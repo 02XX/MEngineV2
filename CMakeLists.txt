@@ -34,3 +34,6 @@ add_subdirectory(Resource)
 add_subdirectory(Core)
 add_subdirectory(Platform)
 
+
+# test
+add_subdirectory(Test)
