@@ -38,6 +38,7 @@ add_subdirectory(Platform)
 #3rd party
 add_subdirectory(3rdParty/spdlog)
 add_subdirectory(3rdParty/googletest)
+add_subdirectory(3rdParty/SDL)
 
 
 # test
