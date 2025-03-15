@@ -10,7 +10,8 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 # 设置静态库的输出目录 (lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-
+# 启用位置无关编码 -fPIC
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 if(WIN32)
     message("Platform: Windows")
@@ -34,6 +35,11 @@ add_subdirectory(Resource)
 add_subdirectory(Core)
 add_subdirectory(Platform)
 
+#3rd party
+add_subdirectory(3rdParty/spdlog)
+add_subdirectory(3rdParty/googletest)
+
 
 # test
+enable_testing()
 add_subdirectory(Test)
