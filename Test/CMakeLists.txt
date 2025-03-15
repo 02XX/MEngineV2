@@ -1,1 +1,1 @@
-add_subdirectory(loggerTest)
+add_subdirectory(Platform)
