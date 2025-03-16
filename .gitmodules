@@ -7,3 +7,6 @@
 [submodule "3rdParty/SDL"]
 	path = 3rdParty/SDL
 	url = https://github.com/libsdl-org/SDL
+[submodule "3rdParty/VulkanMemoryAllocator"]
+path = 3rdParty/VulkanMemoryAllocator
+url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator

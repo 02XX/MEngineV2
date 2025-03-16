@@ -31,21 +31,16 @@ void Context::Init(std::function<vk::SurfaceKHR(vk::Instance)> createSurface,
     mVKInstanceEnabledLayers = instanceRequiredLayers;
 
     CreateInstance();
-    mSurface = createSurface(mVKInstance);
-    if (!mSurface)
-    {
-        LogE("Surface creation failed: No surface provided");
-        throw std::runtime_error("Surface creation failed: No surface provided");
-    }
-    // QuerySurfaceInfo();
-
     PickPhysicalDevice();
+
+    CreateSurface(createSurface);
+    QuerySurfaceInfo();
 
     QueryQueueFamilyIndicates();
     CreateDevice();
     GetQueues();
 
-    // CreateVmaAllocator();
+    CreateVmaAllocator();
 }
 
 void Context::CreateInstance()
@@ -87,16 +82,15 @@ void Context::CreateInstance()
     }
     LogD("Instance Created");
 }
-// void Context::CreateSurface(std::function<vk::SurfaceKHR(vk::Instance)> createSurface)
-// {
-//     vk::SurfaceKHR mSurface = createSurface(this->vkInstance);
-//     if (!mSurface)
-//     {
-//         LogE("Surface creation failed: No mSurface provided");
-//     }
-//     this->mSurface = mSurface;
-//     LogI("Surface Created");
-// }
+void Context::CreateSurface(std::function<vk::SurfaceKHR(vk::Instance)> createSurface)
+{
+    mSurface = createSurface(mVKInstance);
+    if (!mSurface)
+    {
+        LogE("Surface creation failed: No mSurface provided");
+    }
+    LogI("Surface Created");
+}
 void Context::QuerySurfaceInfo()
 {
     auto formats = mPhysicalDevice.getSurfaceFormatsKHR(mSurface);
@@ -353,22 +347,22 @@ size).
 //     std::lock_guard<std::mutex> lock(transferQueueSubmitMutex);
 //     transferQueue.submit(submits, fence);
 // }
-// void Context::CreateVmaAllocator()
-// {
-//     // VmaVulkanFunctions vulkanFunctions = {};
-//     // vulkanFunctions.vkGetInstanceProcAddr = &vkGetInstanceProcAddr;
-//     // vulkanFunctions.vkGetDeviceProcAddr = &vkGetDeviceProcAddr;
+void Context::CreateVmaAllocator()
+{
+    // VmaVulkanFunctions vulkanFunctions = {};
+    // vulkanFunctions.vkGetInstanceProcAddr = &vkGetInstanceProcAddr;
+    // vulkanFunctions.vkGetDeviceProcAddr = &vkGetDeviceProcAddr;
 
-//     VmaAllocatorCreateInfo allocatorCreateInfo{};
-//     allocatorCreateInfo.device = device;
-//     allocatorCreateInfo.mPhysicalDevice = mPhysicalDevice;
-//     allocatorCreateInfo.instance = vkInstance;
-//     allocatorCreateInfo.flags =
-//         VMA_ALLOCATOR_CREATE_KHR_DEDICATED_ALLOCATION_BIT | VMA_ALLOCATOR_CREATE_EXT_MEMORY_BUDGET_BIT;
-//     allocatorCreateInfo.vulkanApiVersion = vk::enumerateInstanceVersion();
-//     // allocatorCreateInfo.pVulkanFunctions = &vulkanFunctions;
-//     vmaCreateAllocator(&allocatorCreateInfo, &vmaAllocator);
-//     LogI("VMA Allocator Created\n");
-// }
+    VmaAllocatorCreateInfo allocatorCreateInfo{};
+    allocatorCreateInfo.device = mDevice;
+    allocatorCreateInfo.physicalDevice = mPhysicalDevice;
+    allocatorCreateInfo.instance = mVKInstance;
+    allocatorCreateInfo.flags =
+        VMA_ALLOCATOR_CREATE_KHR_DEDICATED_ALLOCATION_BIT | VMA_ALLOCATOR_CREATE_EXT_MEMORY_BUDGET_BIT;
+    allocatorCreateInfo.vulkanApiVersion = vk::enumerateInstanceVersion();
+    // allocatorCreateInfo.pVulkanFunctions = &vulkanFunctions;
+    vmaCreateAllocator(&allocatorCreateInfo, &mVmaAllocator);
+    LogI("VMA Allocator Created\n");
+}
 
 } // namespace MEngine

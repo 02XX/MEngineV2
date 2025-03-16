@@ -1,6 +1,7 @@
 #pragma once
 #include "Logger.hpp"
 #include "MEngine.hpp"
+#include "VMA.hpp"
 #include <vulkan/vulkan.hpp>
 
 namespace MEngine
@@ -36,6 +37,8 @@ class MENGINE_API Context
     vk::Queue mPresentQueue;
     vk::Queue mTransferQueue;
 
+    VmaAllocator mVmaAllocator;
+
     // std::mutex graphicQueueSubmitMutex;
     // std::mutex presentQueueSubmitMutex;
     // std::mutex transferQueueSubmitMutex;
@@ -54,9 +57,9 @@ class MENGINE_API Context
     void CreateDevice();
     void QuerySurfaceInfo();
     uint32_t QueryMemory(uint32_t memoryTypeBits, vk::MemoryPropertyFlags property);
-    // void CreateSurface(std::function<vk::SurfaceKHR(vk::Instance)> createSurface);
+    void CreateSurface(std::function<vk::SurfaceKHR(vk::Instance)> createSurface);
     int RatePhysicalDevices(vk::PhysicalDevice &physicalDevice);
-    // void CreateVmaAllocator();
+    void CreateVmaAllocator();
 
   public:
     static Context &Instance();
