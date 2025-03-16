@@ -6,7 +6,7 @@
 	url = https://github.com/gabime/spdlog
 [submodule "3rdParty/SDL"]
 	path = 3rdParty/SDL
-	url = https://github.com/libsdl-org/SDL
+	url = https://github.com/libsdl-org/SDL.git
 [submodule "3rdParty/VulkanMemoryAllocator"]
-path = 3rdParty/VulkanMemoryAllocator
-url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator
+	path = 3rdParty/VulkanMemoryAllocator
+	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
