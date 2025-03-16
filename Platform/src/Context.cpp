@@ -89,7 +89,7 @@ void Context::CreateSurface(std::function<vk::SurfaceKHR(vk::Instance)> createSu
     {
         LogE("Surface creation failed: No mSurface provided");
     }
-    LogI("Surface Created");
+    LogD("Surface Created");
 }
 void Context::QuerySurfaceInfo()
 {
@@ -158,12 +158,12 @@ void Context::QuerySurfaceInfo()
     {
         LogT("Support Present Mode: {}", vk::to_string(supportPresentMode));
     }
-    LogI("Current Format: {}", vk::to_string(mSurfaceInfo.format.format));
-    LogI("Current Color Space: {}", vk::to_string(mSurfaceInfo.format.colorSpace));
-    LogI("Current Present Mode: {}", vk::to_string(mSurfaceInfo.presentMode));
-    LogI("Current Extent: {}x{}", capabilities.currentExtent.width, capabilities.currentExtent.height);
-    LogI("Current Image Count: {}", mSurfaceInfo.imageCount);
-    LogI("Current Image Array Layer: {}", mSurfaceInfo.imageArrayLayer);
+    LogD("Current Format: {}", vk::to_string(mSurfaceInfo.format.format));
+    LogD("Current Color Space: {}", vk::to_string(mSurfaceInfo.format.colorSpace));
+    LogD("Current Present Mode: {}", vk::to_string(mSurfaceInfo.presentMode));
+    LogD("Current Extent: {}x{}", capabilities.currentExtent.width, capabilities.currentExtent.height);
+    LogD("Current Image Count: {}", mSurfaceInfo.imageCount);
+    LogD("Current Image Array Layer: {}", mSurfaceInfo.imageArrayLayer);
 }
 
 int Context::RatePhysicalDevices(vk::PhysicalDevice &mPhysicalDevice)
@@ -197,11 +197,13 @@ void Context::PickPhysicalDevice()
     if (candidates.rbegin()->first > 0)
     {
         this->mPhysicalDevice = candidates.rbegin()->second;
-        LogI("Physical Device Selected: {}", mPhysicalDevice.getProperties().deviceName.data());
-        return;
+        LogD("Physical Device Selected: {}", mPhysicalDevice.getProperties().deviceName.data());
     }
-    LogE("No suitable physical device found");
-    throw std::runtime_error("No suitable physical device found");
+    else
+    {
+        LogE("No suitable physical device found");
+        throw std::runtime_error("No suitable physical device found");
+    }
 }
 void Context::CreateDevice()
 {
@@ -362,7 +364,7 @@ void Context::CreateVmaAllocator()
     allocatorCreateInfo.vulkanApiVersion = vk::enumerateInstanceVersion();
     // allocatorCreateInfo.pVulkanFunctions = &vulkanFunctions;
     vmaCreateAllocator(&allocatorCreateInfo, &mVmaAllocator);
-    LogI("VMA Allocator Created\n");
+    LogD("VMA Allocator Created\n");
 }
 
 } // namespace MEngine
