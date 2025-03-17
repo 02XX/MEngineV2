@@ -1,5 +1,11 @@
-file(GLOB_RECURSE SOURCES CMAKE_CONFIGURE_DEPENDS *.cpp)
-add_executable(loggerTest ${SOURCES})
-
-add_test(NAME loggerTest COMMAND loggerTest)
+add_executable(loggerTest LoggerTest.cpp)
+add_test(NAME loggerTest COMMAND LoggerTest)
 target_link_libraries(loggerTest PUBLIC Platform gtest gtest_main)
+
+add_executable(commandBufferTest CommandBufferTest.cpp)
+add_test(NAME commandBufferTest COMMAND CommandBufferTest)
+target_link_libraries(commandBufferTest PUBLIC Platform gtest gtest_main)
+
+add_executable(bufferTest BufferTest.cpp)
+add_test(NAME bufferTest COMMAND BufferTest)
+target_link_libraries(bufferTest PUBLIC Platform gtest gtest_main)
