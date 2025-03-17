@@ -3,11 +3,10 @@
 #include "MEngine.hpp"
 #include "VMA.hpp"
 #include <vulkan/vulkan.hpp>
-#include <vulkan/vulkan_handles.hpp>
 
 namespace MEngine
 {
-class MENGINE_API Context
+class MENGINE_API Context final
 {
   private:
     struct QueueFamilyIndicates
@@ -82,6 +81,10 @@ class MENGINE_API Context
     inline const vk::PhysicalDevice GetPhysicalDevice() const
     {
         return mPhysicalDevice;
+    }
+    inline const VmaAllocator &GetVmaAllocator() const
+    {
+        return mVmaAllocator;
     }
     // void SubmitToGraphicQueue(std::vector<vk::SubmitInfo> submits, vk::Fence fence);
     // void SubmitToPresnetQueue(vk::PresentInfoKHR presentInfo);
