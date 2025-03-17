@@ -1,8 +1,8 @@
-#include "SyncPrimitiveFactory.hpp"
+#include "SyncPrimitiveManager.hpp"
 
 namespace MEngine
 {
-vk::UniqueFence SyncPrimitiveFactory::CreateFence(vk::FenceCreateFlags flags) const
+vk::UniqueFence SyncPrimitiveManager::CreateFence(vk::FenceCreateFlags flags) const
 {
     auto &context = Context::Instance();
     vk::FenceCreateInfo fenceCreateInfo{};
@@ -12,7 +12,7 @@ vk::UniqueFence SyncPrimitiveFactory::CreateFence(vk::FenceCreateFlags flags) co
     return fence;
 }
 
-vk::UniqueSemaphore SyncPrimitiveFactory::CreateUniqueSemaphore() const
+vk::UniqueSemaphore SyncPrimitiveManager::CreateUniqueSemaphore() const
 {
     auto &context = Context::Instance();
     vk::SemaphoreCreateInfo semaphoreCreateInfo{};

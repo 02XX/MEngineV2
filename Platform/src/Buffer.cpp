@@ -30,19 +30,18 @@ Buffer::Buffer(vk::DeviceSize size, vk::BufferUsageFlags bufferUsage, VmaMemoryU
     }
     mBuffer = vk::Buffer(vkBuffer);
 }
-Buffer::Buffer(Buffer &&other)
-    : mBuffer(std::exchange(other.mBuffer, VK_NULL_HANDLE)),
-      mAllocation(std::exchange(other.mAllocation, VK_NULL_HANDLE)),
+Buffer::Buffer(Buffer &&other) noexcept
+    : mBuffer(std::exchange(other.mBuffer, nullptr)), mAllocation(std::exchange(other.mAllocation, nullptr)),
       mAllocationInfo(std::exchange(other.mAllocationInfo, {}))
 {
 }
-Buffer &Buffer::operator=(Buffer &&other)
+Buffer &Buffer::operator=(Buffer &&other) noexcept
 {
     if (this != &other)
     {
         Release();
-        mBuffer = std::exchange(other.mBuffer, VK_NULL_HANDLE);
-        mAllocation = std::exchange(other.mAllocation, VK_NULL_HANDLE);
+        mBuffer = std::exchange(other.mBuffer, nullptr);
+        mAllocation = std::exchange(other.mAllocation, nullptr);
         mAllocationInfo = std::exchange(other.mAllocationInfo, {});
     }
     return *this;

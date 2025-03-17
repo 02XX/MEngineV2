@@ -1,4 +1,4 @@
-#include "CommandBuffeFactory.hpp"
+#include "CommandBuffeManager.hpp"
 #include "Context.hpp"
 #include "gtest/gtest.h"
 #include <iostream>
@@ -6,7 +6,7 @@
 
 using namespace MEngine;
 
-class CommandBufferFactoryTest : public ::testing::Test
+class CommandBufferManagerTest : public ::testing::Test
 {
   protected:
     void SetUp() override
@@ -28,30 +28,30 @@ class CommandBufferFactoryTest : public ::testing::Test
     }
 };
 
-TEST_F(CommandBufferFactoryTest, CreatePrimaryCommandBuffer)
+TEST_F(CommandBufferManagerTest, CreatePrimaryCommandBuffer)
 {
     auto &context = Context::Instance();
     uint32_t queueFamilyIndex = context.GetQueueFamilyIndicates().graphicsFamily.value();
 
-    CommandBufferFactory factory(queueFamilyIndex);
+    CommandBufferManager factory(queueFamilyIndex);
     vk::UniqueCommandBuffer cmd = factory.CreatePrimaryCommandBuffer();
     EXPECT_TRUE(static_cast<bool>(cmd)) << "Failed to create primary command buffer.";
 }
 
-TEST_F(CommandBufferFactoryTest, CreateSecondaryCommandBuffer)
+TEST_F(CommandBufferManagerTest, CreateSecondaryCommandBuffer)
 {
     auto &context = Context::Instance();
     uint32_t queueFamilyIndex = context.GetQueueFamilyIndicates().graphicsFamily.value();
-    CommandBufferFactory factory(queueFamilyIndex);
+    CommandBufferManager factory(queueFamilyIndex);
     vk::UniqueCommandBuffer cmd = factory.CreateSecondaryCommandBuffer();
     EXPECT_TRUE(static_cast<bool>(cmd)) << "Failed to create secondary command buffer.";
 }
-TEST_F(CommandBufferFactoryTest, CreateMultiplePrimaryCommandBuffers)
+TEST_F(CommandBufferManagerTest, CreateMultiplePrimaryCommandBuffers)
 {
     auto &context = Context::Instance();
     uint32_t queueFamilyIndex = context.GetQueueFamilyIndicates().graphicsFamily.value();
 
-    CommandBufferFactory factory(queueFamilyIndex);
+    CommandBufferManager factory(queueFamilyIndex);
 
     constexpr uint32_t bufferCount = 3;
     auto buffers = factory.CreatePrimaryCommandBuffers(bufferCount);
@@ -62,12 +62,12 @@ TEST_F(CommandBufferFactoryTest, CreateMultiplePrimaryCommandBuffers)
         EXPECT_TRUE(!!buf);
 }
 
-TEST_F(CommandBufferFactoryTest, CreateMultipleSecondaryCommandBuffers)
+TEST_F(CommandBufferManagerTest, CreateMultipleSecondaryCommandBuffers)
 {
     auto &context = Context::Instance();
     uint32_t queueFamilyIndex = context.GetQueueFamilyIndicates().graphicsFamily.value();
 
-    CommandBufferFactory factory(queueFamilyIndex);
+    CommandBufferManager factory(queueFamilyIndex);
 
     constexpr uint32_t bufferCount = 3;
     auto buffers = factory.CreateSecondaryCommandBuffers(bufferCount);

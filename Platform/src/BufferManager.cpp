@@ -1,15 +1,15 @@
-#include "BufferFactory.hpp"
+#include "BufferManager.hpp"
 
 namespace MEngine
 {
-BufferFactory::BufferFactory()
+BufferManager::BufferManager()
 {
-    mCommandBufferFactory =
-        std::make_unique<CommandBufferFactory>(Context::Instance().GetQueueFamilyIndicates().transferFamily.value());
-    mSyncPrimitiveFactory = std::make_unique<SyncPrimitiveFactory>();
+    mCommandBufferManager =
+        std::make_unique<CommandBufferManager>(Context::Instance().GetQueueFamilyIndicates().transferFamily.value());
+    mSyncPrimitiveManager = std::make_unique<SyncPrimitiveManager>();
 }
 
-UniqueBuffer BufferFactory::CreateVertexBuffer(vk::DeviceSize size, const void *data)
+UniqueBuffer BufferManager::CreateVertexBuffer(vk::DeviceSize size, const void *data)
 {
     constexpr auto usage = vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst;
     auto vertexBuffer = std::make_unique<Buffer>(size, usage, VMA_MEMORY_USAGE_GPU_ONLY);
@@ -22,7 +22,7 @@ UniqueBuffer BufferFactory::CreateVertexBuffer(vk::DeviceSize size, const void *
     return vertexBuffer;
 }
 
-UniqueBuffer BufferFactory::CreateIndexBuffer(vk::DeviceSize size, const void *data)
+UniqueBuffer BufferManager::CreateIndexBuffer(vk::DeviceSize size, const void *data)
 {
     constexpr auto usage = vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eTransferDst;
     auto indexBuffer = std::make_unique<Buffer>(size, usage, VMA_MEMORY_USAGE_GPU_ONLY);
@@ -35,7 +35,7 @@ UniqueBuffer BufferFactory::CreateIndexBuffer(vk::DeviceSize size, const void *d
     return indexBuffer;
 }
 
-UniqueBuffer BufferFactory::CreateUniformBuffer(vk::DeviceSize size)
+UniqueBuffer BufferManager::CreateUniformBuffer(vk::DeviceSize size)
 {
     constexpr auto flags = VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT;
     auto buffer =
@@ -44,7 +44,7 @@ UniqueBuffer BufferFactory::CreateUniformBuffer(vk::DeviceSize size)
     return buffer;
 }
 
-UniqueBuffer BufferFactory::CreateStagingBuffer(vk::DeviceSize size, const void *data)
+UniqueBuffer BufferManager::CreateStagingBuffer(vk::DeviceSize size, const void *data)
 {
     constexpr auto flags = VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
 
@@ -63,11 +63,11 @@ UniqueBuffer BufferFactory::CreateStagingBuffer(vk::DeviceSize size, const void 
     return staging;
 }
 
-void BufferFactory::CopyBuffer(vk::Buffer srcBuffer, vk::Buffer dstBuffer, vk::DeviceSize size)
+void BufferManager::CopyBuffer(vk::Buffer srcBuffer, vk::Buffer dstBuffer, vk::DeviceSize size)
 {
     auto &context = Context::Instance();
-    auto commandBuffer = mCommandBufferFactory->CreatePrimaryCommandBuffer();
-    auto fence = mSyncPrimitiveFactory->CreateFence();
+    auto commandBuffer = mCommandBufferManager->CreatePrimaryCommandBuffer();
+    auto fence = mSyncPrimitiveManager->CreateFence();
     vk::CommandBufferBeginInfo beginInfo{};
     beginInfo.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
     commandBuffer->begin(beginInfo);

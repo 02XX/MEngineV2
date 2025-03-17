@@ -5,10 +5,10 @@
 
 namespace MEngine
 {
-class MENGINE_API SyncPrimitiveFactory final
+class MENGINE_API SyncPrimitiveManager final
 {
   public:
-    SyncPrimitiveFactory() = default;
+    SyncPrimitiveManager() = default;
     vk::UniqueFence CreateFence(vk::FenceCreateFlags flags = {}) const;
     vk::UniqueSemaphore CreateUniqueSemaphore() const;
 };

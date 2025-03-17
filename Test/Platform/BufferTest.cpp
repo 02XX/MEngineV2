@@ -1,11 +1,11 @@
-#include "BufferFactory.hpp"
+#include "BufferManager.hpp"
 #include "Context.hpp"
 #include "gtest/gtest.h"
 #include <cstring>
 
 using namespace MEngine;
 
-class BufferFactoryTest : public ::testing::Test
+class BufferManagerTest : public ::testing::Test
 {
   protected:
     void SetUp() override
@@ -24,13 +24,13 @@ class BufferFactoryTest : public ::testing::Test
                 return surface;
             },
             {}, deviceExtensions, deviceLayers);
-        mFactory = std::make_unique<BufferFactory>();
+        mFactory = std::make_unique<BufferManager>();
     }
-    std::unique_ptr<BufferFactory> mFactory;
+    std::unique_ptr<BufferManager> mFactory;
 };
 
 // 顶点缓冲区基础功能测试
-TEST_F(BufferFactoryTest, CreateVertexBufferBasic)
+TEST_F(BufferManagerTest, CreateVertexBufferBasic)
 {
     const float vertexData[] = {0.0f, 1.0f, 2.0f};
     const auto bufferSize = sizeof(vertexData);
@@ -40,7 +40,7 @@ TEST_F(BufferFactoryTest, CreateVertexBufferBasic)
 }
 
 // 索引缓冲区类型验证
-TEST_F(BufferFactoryTest, CreateIndexBufferType)
+TEST_F(BufferManagerTest, CreateIndexBufferType)
 {
     const uint32_t indexData[] = {0, 1, 2, 3};
     auto buffer = mFactory->CreateIndexBuffer(sizeof(indexData), indexData);
@@ -49,7 +49,7 @@ TEST_F(BufferFactoryTest, CreateIndexBufferType)
 }
 
 // Uniform缓冲区内存特性测试
-TEST_F(BufferFactoryTest, UniformBufferMemoryProperties)
+TEST_F(BufferManagerTest, UniformBufferMemoryProperties)
 {
     const vk::DeviceSize bufferSize = 256;
     auto buffer = mFactory->CreateUniformBuffer(bufferSize);
@@ -62,7 +62,7 @@ TEST_F(BufferFactoryTest, UniformBufferMemoryProperties)
 }
 
 // 暂存缓冲区拷贝功能验证
-TEST_F(BufferFactoryTest, StagingBufferCopyFunctionality)
+TEST_F(BufferManagerTest, StagingBufferCopyFunctionality)
 {
     // 准备测试数据
     const char testData[] = "Test staging buffer data";
@@ -81,7 +81,7 @@ TEST_F(BufferFactoryTest, StagingBufferCopyFunctionality)
 }
 
 // 异常情况测试：创建0大小缓冲区
-TEST_F(BufferFactoryTest, CreateZeroSizeBuffer)
+TEST_F(BufferManagerTest, CreateZeroSizeBuffer)
 {
     EXPECT_THROW({ mFactory->CreateVertexBuffer(0); }, std::runtime_error) << "Should reject zero-size buffer";
 }

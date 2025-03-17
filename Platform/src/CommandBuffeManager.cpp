@@ -1,8 +1,8 @@
-#include "CommandBuffeFactory.hpp"
+#include "CommandBuffeManager.hpp"
 
 namespace MEngine
 {
-CommandBufferFactory::CommandBufferFactory(uint32_t queueFamilyIndex) : mQueueFamilyIndex(queueFamilyIndex)
+CommandBufferManager::CommandBufferManager(uint32_t queueFamilyIndex) : mQueueFamilyIndex(queueFamilyIndex)
 {
     auto &context = Context::Instance();
     vk::CommandPoolCreateInfo commandPoolCreateInfo;
@@ -11,17 +11,17 @@ CommandBufferFactory::CommandBufferFactory(uint32_t queueFamilyIndex) : mQueueFa
     mCommandPool = context.GetDevice()->createCommandPoolUnique(commandPoolCreateInfo);
 }
 
-vk::UniqueCommandBuffer CommandBufferFactory::CreatePrimaryCommandBuffer()
+vk::UniqueCommandBuffer CommandBufferManager::CreatePrimaryCommandBuffer()
 {
     return std::move(CreatePrimaryCommandBuffers(1)[0]);
 }
 
-vk::UniqueCommandBuffer CommandBufferFactory::CreateSecondaryCommandBuffer()
+vk::UniqueCommandBuffer CommandBufferManager::CreateSecondaryCommandBuffer()
 {
     return std::move(CreateSecondaryCommandBuffers(1)[0]);
 }
 
-std::vector<vk::UniqueCommandBuffer> CommandBufferFactory::CreatePrimaryCommandBuffers(uint32_t count)
+std::vector<vk::UniqueCommandBuffer> CommandBufferManager::CreatePrimaryCommandBuffers(uint32_t count)
 {
     auto &context = Context::Instance();
     vk::CommandBufferAllocateInfo commandBufferAllocateInfo;
@@ -33,7 +33,7 @@ std::vector<vk::UniqueCommandBuffer> CommandBufferFactory::CreatePrimaryCommandB
     return buffers;
 }
 
-std::vector<vk::UniqueCommandBuffer> CommandBufferFactory::CreateSecondaryCommandBuffers(uint32_t count)
+std::vector<vk::UniqueCommandBuffer> CommandBufferManager::CreateSecondaryCommandBuffers(uint32_t count)
 {
     auto &context = Context::Instance();
     vk::CommandBufferAllocateInfo commandBufferAllocateInfo;

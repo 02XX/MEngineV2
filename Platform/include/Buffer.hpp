@@ -14,8 +14,8 @@ class MENGINE_API Buffer final
            VmaAllocationCreateFlags flags = 0);
     Buffer(const Buffer &) = delete;
     Buffer &operator=(const Buffer &) = delete;
-    Buffer(Buffer &&other);
-    Buffer &operator=(Buffer &&other);
+    Buffer(Buffer &&other) noexcept;
+    Buffer &operator=(Buffer &&other) noexcept;
     ~Buffer();
 
     const vk::Buffer &GetBuffer() const;

@@ -1,22 +1,22 @@
 #pragma once
 #include "Buffer.hpp"
-#include "CommandBuffeFactory.hpp"
+#include "CommandBuffeManager.hpp"
 #include "MEngine.hpp"
-#include "SyncPrimitiveFactory.hpp"
+#include "SyncPrimitiveManager.hpp"
 #include "VMA.hpp"
 #include <memory>
 #include <vulkan/vulkan.hpp>
 
 namespace MEngine
 {
-class MENGINE_API BufferFactory final
+class MENGINE_API BufferManager final
 {
   private:
-    std::unique_ptr<CommandBufferFactory> mCommandBufferFactory;
-    std::unique_ptr<SyncPrimitiveFactory> mSyncPrimitiveFactory;
+    std::unique_ptr<CommandBufferManager> mCommandBufferManager;
+    std::unique_ptr<SyncPrimitiveManager> mSyncPrimitiveManager;
 
   public:
-    BufferFactory();
+    BufferManager();
     /**
      * @brief Create a Vertex Buffer object, GPU Only
      *
@@ -51,7 +51,13 @@ class MENGINE_API BufferFactory final
      * @return UniqueBuffer
      */
     UniqueBuffer CreateStagingBuffer(vk::DeviceSize size, const void *data = nullptr);
-
+    /**
+     * @brief Copy Buffer from srcBuffer to dstBuffer
+     *
+     * @param srcBuffer source buffer
+     * @param dstBuffer destination buffer
+     * @param size size
+     */
     void CopyBuffer(vk::Buffer srcBuffer, vk::Buffer dstBuffer, vk::DeviceSize size);
 };
 } // namespace MEngine

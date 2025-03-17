@@ -5,14 +5,14 @@
 #include <vulkan/vulkan.hpp>
 namespace MEngine
 {
-class MENGINE_API CommandBufferFactory final
+class MENGINE_API CommandBufferManager final
 {
   private:
     uint32_t mQueueFamilyIndex;
     vk::UniqueCommandPool mCommandPool;
 
   public:
-    CommandBufferFactory(uint32_t queueFamilyIndex);
+    CommandBufferManager(uint32_t queueFamilyIndex);
     /**
      * @brief Create a Primary Command Buffer object
      *
