@@ -326,26 +326,23 @@ So then it means you can just have an std::mutex to do the submission. Or else y
 vector and then call submit on it (all command buffers will be submitted in a single call as submit info takes pointer +
 size).
 */
-// void Context::SubmitToGraphicQueue(std::vector<vk::SubmitInfo> submits, vk::Fence fence)
-// {
-//     std::lock_guard<std::mutex> lock(graphicQueueSubmitMutex);
-//     graphicQueue.submit(submits, fence);
-// }
-// void Context::SubmitToPresnetQueue(vk::PresentInfoKHR presentInfo)
-// {
-//     std::lock_guard<std::mutex> lock(presentQueueSubmitMutex);
-//     auto result = presentQueue.presentKHR(presentInfo);
-//     if (result != vk::Result::eSuccess)
-//     {
-//         LogE("Failed to present to the queue");
-//         throw std::runtime_error("Failed to present to the queue");
-//     }
-// }
-// void Context::SubmitToTransferQueue(std::vector<vk::SubmitInfo> submits, vk::Fence fence)
-// {
-//     std::lock_guard<std::mutex> lock(transferQueueSubmitMutex);
-//     transferQueue.submit(submits, fence);
-// }
+void Context::SubmitToGraphicQueue(std::vector<vk::SubmitInfo> submits, vk::UniqueFence &fence)
+{
+    mGraphicQueue.submit(submits, fence.get());
+}
+void Context::SubmitToPresnetQueue(vk::PresentInfoKHR presentInfo)
+{
+    auto result = mPresentQueue.presentKHR(presentInfo);
+    if (result != vk::Result::eSuccess)
+    {
+        LogE("Failed to present to the queue");
+        throw std::runtime_error("Failed to present to the queue");
+    }
+}
+void Context::SubmitToTransferQueue(std::vector<vk::SubmitInfo> submits, vk::UniqueFence &fence)
+{
+    mTransferQueue.submit(submits, fence.get());
+}
 void Context::CreateVmaAllocator()
 {
     // VmaVulkanFunctions vulkanFunctions = {};

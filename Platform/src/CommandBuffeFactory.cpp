@@ -28,7 +28,9 @@ std::vector<vk::UniqueCommandBuffer> CommandBufferFactory::CreatePrimaryCommandB
     commandBufferAllocateInfo.setLevel(vk::CommandBufferLevel::ePrimary)
         .setCommandPool(mCommandPool.get())
         .setCommandBufferCount(count);
-    return context.GetDevice()->allocateCommandBuffersUnique(commandBufferAllocateInfo);
+    auto buffers = context.GetDevice()->allocateCommandBuffersUnique(commandBufferAllocateInfo);
+    LogD("Allocated {} primary command buffers.", std::to_string(count));
+    return buffers;
 }
 
 std::vector<vk::UniqueCommandBuffer> CommandBufferFactory::CreateSecondaryCommandBuffers(uint32_t count)
@@ -38,6 +40,9 @@ std::vector<vk::UniqueCommandBuffer> CommandBufferFactory::CreateSecondaryComman
     commandBufferAllocateInfo.setLevel(vk::CommandBufferLevel::eSecondary)
         .setCommandPool(mCommandPool.get())
         .setCommandBufferCount(count);
-    return context.GetDevice()->allocateCommandBuffersUnique(commandBufferAllocateInfo);
+
+    auto buffers = context.GetDevice()->allocateCommandBuffersUnique(commandBufferAllocateInfo);
+    LogD("Allocated {} primary command buffers.", std::to_string(count));
+    return buffers;
 }
 } // namespace MEngine

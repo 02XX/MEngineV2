@@ -3,6 +3,7 @@
 #include "MEngine.hpp"
 #include "VMA.hpp"
 #include <vulkan/vulkan.hpp>
+#include <vulkan/vulkan_handles.hpp>
 
 namespace MEngine
 {
@@ -38,9 +39,6 @@ class MENGINE_API Context final
     vk::Queue mTransferQueue;
     VmaAllocator mVmaAllocator;
 
-    // std::mutex graphicQueueSubmitMutex;
-    // std::mutex presentQueueSubmitMutex;
-    // std::mutex transferQueueSubmitMutex;
     std::vector<const char *> mVKInstanceEnabledExtensions;
     std::vector<const char *> mVKInstanceEnabledLayers;
     std::vector<const char *> mVKDeviceEnabledExtensions;
@@ -86,9 +84,13 @@ class MENGINE_API Context final
     {
         return mVmaAllocator;
     }
-    // void SubmitToGraphicQueue(std::vector<vk::SubmitInfo> submits, vk::Fence fence);
-    // void SubmitToPresnetQueue(vk::PresentInfoKHR presentInfo);
-    // void SubmitToTransferQueue(std::vector<vk::SubmitInfo> submits, vk::Fence fence);
+    inline const QueueFamilyIndicates &GetQueueFamilyIndicates() const
+    {
+        return mQueueFamilyIndicates;
+    }
+    void SubmitToGraphicQueue(std::vector<vk::SubmitInfo> submits, vk::UniqueFence &fence);
+    void SubmitToPresnetQueue(vk::PresentInfoKHR presentInfo);
+    void SubmitToTransferQueue(std::vector<vk::SubmitInfo> submits, vk::UniqueFence &fence);
 };
 
 } // namespace MEngine
