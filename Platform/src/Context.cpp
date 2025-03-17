@@ -14,10 +14,7 @@ Context::~Context()
 }
 void Context::Quit()
 {
-    // vmaDestroyAllocator(vmaAllocator);
-    mDevice.destroy();
-    mVKInstance.destroySurfaceKHR(mSurface);
-    mVKInstance.destroy();
+    vmaDestroyAllocator(mVmaAllocator);
 }
 void Context::Init(std::function<vk::SurfaceKHR(vk::Instance)> createSurface,
                    const std::vector<const char *> instanceRequiredExtensions,
@@ -69,7 +66,7 @@ void Context::CreateInstance()
         .setPEnabledLayerNames(mVKInstanceEnabledLayers)
         .setPEnabledExtensionNames(mVKInstanceEnabledExtensions);
     LogT("Instance Version: {}.{}.{}.{}", variant, major, minor, patch);
-    mVKInstance = vk::createInstance(instanceCreateInfo);
+    mVKInstance = vk::createInstanceUnique(instanceCreateInfo);
 
     // log
     for (auto &layer : mVKInstanceEnabledLayers)
@@ -84,7 +81,7 @@ void Context::CreateInstance()
 }
 void Context::CreateSurface(std::function<vk::SurfaceKHR(vk::Instance)> createSurface)
 {
-    mSurface = createSurface(mVKInstance);
+    mSurface = vk::UniqueSurfaceKHR(createSurface(mVKInstance.get()), mVKInstance.get());
     if (!mSurface)
     {
         LogE("Surface creation failed: No mSurface provided");
@@ -93,9 +90,9 @@ void Context::CreateSurface(std::function<vk::SurfaceKHR(vk::Instance)> createSu
 }
 void Context::QuerySurfaceInfo()
 {
-    auto formats = mPhysicalDevice.getSurfaceFormatsKHR(mSurface);
-    auto presentModes = mPhysicalDevice.getSurfacePresentModesKHR(mSurface);
-    auto capabilities = mPhysicalDevice.getSurfaceCapabilitiesKHR(mSurface);
+    auto formats = mPhysicalDevice.getSurfaceFormatsKHR(mSurface.get());
+    auto presentModes = mPhysicalDevice.getSurfacePresentModesKHR(mSurface.get());
+    auto capabilities = mPhysicalDevice.getSurfaceCapabilitiesKHR(mSurface.get());
     std::vector<vk::SurfaceFormatKHR> candidatesFormats = {
         {vk::Format::eR8G8B8A8Srgb, vk::ColorSpaceKHR::eSrgbNonlinear},
         {vk::Format::eB8G8R8A8Srgb, vk::ColorSpaceKHR::eSrgbNonlinear},
@@ -182,7 +179,7 @@ int Context::RatePhysicalDevices(vk::PhysicalDevice &mPhysicalDevice)
 
 void Context::PickPhysicalDevice()
 {
-    auto mPhysicalDevices = mVKInstance.enumeratePhysicalDevices();
+    auto mPhysicalDevices = mVKInstance->enumeratePhysicalDevices();
     if (mPhysicalDevices.empty())
     {
         LogE("No physical devices found");
@@ -240,7 +237,7 @@ void Context::CreateDevice()
         .setPEnabledLayerNames(mVKDeviceEnabledLayers)
         .setPEnabledFeatures(nullptr);
 
-    mDevice = mPhysicalDevice.createDevice(deviceCreateInfo);
+    mDevice = mPhysicalDevice.createDeviceUnique(deviceCreateInfo);
 
     // log
     for (auto &layer : mVKDeviceEnabledLayers)
@@ -266,7 +263,7 @@ void Context::QueryQueueFamilyIndicates()
             mQueueFamilyIndicates.graphicsFamilyCount = queueCount;
             LogT("Queue Family Index: {} Supports Graphics. Supports Queue Index:0~{}", i, queueCount - 1);
         }
-        if (mPhysicalDevice.getSurfaceSupportKHR(i, mSurface))
+        if (mPhysicalDevice.getSurfaceSupportKHR(i, mSurface.get()))
         {
             mQueueFamilyIndicates.presentFamily = static_cast<uint32_t>(i);
             LogT("Queue Family Index: {} Supports Presentation. Supports Queue Index:0~{}", i, queueCount - 1);
@@ -289,9 +286,9 @@ void Context::GetQueues()
     uint32_t graphicQueueIndex = 0;
     uint32_t presentQueueIndex = 0;
     uint32_t transferQueueIndex = 0;
-    mGraphicQueue = mDevice.getQueue(mQueueFamilyIndicates.graphicsFamily.value(), graphicQueueIndex);
-    mPresentQueue = mDevice.getQueue(mQueueFamilyIndicates.presentFamily.value(), presentQueueIndex);
-    mTransferQueue = mDevice.getQueue(mQueueFamilyIndicates.transferFamily.value(), transferQueueIndex);
+    mGraphicQueue = mDevice->getQueue(mQueueFamilyIndicates.graphicsFamily.value(), graphicQueueIndex);
+    mPresentQueue = mDevice->getQueue(mQueueFamilyIndicates.presentFamily.value(), presentQueueIndex);
+    mTransferQueue = mDevice->getQueue(mQueueFamilyIndicates.transferFamily.value(), transferQueueIndex);
     LogD("Queues Getted");
 }
 
@@ -356,15 +353,15 @@ void Context::CreateVmaAllocator()
     // vulkanFunctions.vkGetDeviceProcAddr = &vkGetDeviceProcAddr;
 
     VmaAllocatorCreateInfo allocatorCreateInfo{};
-    allocatorCreateInfo.device = mDevice;
+    allocatorCreateInfo.device = mDevice.get();
     allocatorCreateInfo.physicalDevice = mPhysicalDevice;
-    allocatorCreateInfo.instance = mVKInstance;
+    allocatorCreateInfo.instance = mVKInstance.get();
     allocatorCreateInfo.flags =
         VMA_ALLOCATOR_CREATE_KHR_DEDICATED_ALLOCATION_BIT | VMA_ALLOCATOR_CREATE_EXT_MEMORY_BUDGET_BIT;
     allocatorCreateInfo.vulkanApiVersion = vk::enumerateInstanceVersion();
     // allocatorCreateInfo.pVulkanFunctions = &vulkanFunctions;
     vmaCreateAllocator(&allocatorCreateInfo, &mVmaAllocator);
-    LogD("VMA Allocator Created\n");
+    LogD("VMA Allocator Created");
 }
 
 } // namespace MEngine

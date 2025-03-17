@@ -3,6 +3,7 @@
 #include "MEngine.hpp"
 #include "VMA.hpp"
 #include <vulkan/vulkan.hpp>
+#include <vulkan/vulkan_handles.hpp>
 
 namespace MEngine
 {
@@ -29,14 +30,13 @@ class MENGINE_API Context
 
     QueueFamilyIndicates mQueueFamilyIndicates;
     SurfaceInfo mSurfaceInfo;
-    vk::Instance mVKInstance;
-    vk::SurfaceKHR mSurface;
+    vk::UniqueInstance mVKInstance;
+    vk::UniqueSurfaceKHR mSurface;
     vk::PhysicalDevice mPhysicalDevice;
-    vk::Device mDevice;
+    vk::UniqueDevice mDevice;
     vk::Queue mGraphicQueue;
     vk::Queue mPresentQueue;
     vk::Queue mTransferQueue;
-
     VmaAllocator mVmaAllocator;
 
     // std::mutex graphicQueueSubmitMutex;
@@ -49,6 +49,10 @@ class MENGINE_API Context
 
   private:
     Context() = default;
+    Context(const Context &) = delete;
+    Context(Context &&) = delete;
+    Context &operator=(const Context &) = delete;
+    Context &operator=(Context &&) = delete;
     void CreateInstance();
     void QueryQueueFamilyIndicates();
     void QuerySwapchainInfo(uint32_t width, uint32_t height);
@@ -70,6 +74,15 @@ class MENGINE_API Context
               const std::vector<const char *> deviceRequiredLayers = {"VK_KHR_swapchain"},
               const std::vector<const char *> instanceRequiredLayers = {});
     void Quit();
+
+    inline const vk::UniqueDevice &GetDevice() const
+    {
+        return mDevice;
+    }
+    inline const vk::PhysicalDevice GetPhysicalDevice() const
+    {
+        return mPhysicalDevice;
+    }
     // void SubmitToGraphicQueue(std::vector<vk::SubmitInfo> submits, vk::Fence fence);
     // void SubmitToPresnetQueue(vk::PresentInfoKHR presentInfo);
     // void SubmitToTransferQueue(std::vector<vk::SubmitInfo> submits, vk::Fence fence);
