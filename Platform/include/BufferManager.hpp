@@ -24,7 +24,8 @@ class MENGINE_API BufferManager final
      * @param data buffer data
      * @return UniqueBuffer
      */
-    UniqueBuffer CreateVertexBuffer(vk::DeviceSize size, const void *data = nullptr);
+    UniqueBuffer CreateUniqueVertexBuffer(vk::DeviceSize size, const void *data = nullptr);
+    SharedBuffer CreateSharedVertexBuffer(vk::DeviceSize size, const void *data = nullptr);
 
     /**
      * @brief Create a Index Buffer object, GPU Only
@@ -33,7 +34,8 @@ class MENGINE_API BufferManager final
      * @param data buffer data
      * @return UniqueBuffer
      */
-    UniqueBuffer CreateIndexBuffer(vk::DeviceSize size, const void *data = nullptr);
+    UniqueBuffer CreateUniqueIndexBuffer(vk::DeviceSize size, const void *data = nullptr);
+    SharedBuffer CreateSharedIndexBuffer(vk::DeviceSize size, const void *data = nullptr);
 
     /**
      * @brief Create a Uniform Buffer object, CPU And GPU
@@ -41,7 +43,8 @@ class MENGINE_API BufferManager final
      * @param size buffer size
      * @return UniqueBuffer
      */
-    UniqueBuffer CreateUniformBuffer(vk::DeviceSize size);
+    UniqueBuffer CreateUniqueUniformBuffer(vk::DeviceSize size);
+    SharedBuffer CreateSharedUniformBuffer(vk::DeviceSize size);
 
     /**
      * @brief Create a Staging Buffer object, CPU Only
@@ -50,7 +53,8 @@ class MENGINE_API BufferManager final
      * @param data buffer data
      * @return UniqueBuffer
      */
-    UniqueBuffer CreateStagingBuffer(vk::DeviceSize size, const void *data = nullptr);
+    UniqueBuffer CreateUniqueStagingBuffer(vk::DeviceSize size, const void *data = nullptr);
+    SharedBuffer CreateSharedStagingBuffer(vk::DeviceSize size, const void *data = nullptr);
     /**
      * @brief Copy Buffer from srcBuffer to dstBuffer
      *

@@ -29,4 +29,5 @@ class MENGINE_API Buffer final
 };
 
 using UniqueBuffer = std::unique_ptr<Buffer>;
+using SharedBuffer = std::shared_ptr<Buffer>;
 } // namespace MEngine
