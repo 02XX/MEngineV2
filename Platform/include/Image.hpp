@@ -32,4 +32,5 @@ class MENGINE_API Image final
 };
 
 using UniqueImage = std::unique_ptr<Image>;
+using SharedImage = std::shared_ptr<Image>;
 } // namespace MEngine

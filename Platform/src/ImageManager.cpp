@@ -1,4 +1,5 @@
 #include "ImageManager.hpp"
+#include "Image.hpp"
 #include "Logger.hpp"
 #include <vulkan/vulkan_structs.hpp>
 
@@ -11,7 +12,8 @@ ImageManager::ImageManager()
     mSyncPrimitiveManager = std::make_unique<SyncPrimitiveManager>();
     mBufferManager = std::make_unique<BufferManager>();
 }
-UniqueImage ImageManager::CreateTexture2D(vk::Extent2D extent, vk::Format format, uint32_t mipLevels, const void *data)
+UniqueImage ImageManager::CreateUniqueTexture2D(vk::Extent2D extent, vk::Format format, uint32_t mipLevels,
+                                                const void *data)
 {
     auto &context = Context::Instance();
     vk::ImageCreateInfo imageCreateInfo{};
@@ -29,7 +31,7 @@ UniqueImage ImageManager::CreateTexture2D(vk::Extent2D extent, vk::Format format
     if (data)
     {
         const vk::DeviceSize imageSize = extent.width * extent.height * GetFormatPixelSize(format);
-        auto stagingBuffer = mBufferManager->CreateStagingBuffer(imageSize);
+        auto stagingBuffer = mBufferManager->CreateUniqueStagingBuffer(imageSize);
         TransitionLayout(image->GetImage(), vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal,
                          {vk::ImageAspectFlagBits::eColor, 0, mipLevels, 0, 1});
         CopyBufferToImage(stagingBuffer->GetBuffer(), image->GetImage(), extent);
@@ -41,8 +43,39 @@ UniqueImage ImageManager::CreateTexture2D(vk::Extent2D extent, vk::Format format
     return image;
 }
 
-UniqueImage ImageManager::CreateRenderTarget(vk::Extent2D extent, vk::Format format, vk::ImageUsageFlags usage,
-                                             uint32_t mipLevels, vk::SampleCountFlagBits samples)
+SharedImage ImageManager::CreateSharedTexture2D(vk::Extent2D extent, vk::Format format, uint32_t mipLevels,
+                                                const void *data)
+{
+    auto &context = Context::Instance();
+    vk::ImageCreateInfo imageCreateInfo{};
+    imageCreateInfo.setImageType(vk::ImageType::e2D)
+        .setFormat(format)
+        .setExtent(vk::Extent3D(extent, 1))
+        .setMipLevels(mipLevels)
+        .setArrayLayers(1)
+        .setSamples(vk::SampleCountFlagBits::e1)
+        .setTiling(vk::ImageTiling::eOptimal)
+        .setUsage(vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled |
+                  vk::ImageUsageFlagBits::eTransferSrc)
+        .setInitialLayout(vk::ImageLayout::eUndefined);
+    auto image = std::make_shared<Image>(imageCreateInfo, VMA_MEMORY_USAGE_GPU_ONLY);
+    if (data)
+    {
+        const vk::DeviceSize imageSize = extent.width * extent.height * GetFormatPixelSize(format);
+        auto stagingBuffer = mBufferManager->CreateUniqueStagingBuffer(imageSize);
+        TransitionLayout(image->GetImage(), vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal,
+                         {vk::ImageAspectFlagBits::eColor, 0, mipLevels, 0, 1});
+        CopyBufferToImage(stagingBuffer->GetBuffer(), image->GetImage(), extent);
+        TransitionLayout(image->GetImage(), vk::ImageLayout::eTransferDstOptimal,
+                         vk::ImageLayout::eShaderReadOnlyOptimal,
+                         {vk::ImageAspectFlagBits::eColor, 0, mipLevels, 0, 1});
+    }
+    LogD("Created Texture2D with {}x{}, format: {}", extent.width, extent.height, vk::to_string(format));
+    return image;
+}
+
+UniqueImage ImageManager::CreateUniqueRenderTarget(vk::Extent2D extent, vk::Format format, vk::ImageUsageFlags usage,
+                                                   uint32_t mipLevels, vk::SampleCountFlagBits samples)
 {
     vk::ImageCreateInfo imageCreateInfo{};
     imageCreateInfo.setImageType(vk::ImageType::e2D)
@@ -59,9 +92,27 @@ UniqueImage ImageManager::CreateRenderTarget(vk::Extent2D extent, vk::Format for
                      {vk::ImageAspectFlagBits::eColor, 0, mipLevels, 0, 1});
     return image;
 }
+SharedImage ImageManager::CreateSharedRenderTarget(vk::Extent2D extent, vk::Format format, vk::ImageUsageFlags usage,
+                                                   uint32_t mipLevels, vk::SampleCountFlagBits samples)
+{
+    vk::ImageCreateInfo imageCreateInfo{};
+    imageCreateInfo.setImageType(vk::ImageType::e2D)
+        .setFormat(format)
+        .setExtent(vk::Extent3D(extent, 1))
+        .setMipLevels(mipLevels)
+        .setArrayLayers(1)
+        .setSamples(vk::SampleCountFlagBits::e1)
+        .setTiling(vk::ImageTiling::eOptimal)
+        .setUsage(usage)
+        .setInitialLayout(vk::ImageLayout::eUndefined);
+    auto image = std::make_shared<Image>(imageCreateInfo, VMA_MEMORY_USAGE_GPU_ONLY);
+    TransitionLayout(image->GetImage(), vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal,
+                     {vk::ImageAspectFlagBits::eColor, 0, mipLevels, 0, 1});
+    return image;
+}
 
-UniqueImage ImageManager::CreateDepthStencil(vk::Extent2D extent, vk::Format format, uint32_t mipLevels,
-                                             vk::SampleCountFlagBits samples)
+UniqueImage ImageManager::CreateUniqueDepthStencil(vk::Extent2D extent, vk::Format format, uint32_t mipLevels,
+                                                   vk::SampleCountFlagBits samples)
 {
     vk::ImageCreateInfo imageCreateInfo{};
     imageCreateInfo.setImageType(vk::ImageType::e2D)
@@ -78,9 +129,27 @@ UniqueImage ImageManager::CreateDepthStencil(vk::Extent2D extent, vk::Format for
                      {vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil, 0, mipLevels, 0, 1});
     return image;
 }
+SharedImage ImageManager::CreateSharedDepthStencil(vk::Extent2D extent, vk::Format format, uint32_t mipLevels,
+                                                   vk::SampleCountFlagBits samples)
+{
+    vk::ImageCreateInfo imageCreateInfo{};
+    imageCreateInfo.setImageType(vk::ImageType::e2D)
+        .setFormat(format)
+        .setExtent(vk::Extent3D(extent, 1))
+        .setMipLevels(mipLevels)
+        .setArrayLayers(1)
+        .setSamples(samples)
+        .setTiling(vk::ImageTiling::eOptimal)
+        .setUsage(vk::ImageUsageFlagBits::eDepthStencilAttachment)
+        .setInitialLayout(vk::ImageLayout::eUndefined);
+    auto image = std::make_shared<Image>(imageCreateInfo, VMA_MEMORY_USAGE_GPU_ONLY);
+    TransitionLayout(image->GetImage(), vk::ImageLayout::eUndefined, vk::ImageLayout::eDepthStencilAttachmentOptimal,
+                     {vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil, 0, mipLevels, 0, 1});
+    return image;
+}
 
-UniqueImage ImageManager::CreateStorageImage(vk::Extent2D extent, vk::Format format, uint32_t mipLevels,
-                                             vk::SampleCountFlagBits samples)
+UniqueImage ImageManager::CreateUniqueStorageImage(vk::Extent2D extent, vk::Format format, uint32_t mipLevels,
+                                                   vk::SampleCountFlagBits samples)
 {
     vk::ImageCreateInfo imageCreateInfo{};
     imageCreateInfo.setImageType(vk::ImageType::e2D)
@@ -97,6 +166,28 @@ UniqueImage ImageManager::CreateStorageImage(vk::Extent2D extent, vk::Format for
     allocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
 
     auto image = std::make_unique<Image>(imageCreateInfo, VMA_MEMORY_USAGE_GPU_ONLY);
+    TransitionLayout(image->GetImage(), vk::ImageLayout::eUndefined, vk::ImageLayout::eGeneral,
+                     {vk::ImageAspectFlagBits::eColor, 0, mipLevels, 0, 1});
+    return image;
+}
+SharedImage ImageManager::CreateSharedStorageImage(vk::Extent2D extent, vk::Format format, uint32_t mipLevels,
+                                                   vk::SampleCountFlagBits samples)
+{
+    vk::ImageCreateInfo imageCreateInfo{};
+    imageCreateInfo.setImageType(vk::ImageType::e2D)
+        .setFormat(format)
+        .setExtent(vk::Extent3D(extent, 1))
+        .setMipLevels(mipLevels)
+        .setArrayLayers(1)
+        .setSamples(samples)
+        .setTiling(vk::ImageTiling::eOptimal)
+        .setUsage(vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled)
+        .setInitialLayout(vk::ImageLayout::eUndefined);
+
+    VmaAllocationCreateInfo allocInfo{};
+    allocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+
+    auto image = std::make_shared<Image>(imageCreateInfo, VMA_MEMORY_USAGE_GPU_ONLY);
     TransitionLayout(image->GetImage(), vk::ImageLayout::eUndefined, vk::ImageLayout::eGeneral,
                      {vk::ImageAspectFlagBits::eColor, 0, mipLevels, 0, 1});
     return image;

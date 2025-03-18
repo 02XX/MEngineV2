@@ -27,8 +27,10 @@ class MENGINE_API ImageManager final
      * @param mipLevels Mipmap levels
      * @param data Initial data (optional)
      */
-    UniqueImage CreateTexture2D(vk::Extent2D extent, vk::Format format = vk::Format::eR8G8B8A8Srgb,
-                                uint32_t mipLevels = 1, const void *data = nullptr);
+    UniqueImage CreateUniqueTexture2D(vk::Extent2D extent, vk::Format format = vk::Format::eR8G8B8A8Srgb,
+                                      uint32_t mipLevels = 1, const void *data = nullptr);
+    SharedImage CreateSharedTexture2D(vk::Extent2D extent, vk::Format format = vk::Format::eR8G8B8A8Srgb,
+                                      uint32_t mipLevels = 1, const void *data = nullptr);
 
     /**
      * @brief Create a render target (GPU Only)
@@ -36,19 +38,26 @@ class MENGINE_API ImageManager final
      * @param format Pixel format
      * @param usage Additional usage flags
      */
-    UniqueImage CreateRenderTarget(vk::Extent2D extent, vk::Format format = vk::Format::eR8G8B8A8Srgb,
-                                   vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eColorAttachment,
-                                   uint32_t mipLevels = 1,
-                                   vk::SampleCountFlagBits samples = vk::SampleCountFlagBits::e1);
+    UniqueImage CreateUniqueRenderTarget(vk::Extent2D extent, vk::Format format = vk::Format::eR8G8B8A8Srgb,
+                                         vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eColorAttachment,
+                                         uint32_t mipLevels = 1,
+                                         vk::SampleCountFlagBits samples = vk::SampleCountFlagBits::e1);
+    SharedImage CreateSharedRenderTarget(vk::Extent2D extent, vk::Format format = vk::Format::eR8G8B8A8Srgb,
+                                         vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eColorAttachment,
+                                         uint32_t mipLevels = 1,
+                                         vk::SampleCountFlagBits samples = vk::SampleCountFlagBits::e1);
 
     /**
      * @brief Create a depth/stencil buffer (GPU Only)
      * @param extent Buffer extent
      * @param format Depth format
      */
-    UniqueImage CreateDepthStencil(vk::Extent2D extent, vk::Format format = vk::Format::eD32SfloatS8Uint,
-                                   uint32_t mipLevels = 1,
-                                   vk::SampleCountFlagBits samples = vk::SampleCountFlagBits::e1);
+    UniqueImage CreateUniqueDepthStencil(vk::Extent2D extent, vk::Format format = vk::Format::eD32SfloatS8Uint,
+                                         uint32_t mipLevels = 1,
+                                         vk::SampleCountFlagBits samples = vk::SampleCountFlagBits::e1);
+    SharedImage CreateSharedDepthStencil(vk::Extent2D extent, vk::Format format = vk::Format::eD32SfloatS8Uint,
+                                         uint32_t mipLevels = 1,
+                                         vk::SampleCountFlagBits samples = vk::SampleCountFlagBits::e1);
 
     /**
      * @brief Create a storage image (GPU Only)
@@ -56,9 +65,12 @@ class MENGINE_API ImageManager final
      * @param height Image height
      * @param format Storage format
      */
-    UniqueImage CreateStorageImage(vk::Extent2D extent, vk::Format format = vk::Format::eR8G8B8A8Srgb,
-                                   uint32_t mipLevels = 1,
-                                   vk::SampleCountFlagBits samples = vk::SampleCountFlagBits::e1);
+    UniqueImage CreateUniqueStorageImage(vk::Extent2D extent, vk::Format format = vk::Format::eR8G8B8A8Srgb,
+                                         uint32_t mipLevels = 1,
+                                         vk::SampleCountFlagBits samples = vk::SampleCountFlagBits::e1);
+    SharedImage CreateSharedStorageImage(vk::Extent2D extent, vk::Format format = vk::Format::eR8G8B8A8Srgb,
+                                         uint32_t mipLevels = 1,
+                                         vk::SampleCountFlagBits samples = vk::SampleCountFlagBits::e1);
 
     /**
      * @brief Copy buffer to image
