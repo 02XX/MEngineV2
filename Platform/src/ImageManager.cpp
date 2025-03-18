@@ -1,4 +1,5 @@
 #include "ImageManager.hpp"
+#include "Logger.hpp"
 #include <vulkan/vulkan_structs.hpp>
 
 namespace MEngine
@@ -217,6 +218,11 @@ std::pair<vk::AccessFlags, vk::AccessFlags> ImageManager::GetAccessMasksForLayou
     {
         return {eNone, eColorAttachmentWrite};
     }
+    else
+    {
+        LogE("Unsupported layout transition");
+        throw std::runtime_error("Unsupported layout transition");
+    }
 }
 std::pair<vk::PipelineStageFlags, vk::PipelineStageFlags> ImageManager::GetPipelineStagesForLayout(
     vk::ImageLayout oldLayout, vk::ImageLayout newLayout)
@@ -239,5 +245,24 @@ std::pair<vk::PipelineStageFlags, vk::PipelineStageFlags> ImageManager::GetPipel
     {
         return {eTransfer, eFragmentShader};
     }
+    else
+    {
+        LogE("Unsupported layout transition");
+        throw std::runtime_error("Unsupported layout transition");
+    }
+}
+vk::UniqueImageView ImageManager::CreateImageView(vk::Image image, vk::Format format, vk::ComponentMapping components,
+                                                  vk::ImageSubresourceRange subresourceRange)
+{
+    auto &context = Context::Instance();
+    vk::ImageViewCreateInfo imageViewCreateInfo;
+    imageViewCreateInfo.setImage(image)
+        .setViewType(vk::ImageViewType::e2D)
+        .setFormat(format)
+        .setComponents(components)
+        .setSubresourceRange(subresourceRange);
+    auto imageView = context.GetDevice()->createImageViewUnique(imageViewCreateInfo);
+    LogD("Image view created");
+    return imageView;
 }
 } // namespace MEngine

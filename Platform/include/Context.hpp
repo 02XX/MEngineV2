@@ -88,6 +88,10 @@ class MENGINE_API Context final
     {
         return mQueueFamilyIndicates;
     }
+    inline const SurfaceInfo &GetSurfaceInfo() const
+    {
+        return mSurfaceInfo;
+    }
     void SubmitToGraphicQueue(std::vector<vk::SubmitInfo> submits, vk::UniqueFence &fence);
     void SubmitToPresnetQueue(vk::PresentInfoKHR presentInfo);
     void SubmitToTransferQueue(std::vector<vk::SubmitInfo> submits, vk::UniqueFence &fence);

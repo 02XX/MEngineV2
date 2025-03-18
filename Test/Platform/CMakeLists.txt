@@ -1,4 +1,4 @@
-add_executable(loggerTest LoggerTest.cpp)
+add_executable(loggerTest loggerTest.cpp)
 add_test(NAME loggerTest COMMAND LoggerTest)
 target_link_libraries(loggerTest PUBLIC Platform gtest gtest_main)
 

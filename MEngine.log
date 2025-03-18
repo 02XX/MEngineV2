@@ -1,0 +1,32 @@
+[2025-03-18 16:25:24.210] [                    :    ] trace - Instance Version: 0.1.4.309
+[2025-03-18 16:25:24.240] [                    :    ] trace - Instance enabled extension: VK_KHR_surface
+[2025-03-18 16:25:24.240] [                    :    ] trace - Instance enabled extension: VK_KHR_xlib_surface
+[2025-03-18 16:25:24.240] [                    :    ] debug - Instance Created
+[2025-03-18 16:25:24.246] [                    :    ] debug - Physical Device Selected: NVIDIA GeForce RTX 2080 Ti
+[2025-03-18 16:25:24.246] [                    :    ] debug - Surface Created
+[2025-03-18 16:25:24.253] [                    :    ] trace - Current Surface Info:
+[2025-03-18 16:25:24.253] [                    :    ] trace - Support Array Layer: 1~1
+[2025-03-18 16:25:24.253] [                    :    ] trace - Support Usage Flags
+[2025-03-18 16:25:24.253] [                    :    ] trace - Support Transforms
+[2025-03-18 16:25:24.253] [                    :    ] trace - Support Format: B8G8R8A8Unorm
+[2025-03-18 16:25:24.253] [                    :    ] trace - Support Format: B8G8R8A8Srgb
+[2025-03-18 16:25:24.253] [                    :    ] trace - Support Present Mode: Fifo
+[2025-03-18 16:25:24.253] [                    :    ] trace - Support Present Mode: FifoRelaxed
+[2025-03-18 16:25:24.253] [                    :    ] trace - Support Present Mode: Immediate
+[2025-03-18 16:25:24.253] [                    :    ] debug - Current Format: B8G8R8A8Srgb
+[2025-03-18 16:25:24.253] [                    :    ] debug - Current Color Space: SrgbNonlinear
+[2025-03-18 16:25:24.253] [                    :    ] debug - Current Present Mode: Fifo
+[2025-03-18 16:25:24.253] [                    :    ] debug - Current Extent: 800x600
+[2025-03-18 16:25:24.253] [                    :    ] debug - Current Image Count: 2
+[2025-03-18 16:25:24.253] [                    :    ] debug - Current Image Array Layer: 1
+[2025-03-18 16:25:24.253] [                    :    ] trace - Queue Family Index: 0 Supports Graphics. Supports Queue Index:0~15
+[2025-03-18 16:25:24.253] [                    :    ] trace - Support Image Count: 2~8
+[2025-03-18 16:25:24.253] [                    :    ] trace - Queue Family Index: 0 Supports Transfer. Supports Queue Index:0~15
+[2025-03-18 16:25:24.253] [                    :    ] trace - Support Extent: 800x600~800x600
+[2025-03-18 16:25:24.253] [                    :    ] trace - Queue Family Index: 0 Supports Presentation. Supports Queue Index:0~15
+[2025-03-18 16:25:24.253] [                    :    ] trace - Support CompositeAlpha { Opaque }
+[2025-03-18 16:25:24.402] [                    :    ] trace - Device enabled layer: VK_KHR_swapchain
+[2025-03-18 16:25:24.402] [                    :    ] debug - Device Created
+[2025-03-18 16:25:24.402] [                    :    ] debug - Queues Getted
+[2025-03-18 16:25:24.402] [                    :    ] debug - VMA Allocator Created
+[2025-03-18 16:25:25.614] [                    :    ] debug - Context Destroyed

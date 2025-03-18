@@ -17,7 +17,6 @@ class MENGINE_API Buffer final
     Buffer(Buffer &&other) noexcept;
     Buffer &operator=(Buffer &&other) noexcept;
     ~Buffer();
-
     const vk::Buffer &GetBuffer() const;
     const VmaAllocationInfo &GetAllocationInfo() const;
 

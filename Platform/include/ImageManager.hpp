@@ -6,8 +6,6 @@
 #include "MEngine.hpp"
 #include "SyncPrimitiveManager.hpp"
 #include <memory>
-#include <vulkan/vulkan_enums.hpp>
-#include <vulkan/vulkan_structs.hpp>
 
 namespace MEngine
 {
@@ -108,5 +106,17 @@ class MENGINE_API ImageManager final
      */
     std::pair<vk::PipelineStageFlags, vk::PipelineStageFlags> GetPipelineStagesForLayout(vk::ImageLayout oldLayout,
                                                                                          vk::ImageLayout newLayout);
+    /**
+     * @brief Create a Image View object
+     *
+     * @param image
+     * @param format
+     * @param components
+     * @param subresourceRange
+     * @return vk::UniqueImageView
+     */
+    vk::UniqueImageView CreateImageView(vk::Image image, vk::Format format, vk::ComponentMapping components = {},
+                                        vk::ImageSubresourceRange subresourceRange = {vk::ImageAspectFlagBits::eColor,
+                                                                                      0, 0, 1});
 };
 } // namespace MEngine
