@@ -7,9 +7,11 @@ namespace MEngine
 {
 class MENGINE_API FrameBufferManager final
 {
+  private:
+    vk::UniqueFramebuffer mFramebuffer;
+
   public:
-    FrameBufferManager();
-    vk::UniqueFramebuffer CreateFrameBuffer(vk::RenderPass renderPass, vk::Extent2D extent,
-                                            const std::vector<vk::ImageView> &attachments);
+    FrameBufferManager(vk::RenderPass renderPass, vk::Extent2D extent, const std::vector<vk::ImageView> &attachments);
+    vk::Framebuffer GetFramebuffer() const;
 };
 } // namespace MEngine

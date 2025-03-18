@@ -2,7 +2,7 @@
 
 namespace MEngine
 {
-vk::UniquePipelineLayout PipelineLayoutManager::CreatePipelineLayout(
+vk::UniquePipelineLayout PipelineLayoutManager::CreateUniquePipelineLayout(
     const std::vector<DescriptorBindingInfo> &descriptorBindings,
     const std::vector<vk::PushConstantRange> &pushConstants)
 {
@@ -28,5 +28,35 @@ vk::UniquePipelineLayout PipelineLayoutManager::CreatePipelineLayout(
     auto pipelineLayout = context.GetDevice()->createPipelineLayoutUnique(pipelineLayoutCreateInfo);
     LogI("Graphic Pipeline Layout Created.");
     return pipelineLayout;
+}
+SharedPipelineLayout PipelineLayoutManager::CreateSharedPipelineLayout(
+    const std::vector<DescriptorBindingInfo> &descriptorBindings,
+    const std::vector<vk::PushConstantRange> &pushConstants)
+{
+    auto &context = Context::Instance();
+    vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
+    vk::DescriptorSetLayoutBinding descriptorSetLayoutBinding;
+    std::vector<vk::DescriptorSetLayoutBinding> descriptorSetLayoutBindings;
+    for (const auto &descriptorBinding : descriptorBindings)
+    {
+        descriptorSetLayoutBinding.setBinding(descriptorBinding.binding)
+            .setDescriptorType(descriptorBinding.type)
+            .setDescriptorCount(descriptorBinding.count)
+            .setStageFlags(descriptorBinding.stageFlags);
+        descriptorSetLayoutBindings.push_back(descriptorSetLayoutBinding);
+    }
+    vk::DescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo;
+    descriptorSetLayoutCreateInfo.setBindings(descriptorSetLayoutBindings);
+
+    vk::UniqueDescriptorSetLayout descriptorSetLayout =
+        context.GetDevice()->createDescriptorSetLayoutUnique(descriptorSetLayoutCreateInfo);
+
+    pipelineLayoutCreateInfo.setSetLayouts(descriptorSetLayout.get()).setPushConstantRanges(pushConstants);
+    auto pipelineLayout = context.GetDevice()->createPipelineLayout(pipelineLayoutCreateInfo);
+    LogI("Graphic Pipeline Layout Created.");
+    return std::make_shared<vk::PipelineLayout>(pipelineLayout, [&context](vk::PipelineLayout &pipelineLayout) {
+        context.GetDevice()->destroyPipelineLayout(pipelineLayout);
+        LogT("Graphic Pipeline Layout Destroyed.");
+    });
 }
 } // namespace MEngine

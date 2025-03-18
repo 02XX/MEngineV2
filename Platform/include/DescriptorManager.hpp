@@ -25,6 +25,7 @@ struct PoolSizesProportion
         {vk::DescriptorType::eStorageBufferDynamic, 1.0f},
     };
 };
+using SharedDescriptorSet = std::shared_ptr<vk::DescriptorSet>;
 class MENGINE_API DescriptorManager final
 {
   private:
@@ -38,9 +39,10 @@ class MENGINE_API DescriptorManager final
   public:
     DescriptorManager(uint32_t maxDescriptorSize = 1000, PoolSizesProportion defaultPoolSizesProportion = {});
 
-    std::vector<vk::UniqueDescriptorSet> AllocateDescriptorSet(
+    std::vector<vk::UniqueDescriptorSet> AllocateUniqueDescriptorSet(
         std::vector<vk::DescriptorSetLayout> descriptorSetLayouts);
-
+    std::vector<SharedDescriptorSet> AllocateSharedDescriptorSet(
+        std::vector<vk::DescriptorSetLayout> descriptorSetLayouts);
     void ResetDescriptorPool();
     void SetDefaultPoolSizesProportion(PoolSizesProportion defaultPoolSizesProportion)
     {

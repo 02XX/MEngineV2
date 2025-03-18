@@ -3,8 +3,7 @@
 
 namespace MEngine
 {
-vk::UniqueSwapchainKHR SwapchainManager::CreateSwapchain(vk::Extent2D extent, vk::SurfaceKHR surface,
-                                                         vk::SwapchainKHR oldSwapchain)
+SwapchainManager::SwapchainManager(vk::Extent2D extent, vk::SurfaceKHR surface, vk::SwapchainKHR oldSwapchain)
 {
     auto &context = Context::Instance();
     auto &surfaceInfo = context.GetSurfaceInfo();
@@ -35,19 +34,17 @@ vk::UniqueSwapchainKHR SwapchainManager::CreateSwapchain(vk::Extent2D extent, vk
         swapchainCreateInfo.setImageSharingMode(vk::SharingMode::eConcurrent)
             .setQueueFamilyIndices(queueFamilyIndicesArray);
     }
-
-    auto swapchain = context.GetDevice()->createSwapchainKHRUnique(swapchainCreateInfo);
+    mSwapchain = context.GetDevice()->createSwapchainKHRUnique(swapchainCreateInfo);
     LogD("Swapchain Created.");
-    return swapchain;
 }
 
-std::vector<vk::UniqueImageView> SwapchainManager::CreateSwapchainImageViews(vk::SwapchainKHR swapchain)
+void SwapchainManager::CreateSwapchainImageViews()
 {
     auto &context = Context::Instance();
     auto &surfaceInfo = context.GetSurfaceInfo();
     auto &queueFamilyIndices = context.GetQueueFamilyIndicates();
     std::vector<vk::UniqueImageView> imageViews;
-    auto images = GetSwapchainImages(swapchain);
+    auto images = GetSwapchainImages();
     for (auto &image : images)
     {
         vk::ImageViewCreateInfo imageViewCreateInfo;
@@ -60,13 +57,27 @@ std::vector<vk::UniqueImageView> SwapchainManager::CreateSwapchainImageViews(vk:
         auto imageView = context.GetDevice()->createImageViewUnique(imageViewCreateInfo);
         imageViews.push_back(std::move(imageView));
     }
-    return imageViews;
+    mSwapchainImageViews = std::move(imageViews);
+    LogD("Swapchain Image Views Created.");
 }
 
-std::vector<vk::Image> SwapchainManager::GetSwapchainImages(vk::SwapchainKHR swapchain)
+std::vector<vk::Image> SwapchainManager::GetSwapchainImages() const
 {
     auto &context = Context::Instance();
-    auto images = context.GetDevice()->getSwapchainImagesKHR(swapchain);
-    return images;
+    return context.GetDevice()->getSwapchainImagesKHR(mSwapchain.get());
+}
+
+vk::SwapchainKHR SwapchainManager::GetSwapchain() const
+{
+    return mSwapchain.get();
+}
+std::vector<vk::ImageView> SwapchainManager::GetSwapchainImageViews() const
+{
+    std::vector<vk::ImageView> imageViews;
+    for (auto &imageView : mSwapchainImageViews)
+    {
+        imageViews.push_back(imageView.get());
+    }
+    return imageViews;
 }
 } // namespace MEngine

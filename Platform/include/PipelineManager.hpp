@@ -68,9 +68,12 @@ struct ComputePipelineConfig
     uint32_t maxThreadsY = 1;
     uint32_t maxThreadsZ = 1;
 };
+using SharedPipeline = std::shared_ptr<vk::Pipeline>;
+using UniquePipeline = vk::UniquePipeline;
 class MENGINE_API PipelineManager final
 {
   public:
+    using UniquePipeline = vk::UniquePipeline;
     PipelineManager() = default;
     /**
      * @brief Create a Graphics Pipeline object
@@ -78,8 +81,10 @@ class MENGINE_API PipelineManager final
      * @param config
      * @return vk::UniquePipeline
      */
-    vk::UniquePipeline CreateGraphicsPipeline(const GraphicsPipelineConfig &config);
-    vk::UniquePipeline CreateComputePipeline(const ComputePipelineConfig &config);
+    UniquePipeline CreateUniqueGraphicsPipeline(const GraphicsPipelineConfig &config);
+    SharedPipeline CreateSharedGraphicsPipeline(const GraphicsPipelineConfig &config);
+    UniquePipeline CreateComputePipeline(const ComputePipelineConfig &config);
 };
+using SharedPipeline = std::shared_ptr<vk::Pipeline>;
 
 } // namespace MEngine

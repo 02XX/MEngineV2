@@ -8,10 +8,21 @@ namespace MEngine
 {
 class MENGINE_API SwapchainManager final
 {
+  private:
+    vk::UniqueSwapchainKHR mSwapchain;
+    std::vector<vk::UniqueImageView> mSwapchainImageViews;
+    void CreateSwapchainImageViews();
+
   public:
-    SwapchainManager();
-    vk::UniqueSwapchainKHR CreateSwapchain(vk::Extent2D extent, vk::SurfaceKHR surface, vk::SwapchainKHR oldSwapchain);
-    std::vector<vk::UniqueImageView> CreateSwapchainImageViews(vk::SwapchainKHR swapchain);
-    std::vector<vk::Image> GetSwapchainImages(vk::SwapchainKHR swapchain);
+    SwapchainManager(vk::Extent2D extent, vk::SurfaceKHR surface, vk::SwapchainKHR oldSwapchain);
+    SwapchainManager(const SwapchainManager &) = delete;
+    SwapchainManager &operator=(const SwapchainManager &) = delete;
+    SwapchainManager(SwapchainManager &&) = delete;
+    SwapchainManager &operator=(SwapchainManager &&) = delete;
+    ~SwapchainManager();
+
+    std::vector<vk::ImageView> GetSwapchainImageViews() const;
+    std::vector<vk::Image> GetSwapchainImages() const;
+    vk::SwapchainKHR GetSwapchain() const;
 };
 } // namespace MEngine

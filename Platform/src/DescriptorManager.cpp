@@ -1,4 +1,5 @@
 #include "DescriptorManager.hpp"
+#include "Logger.hpp"
 
 namespace MEngine
 {
@@ -28,7 +29,7 @@ vk::UniqueDescriptorPool &DescriptorManager::AcquireAllocatablePool()
     mAllocatablePools.push_back(context.GetDevice()->createDescriptorPoolUnique(descriptorPoolCreateInfo));
     return mAllocatablePools.back();
 }
-std::vector<vk::UniqueDescriptorSet> DescriptorManager::AllocateDescriptorSet(
+std::vector<vk::UniqueDescriptorSet> DescriptorManager::AllocateUniqueDescriptorSet(
     std::vector<vk::DescriptorSetLayout> descriptorSetLayouts)
 {
     auto &allocatablePool = AcquireAllocatablePool();
@@ -50,7 +51,7 @@ std::vector<vk::UniqueDescriptorSet> DescriptorManager::AllocateDescriptorSet(
                                                    return pool.get() == allocatablePool.get();
                                                }),
                                 mAllocatablePools.end());
-        return AllocateDescriptorSet(descriptorSetLayouts);
+        return AllocateUniqueDescriptorSet(descriptorSetLayouts);
     }
     catch (vk::FragmentedPoolError &)
     {
@@ -60,7 +61,51 @@ std::vector<vk::UniqueDescriptorSet> DescriptorManager::AllocateDescriptorSet(
                                                    return pool.get() == allocatablePool.get();
                                                }),
                                 mAllocatablePools.end());
-        return AllocateDescriptorSet(descriptorSetLayouts);
+        return AllocateUniqueDescriptorSet(descriptorSetLayouts);
+    }
+}
+std::vector<SharedDescriptorSet> DescriptorManager::AllocateSharedDescriptorSet(
+    std::vector<vk::DescriptorSetLayout> descriptorSetLayouts)
+{
+    auto &allocatablePool = AcquireAllocatablePool();
+    auto &context = Context::Instance();
+    vk::DescriptorSetAllocateInfo descriptorSetAllocateInfo;
+    descriptorSetAllocateInfo.setDescriptorPool(allocatablePool.get())
+        .setDescriptorSetCount(descriptorSetLayouts.size())
+        .setSetLayouts(descriptorSetLayouts);
+    try
+    {
+        auto result = context.GetDevice()->allocateDescriptorSets(descriptorSetAllocateInfo);
+        std::vector<SharedDescriptorSet> sharedDescriptorSets;
+        for (auto &descriptorSet : result)
+        {
+            sharedDescriptorSets.push_back(std::make_shared<vk::DescriptorSet>(
+                descriptorSet, [&context, &allocatablePool](vk::DescriptorSet &descriptorSet) {
+                    context.GetDevice()->freeDescriptorSets(allocatablePool.get(), descriptorSet);
+                    LogT("Descriptor set destroyed");
+                }));
+        }
+        return sharedDescriptorSets;
+    }
+    catch (vk::OutOfPoolMemoryError &)
+    {
+        mExhaustedPools.push_back(std::move(allocatablePool));
+        mAllocatablePools.erase(std::remove_if(mAllocatablePools.begin(), mAllocatablePools.end(),
+                                               [&allocatablePool](const vk::UniqueDescriptorPool &pool) {
+                                                   return pool.get() == allocatablePool.get();
+                                               }),
+                                mAllocatablePools.end());
+        return AllocateSharedDescriptorSet(descriptorSetLayouts);
+    }
+    catch (vk::FragmentedPoolError &)
+    {
+        mExhaustedPools.push_back(std::move(allocatablePool));
+        mAllocatablePools.erase(std::remove_if(mAllocatablePools.begin(), mAllocatablePools.end(),
+                                               [&allocatablePool](const vk::UniqueDescriptorPool &pool) {
+                                                   return pool.get() == allocatablePool.get();
+                                               }),
+                                mAllocatablePools.end());
+        return AllocateSharedDescriptorSet(descriptorSetLayouts);
     }
 }
 

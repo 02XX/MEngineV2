@@ -2,8 +2,8 @@
 
 namespace MEngine
 {
-vk::UniqueFramebuffer FrameBufferManager::CreateFrameBuffer(vk::RenderPass renderPass, vk::Extent2D extent,
-                                                            const std::vector<vk::ImageView> &attachments)
+FrameBufferManager::FrameBufferManager(vk::RenderPass renderPass, vk::Extent2D extent,
+                                       const std::vector<vk::ImageView> &attachments)
 {
     auto &context = Context::Instance();
     vk::FramebufferCreateInfo framebufferCreateInfo;
@@ -12,8 +12,12 @@ vk::UniqueFramebuffer FrameBufferManager::CreateFrameBuffer(vk::RenderPass rende
         .setWidth(extent.width)
         .setHeight(extent.height)
         .setLayers(1);
-    auto framebuffer = context.GetDevice()->createFramebufferUnique(framebufferCreateInfo);
+    mFramebuffer = context.GetDevice()->createFramebufferUnique(framebufferCreateInfo);
     LogI("Framebuffer Created.");
-    return framebuffer;
+}
+
+vk::Framebuffer FrameBufferManager::GetFramebuffer() const
+{
+    return mFramebuffer.get();
 }
 } // namespace MEngine
