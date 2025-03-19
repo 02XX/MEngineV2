@@ -1,4 +1,5 @@
 #include "PipelineLayoutManager.hpp"
+#include <cstddef>
 
 namespace MEngine
 {
@@ -35,8 +36,6 @@ SharedPipelineLayout PipelineLayoutManager::CreateSharedPipelineLayout(
 {
     auto &context = Context::Instance();
     auto uniquePipelineLayout = CreateUniquePipelineLayout(descriptorBindings, pushConstants);
-    vk::PipelineLayout pipelineLayout = uniquePipelineLayout.release();
-    SharedPipelineLayout sharedPipelineLayout(pipelineLayout);
-    return sharedPipelineLayout;
+    return std::move(uniquePipelineLayout);
 }
 } // namespace MEngine

@@ -1,8 +1,6 @@
 #pragma once
 #include <atomic>
-#include <cstdint>
 #include <vulkan/vulkan.hpp>
-#include <vulkan/vulkan_handles.hpp>
 namespace MEngine
 {
 
@@ -21,7 +19,7 @@ template <typename Dispatch> class SharedHandleTraits<vk::Pipeline, Dispatch>
 template <typename Dispatch> class SharedHandleTraits<vk::DescriptorSet, Dispatch>
 {
   public:
-    using deleter = vk::ObjectDestroy<vk::DescriptorPool, Dispatch>;
+    using deleter = vk::PoolFree<vk::Device, vk::DescriptorPool, Dispatch>;
 };
 template <typename Dispatch> class SharedHandleTraits<vk::Sampler, Dispatch>
 {

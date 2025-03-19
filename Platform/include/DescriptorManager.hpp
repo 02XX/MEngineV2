@@ -3,8 +3,10 @@
 #include "Context.hpp"
 #include "Logger.hpp"
 #include "MEngine.hpp"
+#include "SharedHandle.hpp"
 #include <vector>
 #include <vulkan/vulkan.hpp>
+
 namespace MEngine
 {
 struct ImageDescriptor
@@ -25,7 +27,7 @@ struct PoolSizesProportion
         {vk::DescriptorType::eStorageBufferDynamic, 1.0f},
     };
 };
-using SharedDescriptorSet = std::shared_ptr<vk::DescriptorSet>;
+using UniqueDescriptorSet = vk::UniqueDescriptorSet;
 class MENGINE_API DescriptorManager final
 {
   private:
@@ -38,11 +40,17 @@ class MENGINE_API DescriptorManager final
 
   public:
     DescriptorManager(uint32_t maxDescriptorSize = 1000, PoolSizesProportion defaultPoolSizesProportion = {});
+    DescriptorManager(const DescriptorManager &) = delete;
+    DescriptorManager &operator=(const DescriptorManager &) = delete;
+    DescriptorManager(DescriptorManager &&) = delete;
+    DescriptorManager &operator=(DescriptorManager &&) = delete;
+    ~DescriptorManager() = default;
 
-    std::vector<vk::UniqueDescriptorSet> AllocateUniqueDescriptorSet(
+    std::vector<UniqueDescriptorSet> AllocateUniqueDescriptorSet(
         std::vector<vk::DescriptorSetLayout> descriptorSetLayouts);
     std::vector<SharedDescriptorSet> AllocateSharedDescriptorSet(
         std::vector<vk::DescriptorSetLayout> descriptorSetLayouts);
+
     void ResetDescriptorPool();
     void SetDefaultPoolSizesProportion(PoolSizesProportion defaultPoolSizesProportion)
     {

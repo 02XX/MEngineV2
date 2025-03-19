@@ -106,19 +106,7 @@ SharedPipeline PipelineManager::CreateSharedGraphicsPipeline(const GraphicsPipel
     auto &context = Context::Instance();
 
     auto uniquePipeline = CreateUniqueGraphicsPipeline(config);
-    vk::Pipeline pipeline = uniquePipeline.release();
-
-    // 保证Context在SharedPipeline析构时不被销毁，保证Context的生命周期应该是最长的
-    auto deleter = [&context](vk::Pipeline *pipeline) {
-        context.GetDevice()->destroyPipeline(*pipeline);
-        LogT("Pipeline destroyed");
-    };
-
-    std::shared_ptr<vk::Pipeline> o = std::shared_ptr<vk::Pipeline>(&pipeline, deleter);
-    return std::shared_ptr<vk::Pipeline>(new vk::Pipeline(pipeline), [&context](vk::Pipeline *pipeline) {
-        context.GetDevice()->destroyPipeline(*pipeline);
-        LogT("Pipeline destroyed");
-    });
+    return std::move(uniquePipeline);
 }
 UniquePipeline PipelineManager::CreateComputePipeline(const ComputePipelineConfig &config)
 {

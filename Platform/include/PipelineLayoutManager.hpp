@@ -1,5 +1,4 @@
 #pragma once
-
 #include "Context.hpp"
 #include "Logger.hpp"
 #include "MEngine.hpp"
@@ -17,7 +16,6 @@ struct DescriptorBindingInfo
     vk::ShaderStageFlags stageFlags;
 };
 using UniquePipelineLayout = vk::UniquePipelineLayout;
-using SharedPipelineLayout = SharedPipelineLayout;
 class MENGINE_API PipelineLayoutManager final
 {
   public:

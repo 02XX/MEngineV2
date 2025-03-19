@@ -46,32 +46,8 @@ UniqueImage ImageManager::CreateUniqueTexture2D(vk::Extent2D extent, vk::Format 
 SharedImage ImageManager::CreateSharedTexture2D(vk::Extent2D extent, vk::Format format, uint32_t mipLevels,
                                                 const void *data)
 {
-    auto &context = Context::Instance();
-    vk::ImageCreateInfo imageCreateInfo{};
-    imageCreateInfo.setImageType(vk::ImageType::e2D)
-        .setFormat(format)
-        .setExtent(vk::Extent3D(extent, 1))
-        .setMipLevels(mipLevels)
-        .setArrayLayers(1)
-        .setSamples(vk::SampleCountFlagBits::e1)
-        .setTiling(vk::ImageTiling::eOptimal)
-        .setUsage(vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled |
-                  vk::ImageUsageFlagBits::eTransferSrc)
-        .setInitialLayout(vk::ImageLayout::eUndefined);
-    auto image = std::make_shared<Image>(imageCreateInfo, VMA_MEMORY_USAGE_GPU_ONLY);
-    if (data)
-    {
-        const vk::DeviceSize imageSize = extent.width * extent.height * GetFormatPixelSize(format);
-        auto stagingBuffer = mBufferManager->CreateUniqueStagingBuffer(imageSize);
-        TransitionLayout(image->GetImage(), vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal,
-                         {vk::ImageAspectFlagBits::eColor, 0, mipLevels, 0, 1});
-        CopyBufferToImage(stagingBuffer->GetBuffer(), image->GetImage(), extent);
-        TransitionLayout(image->GetImage(), vk::ImageLayout::eTransferDstOptimal,
-                         vk::ImageLayout::eShaderReadOnlyOptimal,
-                         {vk::ImageAspectFlagBits::eColor, 0, mipLevels, 0, 1});
-    }
-    LogD("Created Texture2D with {}x{}, format: {}", extent.width, extent.height, vk::to_string(format));
-    return image;
+    auto uniqueTexture = CreateUniqueTexture2D(extent, format, mipLevels, data);
+    return std::move(uniqueTexture);
 }
 
 UniqueImage ImageManager::CreateUniqueRenderTarget(vk::Extent2D extent, vk::Format format, vk::ImageUsageFlags usage,
@@ -95,20 +71,8 @@ UniqueImage ImageManager::CreateUniqueRenderTarget(vk::Extent2D extent, vk::Form
 SharedImage ImageManager::CreateSharedRenderTarget(vk::Extent2D extent, vk::Format format, vk::ImageUsageFlags usage,
                                                    uint32_t mipLevels, vk::SampleCountFlagBits samples)
 {
-    vk::ImageCreateInfo imageCreateInfo{};
-    imageCreateInfo.setImageType(vk::ImageType::e2D)
-        .setFormat(format)
-        .setExtent(vk::Extent3D(extent, 1))
-        .setMipLevels(mipLevels)
-        .setArrayLayers(1)
-        .setSamples(vk::SampleCountFlagBits::e1)
-        .setTiling(vk::ImageTiling::eOptimal)
-        .setUsage(usage)
-        .setInitialLayout(vk::ImageLayout::eUndefined);
-    auto image = std::make_shared<Image>(imageCreateInfo, VMA_MEMORY_USAGE_GPU_ONLY);
-    TransitionLayout(image->GetImage(), vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal,
-                     {vk::ImageAspectFlagBits::eColor, 0, mipLevels, 0, 1});
-    return image;
+    auto uniqueRenderTarget = CreateUniqueRenderTarget(extent, format, usage, mipLevels, samples);
+    return std::move(uniqueRenderTarget);
 }
 
 UniqueImage ImageManager::CreateUniqueDepthStencil(vk::Extent2D extent, vk::Format format, uint32_t mipLevels,
@@ -132,20 +96,8 @@ UniqueImage ImageManager::CreateUniqueDepthStencil(vk::Extent2D extent, vk::Form
 SharedImage ImageManager::CreateSharedDepthStencil(vk::Extent2D extent, vk::Format format, uint32_t mipLevels,
                                                    vk::SampleCountFlagBits samples)
 {
-    vk::ImageCreateInfo imageCreateInfo{};
-    imageCreateInfo.setImageType(vk::ImageType::e2D)
-        .setFormat(format)
-        .setExtent(vk::Extent3D(extent, 1))
-        .setMipLevels(mipLevels)
-        .setArrayLayers(1)
-        .setSamples(samples)
-        .setTiling(vk::ImageTiling::eOptimal)
-        .setUsage(vk::ImageUsageFlagBits::eDepthStencilAttachment)
-        .setInitialLayout(vk::ImageLayout::eUndefined);
-    auto image = std::make_shared<Image>(imageCreateInfo, VMA_MEMORY_USAGE_GPU_ONLY);
-    TransitionLayout(image->GetImage(), vk::ImageLayout::eUndefined, vk::ImageLayout::eDepthStencilAttachmentOptimal,
-                     {vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil, 0, mipLevels, 0, 1});
-    return image;
+    auto uniqueDepthStencil = CreateUniqueDepthStencil(extent, format, mipLevels, samples);
+    return std::move(uniqueDepthStencil);
 }
 
 UniqueImage ImageManager::CreateUniqueStorageImage(vk::Extent2D extent, vk::Format format, uint32_t mipLevels,
@@ -173,24 +125,8 @@ UniqueImage ImageManager::CreateUniqueStorageImage(vk::Extent2D extent, vk::Form
 SharedImage ImageManager::CreateSharedStorageImage(vk::Extent2D extent, vk::Format format, uint32_t mipLevels,
                                                    vk::SampleCountFlagBits samples)
 {
-    vk::ImageCreateInfo imageCreateInfo{};
-    imageCreateInfo.setImageType(vk::ImageType::e2D)
-        .setFormat(format)
-        .setExtent(vk::Extent3D(extent, 1))
-        .setMipLevels(mipLevels)
-        .setArrayLayers(1)
-        .setSamples(samples)
-        .setTiling(vk::ImageTiling::eOptimal)
-        .setUsage(vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled)
-        .setInitialLayout(vk::ImageLayout::eUndefined);
-
-    VmaAllocationCreateInfo allocInfo{};
-    allocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
-
-    auto image = std::make_shared<Image>(imageCreateInfo, VMA_MEMORY_USAGE_GPU_ONLY);
-    TransitionLayout(image->GetImage(), vk::ImageLayout::eUndefined, vk::ImageLayout::eGeneral,
-                     {vk::ImageAspectFlagBits::eColor, 0, mipLevels, 0, 1});
-    return image;
+    auto uniqueStorageImage = CreateUniqueStorageImage(extent, format, mipLevels, samples);
+    return std::move(uniqueStorageImage);
 }
 
 void ImageManager::CopyBufferToImage(vk::Buffer srcBuffer, vk::Image dstImage, vk::Extent2D extent,

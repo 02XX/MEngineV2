@@ -24,15 +24,8 @@ UniqueBuffer BufferManager::CreateUniqueVertexBuffer(vk::DeviceSize size, const 
 }
 SharedBuffer BufferManager::CreateSharedVertexBuffer(vk::DeviceSize size, const void *data)
 {
-    constexpr auto usage = vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst;
-    auto vertexBuffer = std::make_shared<Buffer>(size, usage, VMA_MEMORY_USAGE_GPU_ONLY);
-    if (data)
-    {
-        auto staging = CreateUniqueStagingBuffer(size, data);
-        CopyBuffer(staging->GetBuffer(), vertexBuffer->GetBuffer(), size);
-    }
-    LogD("Vertex buffer created and data copied successfully");
-    return vertexBuffer;
+    auto uniqueVertexBuffer = CreateUniqueVertexBuffer(size, data);
+    return std::move(uniqueVertexBuffer);
 }
 
 UniqueBuffer BufferManager::CreateUniqueIndexBuffer(vk::DeviceSize size, const void *data)
@@ -49,15 +42,8 @@ UniqueBuffer BufferManager::CreateUniqueIndexBuffer(vk::DeviceSize size, const v
 }
 SharedBuffer BufferManager::CreateSharedIndexBuffer(vk::DeviceSize size, const void *data)
 {
-    constexpr auto usage = vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eTransferDst;
-    auto indexBuffer = std::make_shared<Buffer>(size, usage, VMA_MEMORY_USAGE_GPU_ONLY);
-    if (data)
-    {
-        auto staging = CreateUniqueStagingBuffer(size, data);
-        CopyBuffer(staging->GetBuffer(), indexBuffer->GetBuffer(), size);
-    }
-    LogD("Index buffer created and data copied successfully");
-    return indexBuffer;
+    auto uniqueIndexBuffer = CreateUniqueIndexBuffer(size, data);
+    return std::move(uniqueIndexBuffer);
 }
 
 UniqueBuffer BufferManager::CreateUniqueUniformBuffer(vk::DeviceSize size)
@@ -70,11 +56,8 @@ UniqueBuffer BufferManager::CreateUniqueUniformBuffer(vk::DeviceSize size)
 }
 SharedBuffer BufferManager::CreateSharedUniformBuffer(vk::DeviceSize size)
 {
-    constexpr auto flags = VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT;
-    auto buffer =
-        std::make_shared<Buffer>(size, vk::BufferUsageFlagBits::eUniformBuffer, VMA_MEMORY_USAGE_CPU_TO_GPU, flags);
-    LogD("Uniform buffer created and data copied successfully");
-    return buffer;
+    auto uniqueBuffer = CreateUniqueUniformBuffer(size);
+    return std::move(uniqueBuffer);
 }
 
 UniqueBuffer BufferManager::CreateUniqueStagingBuffer(vk::DeviceSize size, const void *data)
@@ -97,21 +80,8 @@ UniqueBuffer BufferManager::CreateUniqueStagingBuffer(vk::DeviceSize size, const
 }
 SharedBuffer BufferManager::CreateSharedStagingBuffer(vk::DeviceSize size, const void *data)
 {
-    constexpr auto flags = VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
-
-    auto staging = std::make_shared<Buffer>(size,
-                                            vk::BufferUsageFlagBits::eTransferSrc, // 用途：传输源
-                                            VMA_MEMORY_USAGE_CPU_ONLY,             // 内存类型：CPU可见且相干
-                                            flags);
-    if (data)
-    {
-        void *mapped = staging->GetAllocationInfo().pMappedData;
-        std::memcpy(
-            mapped, data,
-            size); // 这里使用size而不是staging->GetAllocationInfo().size，是因为实际分配的内存可能比请求的内存大（内存对齐的要求）
-    }
-    LogD("Staging buffer created and data copied successfully");
-    return staging;
+    auto uniqueStaging = CreateUniqueStagingBuffer(size, data);
+    return std::move(uniqueStaging);
 }
 
 void BufferManager::CopyBuffer(vk::Buffer srcBuffer, vk::Buffer dstBuffer, vk::DeviceSize size)
