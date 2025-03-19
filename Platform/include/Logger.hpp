@@ -33,32 +33,32 @@ class MENGINE_API Logger
 
     template <typename... Args> void trace(fmt::format_string<Args...> fmt, Args &&...args)
     {
-        // mLogger->trace(fmt, std::forward<Args>(args)...);
+        mLogger->trace(fmt, std::forward<Args>(args)...);
     }
 
     template <typename... Args> void debug(fmt::format_string<Args...> fmt, Args &&...args)
     {
-        // mLogger->debug(fmt, std::forward<Args>(args)...);
+        mLogger->debug(fmt, std::forward<Args>(args)...);
     }
 
     template <typename... Args> void info(fmt::format_string<Args...> fmt, Args &&...args)
     {
-        // mLogger->info(fmt, std::forward<Args>(args)...);
+        mLogger->info(fmt, std::forward<Args>(args)...);
     }
 
     template <typename... Args> void warn(fmt::format_string<Args...> fmt, Args &&...args)
     {
-        // mLogger->warn(fmt, std::forward<Args>(args)...);
+        mLogger->warn(fmt, std::forward<Args>(args)...);
     }
 
     template <typename... Args> void error(fmt::format_string<Args...> fmt, Args &&...args)
     {
-        // mLogger->error(fmt, std::forward<Args>(args)...);
+        mLogger->error(fmt, std::forward<Args>(args)...);
     }
 
     template <typename... Args> void critical(fmt::format_string<Args...> fmt, Args &&...args)
     {
-        // mLogger->critical(fmt, std::forward<Args>(args)...);
+        mLogger->critical(fmt, std::forward<Args>(args)...);
     }
 };
 
