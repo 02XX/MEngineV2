@@ -2,7 +2,7 @@
 
 namespace MEngine
 {
-vk::UniquePipelineLayout PipelineLayoutManager::CreateUniquePipelineLayout(
+UniquePipelineLayout PipelineLayoutManager::CreateUniquePipelineLayout(
     const std::vector<DescriptorBindingInfo> &descriptorBindings,
     const std::vector<vk::PushConstantRange> &pushConstants)
 {
@@ -25,9 +25,9 @@ vk::UniquePipelineLayout PipelineLayoutManager::CreateUniquePipelineLayout(
         context.GetDevice()->createDescriptorSetLayoutUnique(descriptorSetLayoutCreateInfo);
 
     pipelineLayoutCreateInfo.setSetLayouts(descriptorSetLayout.get()).setPushConstantRanges(pushConstants);
-    auto pipelineLayout = context.GetDevice()->createPipelineLayoutUnique(pipelineLayoutCreateInfo);
+    auto pipelineLayout = context.GetDevice()->createPipelineLayout(pipelineLayoutCreateInfo);
     LogI("Graphic Pipeline Layout Created.");
-    return pipelineLayout;
+    return std::make_unique<PipelineLayout>(pipelineLayout);
 }
 SharedPipelineLayout PipelineLayoutManager::CreateSharedPipelineLayout(
     const std::vector<DescriptorBindingInfo> &descriptorBindings,
@@ -54,9 +54,6 @@ SharedPipelineLayout PipelineLayoutManager::CreateSharedPipelineLayout(
     pipelineLayoutCreateInfo.setSetLayouts(descriptorSetLayout.get()).setPushConstantRanges(pushConstants);
     auto pipelineLayout = context.GetDevice()->createPipelineLayout(pipelineLayoutCreateInfo);
     LogI("Graphic Pipeline Layout Created.");
-    return std::make_shared<vk::PipelineLayout>(pipelineLayout, [&context](vk::PipelineLayout &pipelineLayout) {
-        context.GetDevice()->destroyPipelineLayout(pipelineLayout);
-        LogT("Graphic Pipeline Layout Destroyed.");
-    });
+    return std::make_shared<PipelineLayout>(pipelineLayout);
 }
 } // namespace MEngine

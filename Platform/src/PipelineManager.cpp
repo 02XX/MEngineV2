@@ -1,7 +1,5 @@
 #include "PipelineManager.hpp"
-#include "Logger.hpp"
 #include <memory>
-#include <vulkan/vulkan.hpp>
 
 namespace MEngine
 {
@@ -94,15 +92,15 @@ UniquePipeline PipelineManager::CreateUniqueGraphicsPipeline(const GraphicsPipel
 
     // ========== 11. 创建管线 ==========
     auto result = context.GetDevice()->createGraphicsPipelineUnique(nullptr, // 管线缓存
-                                                                    pipelineInfo);
-
+                                                                pipelineInfo);                                         
     if (result.result != vk::Result::eSuccess)
     {
         LogD("Failed to create graphics pipeline");
         throw std::runtime_error("Failed to create graphics pipeline");
     }
+    auto pipeline = std::make_unique<Pipeline>(result.value);
     LogD("Graphics pipeline created");
-    return std::move(result.value);
+    return pipeline;
 }
 SharedPipeline PipelineManager::CreateSharedGraphicsPipeline(const GraphicsPipelineConfig &config)
 {
@@ -200,12 +198,10 @@ SharedPipeline PipelineManager::CreateSharedGraphicsPipeline(const GraphicsPipel
         throw std::runtime_error("Failed to create graphics pipeline");
     }
     LogD("Graphics pipeline created");
-    return std::make_shared<vk::Pipeline>(result.value, [&context](vk::Pipeline &p) {
-        context.GetDevice()->destroyPipeline(p);
-        LogT("Pipeline Destroyed.");
-    });
+    auto pipeline = std::make_shared<Pipeline>(result.value);
+    return pipeline;
 }
-vk::UniquePipeline PipelineManager::CreateComputePipeline(const ComputePipelineConfig &config)
+UniquePipeline PipelineManager::CreateComputePipeline(const ComputePipelineConfig &config)
 {
 }
 } // namespace MEngine
