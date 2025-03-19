@@ -58,7 +58,10 @@ TEST_F(PipelineLayoutManagerTest, sharedPipelineLayout_destroy)
     descriptorBindings.push_back({0, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex});
     vk::PushConstantRange pushConstantRange;
     pushConstantRange.setStageFlags(vk::ShaderStageFlagBits::eVertex).setSize(4).setOffset(0);
-    {
-        auto pipelineLayout = mManager->CreateSharedPipelineLayout(descriptorBindings, {pushConstantRange});
-    }
+    SharedPipelineLayout pipelineLayout = mManager->CreateSharedPipelineLayout(descriptorBindings, {pushConstantRange});
+    EXPECT_EQ(pipelineLayout.useCount(), 1);
+    auto pipelineLayout2 = pipelineLayout;
+    EXPECT_EQ(pipelineLayout.useCount(), 2);
+    pipelineLayout2.reset();
+    EXPECT_EQ(pipelineLayout.useCount(), 1);
 }
