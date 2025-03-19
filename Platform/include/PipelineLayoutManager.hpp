@@ -3,7 +3,8 @@
 #include "Context.hpp"
 #include "Logger.hpp"
 #include "MEngine.hpp"
-#include "PipelineLayout.hpp"
+#include "SharedHandle.hpp"
+#include <memory>
 #include <vulkan/vulkan.hpp>
 namespace MEngine
 {
@@ -15,6 +16,8 @@ struct DescriptorBindingInfo
     uint32_t count;
     vk::ShaderStageFlags stageFlags;
 };
+using UniquePipelineLayout = vk::UniquePipelineLayout;
+using SharedPipelineLayout = SharedPipelineLayout;
 class MENGINE_API PipelineLayoutManager final
 {
   public:

@@ -2,7 +2,6 @@
 #include "Context.hpp"
 #include "Logger.hpp"
 #include "MEngine.hpp"
-#include "Pipeline.hpp"
 #include <vulkan/vulkan.hpp>
 namespace MEngine
 {
@@ -69,6 +68,8 @@ struct ComputePipelineConfig
     uint32_t maxThreadsY = 1;
     uint32_t maxThreadsZ = 1;
 };
+using SharedPipeline = std::shared_ptr<vk::Pipeline>;
+using UniquePipeline = vk::UniquePipeline;
 class MENGINE_API PipelineManager final
 {
   public:
