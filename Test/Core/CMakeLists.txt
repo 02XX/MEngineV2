@@ -1,0 +1,3 @@
+add_executable(taskSchedulerTest TaskSchedulerTest.cpp)
+add_test(NAME taskSchedulerTest COMMAND TaskSchedulerTest)
+target_link_libraries(taskSchedulerTest PUBLIC Core gtest gtest_main)

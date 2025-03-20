@@ -1,12 +1,12 @@
 #include "TaskScheduler.hpp"
-#include <mutex>
+#include "Logger.hpp"
 
 namespace MEngine
 {
-TaskScheduler::TaskScheduler(int64_t threadCount, int64_t taskCount)
+TaskScheduler::TaskScheduler(uint32_t threadCount, uint32_t taskCount)
     : mStop(false), mThreadCount(threadCount), mTaskCount(taskCount)
 {
-    for (int64_t i = 0; i < threadCount; i++)
+    for (int i = 0; i < threadCount; i++)
     {
         mWorkers.emplace_back([this]() {
             while (true)
@@ -22,7 +22,14 @@ TaskScheduler::TaskScheduler(int64_t threadCount, int64_t taskCount)
                     task = std::move(mTasks.front());
                     mTasks.pop();
                 }
-                task();
+                try
+                {
+                    task();
+                }
+                catch (const std::exception &e)
+                {
+                    LogE("Task failed: {}", e.what());
+                }
                 mPendingTasks--;
                 if (mPendingTasks == 0)
                 {
@@ -31,7 +38,10 @@ TaskScheduler::TaskScheduler(int64_t threadCount, int64_t taskCount)
                 }
                 mNotFull.notify_one();
             }
-            LogT("TaskScheduler's worker {} thread exit", std::this_thread::get_id());
+            std::stringstream ss;
+            ss << std::this_thread::get_id();
+            std::string threadID = ss.str();
+            LogT("TaskScheduler's worker {} thread exit", threadID);
         });
     }
 }
@@ -62,5 +72,18 @@ void TaskScheduler::AddTask(std::function<void()> &&task)
         mPendingTasks++;
     }
     mNotEmpty.notify_one();
+}
+
+uint32_t TaskScheduler::GetThreadCount() const noexcept
+{
+    return mThreadCount;
+}
+uint32_t TaskScheduler::GetTaskCount() const noexcept
+{
+    return mTaskCount;
+}
+uint32_t TaskScheduler::GetPendingTasks() const noexcept
+{
+    return mPendingTasks.load();
 }
 } // namespace MEngine
