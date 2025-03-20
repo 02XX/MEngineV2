@@ -30,7 +30,6 @@ class MENGINE_API RenderSystem
     std::unique_ptr<RenderPassManager> mRenderPassManager;
     std::unique_ptr<ImageManager> mImageManager;
 
-    std::unique_ptr<TaskScheduler> mTaskScheduler;
     int64_t mFrameIndex;
     int64_t mFrameCount;
     std::vector<vk::UniqueSemaphore> mImageAvailableSemaphores;

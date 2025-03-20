@@ -41,7 +41,7 @@ add_subdirectory(3rdParty/googletest)
 add_subdirectory(3rdParty/SDL)
 add_subdirectory(3rdParty/VulkanMemoryAllocator)
 add_subdirectory(3rdParty/entt)
-
+add_subdirectory(3rdParty/glm)
 
 # test
 enable_testing()

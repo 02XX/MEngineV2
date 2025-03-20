@@ -11,5 +11,6 @@ target_link_libraries(
     Core
     Platform
     EnTT::EnTT
+
 )
 target_compile_definitions(Function PRIVATE MENGINE_EXPORT)

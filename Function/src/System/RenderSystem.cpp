@@ -1,4 +1,5 @@
 #include "System/RenderSystem.hpp"
+#include <vector>
 
 namespace MEngine
 {
@@ -120,6 +121,7 @@ void RenderSystem::RenderForwardPass()
     auto &context = Context::Instance();
     std::mutex mutex;
     mSecondaryCommandBuffers.clear();
+    std::vector<std::shared_ptr<Task>> tasks;
     for (auto &[materialID, entities] : mBatchMaterialComponents)
     {
         if (materialID == 9)
@@ -127,7 +129,7 @@ void RenderSystem::RenderForwardPass()
             continue; // deffered pass
         }
         // 每个material批次一个线程
-        mTaskScheduler->AddTask([this, entities, &mutex]() {
+        auto task = Task::Run([this, entities, &mutex]() {
             auto secondary = mCommandBufferManager->CreateSecondaryCommandBuffer();
             vk::CommandBufferBeginInfo beginInfo;
             beginInfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
@@ -150,9 +152,9 @@ void RenderSystem::RenderForwardPass()
             std::lock_guard<std::mutex> lock(mutex);
             mSecondaryCommandBuffers[mFrameIndex].push_back(std::move(secondary));
         });
+        tasks.push_back(task);
     }
-    mTaskScheduler->WaitAll();
-
+    Task::WhenAll(tasks);
     std::vector<vk::CommandBuffer> rawCommandBuffers;
     rawCommandBuffers.reserve(mSecondaryCommandBuffers.size());
     std::transform(mSecondaryCommandBuffers[mFrameIndex].begin(), mSecondaryCommandBuffers[mFrameIndex].end(),
