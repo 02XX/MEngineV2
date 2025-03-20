@@ -9,5 +9,6 @@ target_link_libraries(
     Core
     PUBLIC
     Platform
+    glm::glm-header-only
 )
 target_compile_definitions(Core PRIVATE MENGINE_EXPORT)
