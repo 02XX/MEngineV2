@@ -5,6 +5,7 @@
 #include <vulkan/vulkan.hpp>
 namespace MEngine
 {
+using UniqueCommandBuffer = vk::UniqueCommandBuffer;
 class MENGINE_API CommandBufferManager final
 {
   private:

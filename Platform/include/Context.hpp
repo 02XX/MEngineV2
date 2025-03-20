@@ -3,7 +3,6 @@
 #include "MEngine.hpp"
 #include "VMA.hpp"
 #include <vulkan/vulkan.hpp>
-#include <vulkan/vulkan_handles.hpp>
 
 namespace MEngine
 {
@@ -91,6 +90,10 @@ class MENGINE_API Context final
     inline const SurfaceInfo &GetSurfaceInfo() const
     {
         return mSurfaceInfo;
+    }
+    inline const vk::UniqueSurfaceKHR &GetSurface() const
+    {
+        return mSurface;
     }
     void SubmitToGraphicQueue(std::vector<vk::SubmitInfo> submits, vk::UniqueFence &fence);
     void SubmitToPresnetQueue(vk::PresentInfoKHR presentInfo);
