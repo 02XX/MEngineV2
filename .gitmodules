@@ -10,3 +10,6 @@
 [submodule "3rdParty/VulkanMemoryAllocator"]
 	path = 3rdParty/VulkanMemoryAllocator
 	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
+[submodule "3rdParty/entt"]
+	path = 3rdParty/entt
+	url = https://github.com/skypjack/entt

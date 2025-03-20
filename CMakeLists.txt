@@ -40,6 +40,7 @@ add_subdirectory(3rdParty/spdlog)
 add_subdirectory(3rdParty/googletest)
 add_subdirectory(3rdParty/SDL)
 add_subdirectory(3rdParty/VulkanMemoryAllocator)
+add_subdirectory(3rdParty/entt)
 
 
 # test
