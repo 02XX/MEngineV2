@@ -9,22 +9,38 @@ template <typename T, typename Dispatch> class SharedHandleTraits;
 template <typename Dispatch> class SharedHandleTraits<vk::PipelineLayout, Dispatch>
 {
   public:
+#ifdef PLATFORM_WINDOWS
+    using deleter = vk::ObjectDestroy<vk::Device, Dispatch>;
+#else
     using deleter = vk::detail::ObjectDestroy<vk::Device, Dispatch>;
+#endif
 };
 template <typename Dispatch> class SharedHandleTraits<vk::Pipeline, Dispatch>
 {
   public:
+#ifdef PLATFORM_WINDOWS
+    using deleter = vk::ObjectDestroy<vk::Device, Dispatch>;
+#else
     using deleter = vk::detail::ObjectDestroy<vk::Device, Dispatch>;
+#endif
 };
 template <typename Dispatch> class SharedHandleTraits<vk::DescriptorSet, Dispatch>
 {
   public:
+#ifdef PLATFORM_WINDOWS
+    using deleter = vk::PoolFree<vk::Device, vk::DescriptorPool, Dispatch>;
+#else
     using deleter = vk::detail::PoolFree<vk::Device, vk::DescriptorPool, Dispatch>;
+#endif
 };
 template <typename Dispatch> class SharedHandleTraits<vk::Sampler, Dispatch>
 {
   public:
+#ifdef PLATFORM_WINDOWS
+    using deleter = vk::ObjectDestroy<vk::Device, Dispatch>;
+#else
     using deleter = vk::detail::ObjectDestroy<vk::Device, Dispatch>;
+#endif
 };
 
 template <typename Type, typename Dispatch> class SharedHandle : public SharedHandleTraits<Type, Dispatch>::deleter

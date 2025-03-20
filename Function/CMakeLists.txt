@@ -9,6 +9,7 @@ target_link_libraries(
     Function
     PUBLIC
     Core
+    Resource
     Platform
     EnTT::EnTT
 

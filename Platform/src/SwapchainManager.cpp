@@ -38,6 +38,11 @@ SwapchainManager::SwapchainManager(vk::Extent2D extent, vk::SurfaceKHR surface, 
     LogD("Swapchain Created.");
 }
 
+SwapchainManager::~SwapchainManager()
+{
+    
+}
+
 void SwapchainManager::CreateSwapchainImageViews()
 {
     auto &context = Context::Instance();

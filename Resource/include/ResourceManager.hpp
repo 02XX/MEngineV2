@@ -1,9 +1,16 @@
 #pragma once
+#include "Buffer.hpp"
+#include "Image.hpp"
 #include "Logger.hpp"
 #include "MEngine.hpp"
+#include "PipelineLayoutManager.hpp"
 #include "PipelineManager.hpp"
 #include "SharedHandle.hpp"
+#include <cstdint>
+#include <unordered_map>
 #include <vector>
+#include <vulkan/vulkan_handles.hpp>
+
 namespace MEngine
 {
 enum class ResourceType
@@ -14,23 +21,22 @@ enum class ResourceType
     Material,
     Shader
 };
-enum class PipelineType
-{
-    ForwardOpaque,   // 前向渲染（不透明物体）
-    DeferredGBuffer, // 延迟渲染-GBuffer阶段
-    ShadowDepth,     // 阴影深度渲染
-    PostProcess      // 后处理（可按需扩展）
-};
+
 class MENGINE_API ResourceManager
 {
   private:
-    PipelineManager mPipelineManager;
-    std::map<PipelineType, UniquePipeline> mPipelines;
+    std::unordered_map<uint32_t, UniqueBuffer> mBuffers;
+    std::unordered_map<uint32_t, UniqueImage> mImages;
 
   public:
     ResourceManager();
-    ~ResourceManager();
-    void LoadPipeline();
-    vk::Pipeline &GetPipeline(PipelineType type) const;
+    ResourceManager(const ResourceManager &) = delete;
+    ResourceManager &operator=(const ResourceManager &) = delete;
+    ResourceManager(ResourceManager &&) = delete;
+    ResourceManager &operator=(ResourceManager &&) = delete;
+    ~ResourceManager() = default;
+
+    vk::Buffer GetBuffer(uint32_t id);
+    vk::Image GetImage(uint32_t id);
 };
 } // namespace MEngine

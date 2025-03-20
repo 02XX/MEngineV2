@@ -21,7 +21,11 @@ struct MENGINE_API BoundingBox
     glm::vec3 min{FLT_MAX};
     glm::vec3 max{-FLT_MAX};
 };
-
+struct MENGINE_API BufferHandle
+{
+    uint32_t id;      // 唯一标识符
+    std::string name; // 调试用名称
+};
 // LOD 数据
 struct MENGINE_API LODData
 {
@@ -39,8 +43,8 @@ struct MENGINE_API MeshComponent
     BoundingBox localBounds;   // 模型空间包围盒（用于视锥剔除）
 
     // ===== 顶点/索引缓冲 =====
-    UniqueBuffer vertexBuffer; // Vulkan 顶点缓冲区（由资源管理器填充）
-    UniqueBuffer indexBuffer;  // Vulkan 索引缓冲区
+    BufferHandle vertexBuffer; // Vulkan 顶点缓冲区（由资源管理器填充）
+    BufferHandle indexBuffer;  // Vulkan 索引缓冲区
     uint32_t indexCount = 0;   // 索引数量
 
     // ===== LOD 支持 =====

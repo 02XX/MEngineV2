@@ -4,6 +4,7 @@
 #include "DescriptorManager.hpp"
 #include "Logger.hpp"
 #include "MEngine.hpp"
+#include "PipelineManager.hpp"
 #include "SharedHandle.hpp"
 #include "glm/glm.hpp"
 #include <cstdint>

@@ -1,4 +1,5 @@
 #include "System/RenderSystem.hpp"
+#include <cstdint>
 #include <vector>
 
 namespace MEngine
@@ -14,11 +15,9 @@ RenderSystem::RenderSystem(std::shared_ptr<entt::registry> registry) : mRegistry
         std::make_unique<CommandBufferManager>(Context::Instance().GetQueueFamilyIndicates().graphicsFamily.value());
     mSyncPrimitiveManager = std::make_unique<SyncPrimitiveManager>();
     mImageManager = std::make_unique<ImageManager>();
-    mTaskScheduler = std::make_unique<TaskScheduler>(4, 1000);
     mRenderPassManager = std::make_unique<RenderPassManager>();
     mFrameCount = mSwapchainManager->GetSwapchainImageViews().size();
     mFrameIndex = 0;
-
     // command buffer
     mGraphicCommandBuffers = mCommandBufferManager->CreatePrimaryCommandBuffers(mFrameCount);
     mSecondaryCommandBuffers.reserve(mFrameCount);
@@ -54,7 +53,73 @@ RenderSystem::RenderSystem(std::shared_ptr<entt::registry> registry) : mRegistry
             .setLayers(1);
         mFrameBuffers.push_back(context.GetDevice()->createFramebufferUnique(framebufferCreateInfo));
     }
+    CreateForwardOpaquePipeline();
+    CreateDeferredGBufferPipeline();
+    CreateShadowDepthPipeline();
+    CreatePostProcessPipeline();
 }
+// Create
+void RenderSystem::CreateForwardOpaquePipeline()
+{
+    auto &context = Context::Instance();
+    auto pipelineLayout = mPipelineLayoutManager->CreateUniquePipelineLayout(std::vector<DescriptorBindingInfo>{},
+                                                                             std::vector<vk::PushConstantRange>{});
+    GraphicsPipelineConfig config;
+    config.pipelineLayout = pipelineLayout.get();
+    config.renderPass = mRenderPass.get();
+    config.subPass = 0;
+    // config.vertexShader = context.CreateShaderModule("shader/forward.vert.spv");
+    // config.fragmentShader = context.CreateShaderModule("shader/forward.frag.spv");
+    config.vertexBindings = {{0, sizeof(Vertex), vk::VertexInputRate::eVertex}};
+    config.vertexAttributes = std::vector<vk::VertexInputAttributeDescription>(
+        Vertex::GetVertexInputAttributeDescription().begin(), Vertex::GetVertexInputAttributeDescription().end());
+    config.topology = vk::PrimitiveTopology::eTriangleList;
+    config.polygonMode = vk::PolygonMode::eFill;
+    config.lineWidth = 1.0f;
+    config.cullMode = vk::CullModeFlagBits::eBack;
+    config.frontFace = vk::FrontFace::eCounterClockwise;
+    config.viewport = vk::Viewport(0.0f, 0.0f, static_cast<float>(context.GetSurfaceInfo().extent.width),
+                                   static_cast<float>(context.GetSurfaceInfo().extent.height), 0.0f, 1.0f);
+    config.scissor = vk::Rect2D({0, 0}, context.GetSurfaceInfo().extent);
+    config.rasterizationSamples = vk::SampleCountFlagBits::e1;
+    config.minSampleShading = 1.0f;
+    config.sampleShadingEnable = VK_FALSE;
+    config.alphaToCoverageEnable = VK_FALSE;
+    config.alphaToOneEnable = VK_FALSE;
+    config.sampleMasks = {0xFFFFFFFF};
+    config.colorBlendAttachments = {vk::PipelineColorBlendAttachmentState().setColorWriteMask(
+        vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB |
+        vk::ColorComponentFlagBits::eA)};
+    config.logicOpEnable = VK_FALSE;
+    config.logicOp = vk::LogicOp::eCopy;
+    config.blendConstants = {0.0f, 0.0f, 0.0f, 0.0f};
+    config.depthTestEnable = VK_TRUE;
+    config.depthWriteEnable = VK_TRUE;
+    config.depthCompareOp = vk::CompareOp::eLess;
+    config.depthBoundsTestEnable = VK_FALSE;
+    config.minDepthBounds = 0.0f;
+    config.maxDepthBounds = 1.0f;
+    config.stencilTestEnable = VK_FALSE;
+    config.frontStencilOp = vk::StencilOpState()
+                                .setFailOp(vk::StencilOp::eKeep)
+                                .setPassOp(vk::StencilOp::eKeep)
+                                .setDepthFailOp(vk::StencilOp::eKeep)
+                                .setCompareOp(vk::CompareOp::eAlways);
+    config.backStencilOp = config.frontStencilOp;
+    auto pipeline = mPipelineManager->CreateUniqueGraphicsPipeline(config);
+    mPipelines[static_cast<uint32_t>(PipelineType::ForwardOpaque)] = std::move(pipeline);
+    mPipelineLayouts[static_cast<uint32_t>(PipelineType::ForwardOpaque)] = std::move(pipelineLayout);
+}
+void RenderSystem::CreateDeferredGBufferPipeline()
+{
+}
+void RenderSystem::CreateShadowDepthPipeline()
+{
+}
+void RenderSystem::CreatePostProcessPipeline()
+{
+}
+// Create Done
 
 void RenderSystem::CollectRenderEntities()
 {
@@ -63,7 +128,7 @@ void RenderSystem::CollectRenderEntities()
     {
         auto &material = mRegistry->get<MaterialComponent>(entity);
         auto &mesh = entities.get<MeshComponent>(entity);
-        mBatchMaterialComponents[mesh.GetID()].push_back(entity);
+        mBatchMaterialComponents[material.pipeline.id].push_back(entity);
     }
 }
 
@@ -136,17 +201,17 @@ void RenderSystem::RenderForwardPass()
             secondary->begin(beginInfo);
 
             auto &material = mRegistry->get<MaterialComponent>(entities[0]);
-            auto pipeline = material.GetPipeline();
-            secondary->bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline.get());
+            auto pipeline = mPipelines[material.pipeline.id].get();
+            secondary->bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
             for (auto entity : entities)
             {
                 auto &mesh = mRegistry->get<MeshComponent>(entity);
-                auto &vertexBuffer = mesh.GetVertexBuffer();
-                auto &indexBuffer = mesh.GetIndexBuffer();
+                auto vertexBuffer = mResourceManager->GetBuffer(mesh.vertexBuffer.id);
+                auto indexBuffer = mResourceManager->GetBuffer(mesh.indexBuffer.id);
 
-                secondary->bindVertexBuffers(0, vertexBuffer->GetBuffer(), {0});
-                secondary->bindIndexBuffer(indexBuffer->GetBuffer(), 0, mesh.GetIndexType());
-                secondary->drawIndexed(mesh.GetIndexCount(), 1, mesh.GetFirstIndex(), mesh.GetVertexOffset(), 0);
+                secondary->bindVertexBuffers(0, vertexBuffer, {0});
+                secondary->bindIndexBuffer(indexBuffer, 0, vk::IndexType::eUint32);
+                secondary->drawIndexed(mesh.indexCount, 1, 0, 0, 0);
             }
             secondary->end();
             std::lock_guard<std::mutex> lock(mutex);

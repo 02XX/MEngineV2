@@ -5,17 +5,23 @@
 #include "Image.hpp"
 #include "ImageManager.hpp"
 #include "MEngine.hpp"
+#include "PipelineLayoutManager.hpp"
+#include "PipelineManager.hpp"
 #include "RenderPassManager.hpp"
+#include "ResourceManager.hpp"
 #include "SwapchainManager.hpp"
 #include "SyncPrimitiveManager.hpp"
 #include "TaskScheduler.hpp"
+#include "Vertex.hpp"
 #include "entt/entity/fwd.hpp"
 #include "entt/entt.hpp"
 #include <cstdint>
 #include <memory>
 #include <vector>
+
 namespace MEngine
 {
+
 class MENGINE_API RenderSystem
 {
   private:
@@ -29,6 +35,9 @@ class MENGINE_API RenderSystem
     std::unique_ptr<SwapchainManager> mSwapchainManager;
     std::unique_ptr<RenderPassManager> mRenderPassManager;
     std::unique_ptr<ImageManager> mImageManager;
+    std::unique_ptr<PipelineLayoutManager> mPipelineLayoutManager;
+    std::unique_ptr<PipelineManager> mPipelineManager;
+    std::shared_ptr<ResourceManager> mResourceManager;
 
     int64_t mFrameIndex;
     int64_t mFrameCount;
@@ -42,6 +51,13 @@ class MENGINE_API RenderSystem
     std::vector<UniqueImage> mDepthStencilImages;
     std::vector<vk::UniqueImageView> mDepthStencilImageViews;
     std::vector<std::vector<vk::UniqueCommandBuffer>> mSecondaryCommandBuffers;
+
+    std::unordered_map<uint32_t, UniquePipeline> mPipelines;
+    std::unordered_map<uint32_t, UniquePipelineLayout> mPipelineLayouts;
+    void CreateForwardOpaquePipeline();
+    void CreateDeferredGBufferPipeline();
+    void CreateShadowDepthPipeline();
+    void CreatePostProcessPipeline();
 
   public:
     RenderSystem(std::shared_ptr<entt::registry> registry);

@@ -6,6 +6,13 @@
 #include <vulkan/vulkan.hpp>
 namespace MEngine
 {
+enum class PipelineType
+{
+    ForwardOpaque,   // 前向渲染（不透明物体）
+    DeferredGBuffer, // 延迟渲染-GBuffer阶段
+    ShadowDepth,     // 阴影深度渲染
+    PostProcess      // 后处理（可按需扩展）
+};
 struct GraphicsPipelineConfig
 {
     // ===== 核心必需 =====

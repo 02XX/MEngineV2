@@ -1,15 +1,19 @@
 #include "ResourceManager.hpp"
-#include "PipelineManager.hpp"
 
 namespace MEngine
 {
-void ResourceManager::LoadPipeline()
+ResourceManager::ResourceManager()
 {
-    // ForwardOpaque
-    GraphicsPipelineConfig forwardOpaqueConfig;
-
-    UniquePipeline forwardOpaque = mPipelineManager.CreateUniqueGraphicsPipeline(forwardOpaqueConfig);
-    mPipelines[PipelineType::ForwardOpaque] = std::move(forwardOpaque);
-    LogD("ForwardOpaque pipeline loaded.");
 }
+
+vk::Buffer ResourceManager::GetBuffer(uint32_t id)
+{
+    return mBuffers[id]->GetBuffer();
+}
+
+vk::Image ResourceManager::GetImage(uint32_t id)
+{
+    return mImages[id]->GetImage();
+}
+
 } // namespace MEngine
