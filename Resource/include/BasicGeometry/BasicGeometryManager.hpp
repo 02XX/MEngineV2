@@ -1,6 +1,7 @@
 #include "Logger.hpp"
 #include "MEngine.hpp"
 #include "Mesh.hpp"
+#include "NoCopyable.hpp"
 #include "glm/glm.hpp"
 #include <glm/gtc/constants.hpp>
 #include <unordered_map>
@@ -14,7 +15,7 @@ enum class PrimitiveType
     Sphere,   // 球体
     Quad,     // 四边形
 };
-class MENGINE_API BasicGeometryManager
+class MENGINE_API BasicGeometryManager : public NoCopyable
 {
   private:
     std::unordered_map<PrimitiveType, std::weak_ptr<Mesh>> mCache;
