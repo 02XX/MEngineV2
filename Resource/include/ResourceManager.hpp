@@ -1,5 +1,6 @@
 #pragma once
 #include "Buffer.hpp"
+#include "BufferManager.hpp"
 #include "Image.hpp"
 #include "Logger.hpp"
 #include "MEngine.hpp"
@@ -7,9 +8,9 @@
 #include "PipelineManager.hpp"
 #include "SharedHandle.hpp"
 #include <cstdint>
+#include <memory>
 #include <unordered_map>
 #include <vector>
-#include <vulkan/vulkan_handles.hpp>
 
 namespace MEngine
 {
@@ -27,6 +28,8 @@ class MENGINE_API ResourceManager
   private:
     std::unordered_map<uint32_t, UniqueBuffer> mBuffers;
     std::unordered_map<uint32_t, UniqueImage> mImages;
+
+    std::unique_ptr<BufferManager> mBufferManager;
 
   public:
     ResourceManager();

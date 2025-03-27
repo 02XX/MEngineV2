@@ -9,6 +9,7 @@
 #include "PipelineManager.hpp"
 #include "RenderPassManager.hpp"
 #include "ResourceManager.hpp"
+#include "ShaderManager.hpp"
 #include "SwapchainManager.hpp"
 #include "SyncPrimitiveManager.hpp"
 #include "TaskScheduler.hpp"
@@ -26,7 +27,7 @@ class MENGINE_API RenderSystem
 {
   private:
     std::shared_ptr<entt::registry> mRegistry;
-    std::map<int64_t, std::vector<entt::entity>> mBatchMaterialComponents;
+    std::map<PipelineType, std::vector<entt::entity>> mBatchMaterialComponents;
 
     std::vector<UniqueCommandBuffer> mGraphicCommandBuffers;
     // std::vector<UniqueCommandBuffer> mPresnetCommandBuffers;
@@ -38,6 +39,7 @@ class MENGINE_API RenderSystem
     std::unique_ptr<PipelineLayoutManager> mPipelineLayoutManager;
     std::unique_ptr<PipelineManager> mPipelineManager;
     std::shared_ptr<ResourceManager> mResourceManager;
+    std::unique_ptr<ShaderManager> mShaderManager;
 
     int64_t mFrameIndex;
     int64_t mFrameCount;
@@ -52,8 +54,11 @@ class MENGINE_API RenderSystem
     std::vector<vk::UniqueImageView> mDepthStencilImageViews;
     std::vector<std::vector<vk::UniqueCommandBuffer>> mSecondaryCommandBuffers;
 
-    std::unordered_map<uint32_t, UniquePipeline> mPipelines;
-    std::unordered_map<uint32_t, UniquePipelineLayout> mPipelineLayouts;
+    // pipeline and layout
+    std::unordered_map<PipelineType, UniquePipeline> mPipelines;
+    std::unordered_map<PipelineType, UniquePipelineLayout> mPipelineLayouts;
+
+    void InitialPipeline();
     void CreateForwardOpaquePipeline();
     void CreateDeferredGBufferPipeline();
     void CreateShadowDepthPipeline();

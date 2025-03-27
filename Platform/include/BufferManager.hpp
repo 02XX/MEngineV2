@@ -2,6 +2,7 @@
 #include "Buffer.hpp"
 #include "CommandBuffeManager.hpp"
 #include "MEngine.hpp"
+#include "NoCopyable.hpp"
 #include "SyncPrimitiveManager.hpp"
 #include "VMA.hpp"
 #include <memory>
@@ -9,7 +10,7 @@
 
 namespace MEngine
 {
-class MENGINE_API BufferManager final
+class MENGINE_API BufferManager final : public NoCopyable
 {
   private:
     std::unique_ptr<CommandBufferManager> mCommandBufferManager;

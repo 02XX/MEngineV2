@@ -4,12 +4,13 @@
 #include "CommandBuffeManager.hpp"
 #include "Image.hpp"
 #include "MEngine.hpp"
+#include "NoCopyable.hpp"
 #include "SyncPrimitiveManager.hpp"
 #include <memory>
 
 namespace MEngine
 {
-class MENGINE_API ImageManager final
+class MENGINE_API ImageManager final : public NoCopyable
 {
   private:
     std::unique_ptr<CommandBufferManager> mCommandBufferManager;

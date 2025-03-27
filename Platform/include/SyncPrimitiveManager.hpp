@@ -1,11 +1,12 @@
 #pragma once
 #include "Context.hpp"
 #include "MEngine.hpp"
+#include "NoCopyable.hpp"
 #include <vulkan/vulkan.hpp>
 
 namespace MEngine
 {
-class MENGINE_API SyncPrimitiveManager final
+class MENGINE_API SyncPrimitiveManager final : public NoCopyable
 {
   public:
     SyncPrimitiveManager() = default;

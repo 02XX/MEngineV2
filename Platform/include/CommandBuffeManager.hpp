@@ -1,12 +1,14 @@
 #pragma once
 #include "Context.hpp"
 #include "MEngine.hpp"
+#include "NoCopyable.hpp"
 #include <vector>
 #include <vulkan/vulkan.hpp>
+
 namespace MEngine
 {
 using UniqueCommandBuffer = vk::UniqueCommandBuffer;
-class MENGINE_API CommandBufferManager final
+class MENGINE_API CommandBufferManager final : public NoCopyable
 {
   private:
     uint32_t mQueueFamilyIndex;

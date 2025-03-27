@@ -1,13 +1,14 @@
 #pragma once
 #include "Context.hpp"
 #include "MEngine.hpp"
+#include "NoCopyable.hpp"
 #include "SharedHandle.hpp"
 #include <vulkan/vulkan.hpp>
 
 namespace MEngine
 {
 using UniqueSampler = vk::UniqueSampler;
-class MENGINE_API SamplerManagerManager final
+class MENGINE_API SamplerManagerManager final : public NoCopyable
 {
   public:
     SamplerManagerManager() = default;

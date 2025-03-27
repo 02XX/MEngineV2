@@ -1,6 +1,4 @@
 #include "System/RenderSystem.hpp"
-#include <cstdint>
-#include <vector>
 
 namespace MEngine
 {
@@ -16,6 +14,9 @@ RenderSystem::RenderSystem(std::shared_ptr<entt::registry> registry) : mRegistry
     mSyncPrimitiveManager = std::make_unique<SyncPrimitiveManager>();
     mImageManager = std::make_unique<ImageManager>();
     mRenderPassManager = std::make_unique<RenderPassManager>();
+    mShaderManager = std::make_unique<ShaderManager>();
+    mPipelineLayoutManager = std::make_unique<PipelineLayoutManager>();
+    mPipelineManager = std::make_unique<PipelineManager>();
     mFrameCount = mSwapchainManager->GetSwapchainImageViews().size();
     mFrameIndex = 0;
     // command buffer
@@ -53,23 +54,58 @@ RenderSystem::RenderSystem(std::shared_ptr<entt::registry> registry) : mRegistry
             .setLayers(1);
         mFrameBuffers.push_back(context.GetDevice()->createFramebufferUnique(framebufferCreateInfo));
     }
+    InitialPipeline();
+}
+// Pipeline
+void RenderSystem::InitialPipeline()
+{
     CreateForwardOpaquePipeline();
     CreateDeferredGBufferPipeline();
     CreateShadowDepthPipeline();
     CreatePostProcessPipeline();
 }
-// Create
 void RenderSystem::CreateForwardOpaquePipeline()
 {
     auto &context = Context::Instance();
-    auto pipelineLayout = mPipelineLayoutManager->CreateUniquePipelineLayout(std::vector<DescriptorBindingInfo>{},
-                                                                             std::vector<vk::PushConstantRange>{});
+    // 定义PBR材质所需的描述符绑定
+    std::vector<DescriptorBindingInfo> pbrBindings = {
+        // Set 0: 场景级Uniform数据（每帧更新）
+        {.binding = 0,
+         .type = vk::DescriptorType::eUniformBuffer,
+         .count = 1,
+         .stageFlags = vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment},
+
+        // Set 1: 材质纹理（每个材质实例独立）
+        {.binding = 0,
+         .type = vk::DescriptorType::eCombinedImageSampler, // Albedo
+         .count = 1,
+         .stageFlags = vk::ShaderStageFlagBits::eFragment},
+        {.binding = 1,
+         .type = vk::DescriptorType::eCombinedImageSampler, // 法线贴图
+         .count = 1,
+         .stageFlags = vk::ShaderStageFlagBits::eFragment},
+        {.binding = 2,
+         .type = vk::DescriptorType::eCombinedImageSampler, // 金属/粗糙度
+         .count = 1,
+         .stageFlags = vk::ShaderStageFlagBits::eFragment},
+        {.binding = 3,
+         .type = vk::DescriptorType::eCombinedImageSampler, // AO贴图
+         .count = 1,
+         .stageFlags = vk::ShaderStageFlagBits::eFragment}};
+
+    // Push Constant用于传递模型矩阵
+    std::vector<vk::PushConstantRange> pushConstants = {vk::PushConstantRange()
+                                                            .setStageFlags(vk::ShaderStageFlagBits::eVertex)
+                                                            .setOffset(0)
+                                                            .setSize(sizeof(glm::mat4))};
+
+    auto pipelineLayout = mPipelineLayoutManager->CreateUniquePipelineLayout(pbrBindings, pushConstants);
     GraphicsPipelineConfig config;
     config.pipelineLayout = pipelineLayout.get();
     config.renderPass = mRenderPass.get();
     config.subPass = 0;
-    // config.vertexShader = context.CreateShaderModule("shader/forward.vert.spv");
-    // config.fragmentShader = context.CreateShaderModule("shader/forward.frag.spv");
+    config.vertexShader = mShaderManager->GetShaderModule("forward.vert");
+    config.fragmentShader = mShaderManager->GetShaderModule("forward.frag");
     config.vertexBindings = {{0, sizeof(Vertex), vk::VertexInputRate::eVertex}};
     config.vertexAttributes = std::vector<vk::VertexInputAttributeDescription>(
         Vertex::GetVertexInputAttributeDescription().begin(), Vertex::GetVertexInputAttributeDescription().end());
@@ -107,8 +143,8 @@ void RenderSystem::CreateForwardOpaquePipeline()
                                 .setCompareOp(vk::CompareOp::eAlways);
     config.backStencilOp = config.frontStencilOp;
     auto pipeline = mPipelineManager->CreateUniqueGraphicsPipeline(config);
-    mPipelines[static_cast<uint32_t>(PipelineType::ForwardOpaque)] = std::move(pipeline);
-    mPipelineLayouts[static_cast<uint32_t>(PipelineType::ForwardOpaque)] = std::move(pipelineLayout);
+    mPipelines[PipelineType::ForwardOpaque] = std::move(pipeline);
+    mPipelineLayouts[PipelineType::ForwardOpaque] = std::move(pipelineLayout);
 }
 void RenderSystem::CreateDeferredGBufferPipeline()
 {
@@ -128,7 +164,7 @@ void RenderSystem::CollectRenderEntities()
     {
         auto &material = mRegistry->get<MaterialComponent>(entity);
         auto &mesh = entities.get<MeshComponent>(entity);
-        mBatchMaterialComponents[material.pipeline.id].push_back(entity);
+        mBatchMaterialComponents[material.material->GetPipelineType()].push_back(entity);
     }
 }
 
@@ -187,37 +223,38 @@ void RenderSystem::RenderForwardPass()
     std::mutex mutex;
     mSecondaryCommandBuffers.clear();
     std::vector<std::shared_ptr<Task>> tasks;
-    for (auto &[materialID, entities] : mBatchMaterialComponents)
+    for (auto &[type, entities] : mBatchMaterialComponents)
     {
-        if (materialID == 9)
+        if (type == PipelineType::ForwardOpaque)
         {
-            continue; // deffered pass
+            // 每个material批次一个线程
+            auto task = Task::Run([this, entities, &mutex, type]() {
+                auto secondary = mCommandBufferManager->CreateSecondaryCommandBuffer();
+                vk::CommandBufferBeginInfo beginInfo;
+                beginInfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
+                secondary->begin(beginInfo);
+
+                auto &material = mRegistry->get<MaterialComponent>(entities[0]);
+                auto pipeline = mPipelines[type].get();
+
+                secondary->bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
+                for (auto entity : entities)
+                {
+                    auto &meshComponent = mRegistry->get<MeshComponent>(entity);
+                    auto vertexBuffer = meshComponent.mesh->GetVertexBuffer();
+                    auto indexBuffer = meshComponent.mesh->GetIndexBuffer();
+                    auto indexCount = meshComponent.mesh->GetIndexCount();
+
+                    secondary->bindVertexBuffers(0, vertexBuffer, {0});
+                    secondary->bindIndexBuffer(indexBuffer, 0, vk::IndexType::eUint32);
+                    secondary->drawIndexed(indexCount, 1, 0, 0, 0);
+                }
+                secondary->end();
+                std::lock_guard<std::mutex> lock(mutex);
+                mSecondaryCommandBuffers[mFrameIndex].push_back(std::move(secondary));
+            });
+            tasks.push_back(task);
         }
-        // 每个material批次一个线程
-        auto task = Task::Run([this, entities, &mutex]() {
-            auto secondary = mCommandBufferManager->CreateSecondaryCommandBuffer();
-            vk::CommandBufferBeginInfo beginInfo;
-            beginInfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
-            secondary->begin(beginInfo);
-
-            auto &material = mRegistry->get<MaterialComponent>(entities[0]);
-            auto pipeline = mPipelines[material.pipeline.id].get();
-            secondary->bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
-            for (auto entity : entities)
-            {
-                auto &mesh = mRegistry->get<MeshComponent>(entity);
-                auto vertexBuffer = mResourceManager->GetBuffer(mesh.vertexBuffer.id);
-                auto indexBuffer = mResourceManager->GetBuffer(mesh.indexBuffer.id);
-
-                secondary->bindVertexBuffers(0, vertexBuffer, {0});
-                secondary->bindIndexBuffer(indexBuffer, 0, vk::IndexType::eUint32);
-                secondary->drawIndexed(mesh.indexCount, 1, 0, 0, 0);
-            }
-            secondary->end();
-            std::lock_guard<std::mutex> lock(mutex);
-            mSecondaryCommandBuffers[mFrameIndex].push_back(std::move(secondary));
-        });
-        tasks.push_back(task);
     }
     Task::WhenAll(tasks);
     std::vector<vk::CommandBuffer> rawCommandBuffers;

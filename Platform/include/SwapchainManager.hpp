@@ -1,12 +1,13 @@
 #pragma once
 #include "Context.hpp"
 #include "MEngine.hpp"
+#include "NoCopyable.hpp"
 #include <vector>
 #include <vulkan/vulkan.hpp>
 
 namespace MEngine
 {
-class MENGINE_API SwapchainManager final
+class MENGINE_API SwapchainManager final : public NoCopyable
 {
   private:
     vk::UniqueSwapchainKHR mSwapchain;

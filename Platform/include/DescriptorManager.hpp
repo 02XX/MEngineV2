@@ -3,6 +3,7 @@
 #include "Context.hpp"
 #include "Logger.hpp"
 #include "MEngine.hpp"
+#include "NoCopyable.hpp"
 #include "SharedHandle.hpp"
 #include <vector>
 #include <vulkan/vulkan.hpp>
@@ -28,7 +29,7 @@ struct PoolSizesProportion
     };
 };
 using UniqueDescriptorSet = vk::UniqueDescriptorSet;
-class MENGINE_API DescriptorManager final
+class MENGINE_API DescriptorManager final : public NoCopyable
 {
   private:
     PoolSizesProportion mDefaultPoolSizesProportion;
@@ -40,11 +41,6 @@ class MENGINE_API DescriptorManager final
 
   public:
     DescriptorManager(uint32_t maxDescriptorSize = 1000, PoolSizesProportion defaultPoolSizesProportion = {});
-    DescriptorManager(const DescriptorManager &) = delete;
-    DescriptorManager &operator=(const DescriptorManager &) = delete;
-    DescriptorManager(DescriptorManager &&) = delete;
-    DescriptorManager &operator=(DescriptorManager &&) = delete;
-    ~DescriptorManager() = default;
 
     std::vector<UniqueDescriptorSet> AllocateUniqueDescriptorSet(
         std::vector<vk::DescriptorSetLayout> descriptorSetLayouts);

@@ -3,7 +3,9 @@
 #include "Context.hpp"
 #include "Logger.hpp"
 #include "MEngine.hpp"
+#include "NoCopyable.hpp"
 #include <vulkan/vulkan.hpp>
+
 namespace MEngine
 {
 struct SubpassConfig
@@ -37,7 +39,7 @@ struct RenderPassConfigInfo
     // 子流程间依赖关系
     std::vector<vk::SubpassDependency> dependencies;
 };
-class MENGINE_API RenderPassManager final
+class MENGINE_API RenderPassManager final : public NoCopyable
 {
   public:
     RenderPassManager() = default;

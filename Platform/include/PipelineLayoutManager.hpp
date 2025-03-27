@@ -2,9 +2,11 @@
 #include "Context.hpp"
 #include "Logger.hpp"
 #include "MEngine.hpp"
+#include "NoCopyable.hpp"
 #include "SharedHandle.hpp"
 #include <memory>
 #include <vulkan/vulkan.hpp>
+
 namespace MEngine
 {
 // 描述符绑定信息
@@ -16,7 +18,7 @@ struct DescriptorBindingInfo
     vk::ShaderStageFlags stageFlags;
 };
 using UniquePipelineLayout = vk::UniquePipelineLayout;
-class MENGINE_API PipelineLayoutManager final
+class MENGINE_API PipelineLayoutManager final : public NoCopyable
 {
   public:
     UniquePipelineLayout CreateUniquePipelineLayout(const std::vector<DescriptorBindingInfo> &descriptorBindings,

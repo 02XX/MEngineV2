@@ -2,8 +2,10 @@
 #include "Context.hpp"
 #include "Logger.hpp"
 #include "MEngine.hpp"
+#include "NoCopyable.hpp"
 #include "SharedHandle.hpp"
 #include <vulkan/vulkan.hpp>
+
 namespace MEngine
 {
 enum class PipelineType
@@ -77,7 +79,7 @@ struct ComputePipelineConfig
     uint32_t maxThreadsZ = 1;
 };
 using UniquePipeline = vk::UniquePipeline;
-class MENGINE_API PipelineManager final
+class MENGINE_API PipelineManager final : public NoCopyable
 {
   public:
     PipelineManager() = default;
