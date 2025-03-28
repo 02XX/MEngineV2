@@ -34,7 +34,7 @@ class PipelineManagerTest : public ::testing::Test
 
 TEST_F(PipelineManagerTest, sharedPipeline_destroy)
 {
-    Logger::Instance().SetLevel(LogLevel::TRACE);
+    Logger::Instance().SetLevel(LogLevel::LOG_TRACE);
     {
         auto pipeline = mManager->CreateUniqueGraphicsPipeline({});
     }

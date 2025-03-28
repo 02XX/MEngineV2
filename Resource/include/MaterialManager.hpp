@@ -9,7 +9,7 @@ enum class MaterialType
     Default,
     Custom,
 };
-class MENGINE_API MaterialManager : public NoCopyable
+class MaterialManager : public NoCopyable
 {
   private:
     std::unordered_map<MaterialType, std::weak_ptr<Material>> mMaterials;

@@ -15,7 +15,7 @@ enum class PrimitiveType
     Sphere,   // 球体
     Quad,     // 四边形
 };
-class MENGINE_API BasicGeometryManager : public NoCopyable
+class BasicGeometryManager : public NoCopyable
 {
   private:
     std::unordered_map<PrimitiveType, std::weak_ptr<Mesh>> mCache;

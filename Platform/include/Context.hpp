@@ -6,7 +6,7 @@
 
 namespace MEngine
 {
-class MENGINE_API Context final
+class Context final
 {
   private:
     struct QueueFamilyIndicates
@@ -68,7 +68,7 @@ class MENGINE_API Context final
               const std::vector<const char *> instanceRequiredExtensions = {},
               const std::vector<const char *> instanceRequiredLayers = {"VK_LAYER_KHRONOS_validation"},
               const std::vector<const char *> deviceRequiredExtensions = {"VK_KHR_swapchain"},
-              const std::vector<const char *> deviceRequiredLayers = {} );
+              const std::vector<const char *> deviceRequiredLayers = {});
     void Quit();
 
     inline const vk::Device &GetDevice() const

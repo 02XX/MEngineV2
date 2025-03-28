@@ -6,7 +6,7 @@
 
 namespace MEngine
 {
-class MENGINE_API FrameBufferManager final : public NoCopyable
+class FrameBufferManager final : public NoCopyable
 {
   private:
     vk::UniqueFramebuffer mFramebuffer;

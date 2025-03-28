@@ -6,7 +6,7 @@
 
 namespace MEngine
 {
-class MENGINE_API Mesh
+class Mesh
 {
   private:
     std::vector<Vertex> mVertices;

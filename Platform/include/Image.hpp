@@ -7,7 +7,7 @@
 
 namespace MEngine
 {
-class MENGINE_API Image final
+class Image final
 {
   public:
     Image(const vk::ImageCreateInfo &imageInfo, VmaMemoryUsage memoryUsage, VmaAllocationCreateFlags flags = 0);

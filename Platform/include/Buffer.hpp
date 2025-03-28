@@ -6,7 +6,7 @@
 #include <vulkan/vulkan.hpp>
 namespace MEngine
 {
-class MENGINE_API Buffer final
+class Buffer final
 {
   public:
     Buffer(vk::DeviceSize size, vk::BufferUsageFlags bufferUsage, VmaMemoryUsage memoryUsage,

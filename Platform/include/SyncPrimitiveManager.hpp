@@ -6,7 +6,7 @@
 
 namespace MEngine
 {
-class MENGINE_API SyncPrimitiveManager final : public NoCopyable
+class SyncPrimitiveManager final : public NoCopyable
 {
   public:
     SyncPrimitiveManager() = default;

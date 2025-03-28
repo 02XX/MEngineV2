@@ -1,6 +1,6 @@
 
 file(GLOB_RECURSE SOURCES CMAKE_CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
-add_library(Resource SHARED ${SOURCES})
+add_library(Resource STATIC ${SOURCES})
 
 
 
@@ -12,6 +12,6 @@ target_link_libraries(
     Platform
     EnTT::EnTT
 )
-target_compile_definitions(Resource PRIVATE MENGINE_EXPORT)
+# target_compile_definitions(Resource PRIVATE MENGINE_EXPORT)
 
 add_subdirectory(Shader)

@@ -7,7 +7,7 @@
 
 namespace MEngine
 {
-class MENGINE_API SwapchainManager final : public NoCopyable
+class SwapchainManager final : public NoCopyable
 {
   private:
     vk::UniqueSwapchainKHR mSwapchain;

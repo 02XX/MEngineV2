@@ -8,7 +8,7 @@
 namespace MEngine
 {
 
-class MENGINE_API ShaderManager final : public NoCopyable
+class ShaderManager final : public NoCopyable
 {
   public:
     ShaderManager() = default;

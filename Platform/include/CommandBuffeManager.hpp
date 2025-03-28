@@ -8,7 +8,7 @@
 namespace MEngine
 {
 using UniqueCommandBuffer = vk::UniqueCommandBuffer;
-class MENGINE_API CommandBufferManager final : public NoCopyable
+class CommandBufferManager final : public NoCopyable
 {
   private:
     uint32_t mQueueFamilyIndex;

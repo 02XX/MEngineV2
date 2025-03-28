@@ -1,18 +1,18 @@
 #pragma once
 
-#ifdef PLATFORM_WINDOWS
-#ifdef MENGINE_EXPORT
-#define MENGINE_API __declspec(dllexport)
-#else
-#define MENGINE_API __declspec(dllimport)
-#endif
-#elif PLATFORM_MACOS
-#define MENGINE_API __attribute__((visibility("default")))
-#elif PLATFORM_LINUX
-#define MENGINE_API
-#else
-#error "Unknown platform!"
-#endif
+// #ifdef PLATFORM_WINDOWS
+// #ifdef MENGINE_EXPORT
+// #define __declspec(dllexport)
+// #else
+// #define __declspec(dllimport)
+// #endif
+// #elif PLATFORM_MACOS
+// #define __attribute__((visibility("default")))
+// #elif PLATFORM_LINUX
+// #define MENGINE_API
+// #else
+// #error "Unknown platform!"
+// #endif
 
 #include <algorithm>
 #include <chrono>

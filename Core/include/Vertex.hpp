@@ -6,7 +6,7 @@
 #include <vulkan/vulkan.hpp>
 namespace MEngine
 {
-class MENGINE_API Vertex
+class Vertex
 {
   public:
     glm::vec3 position;

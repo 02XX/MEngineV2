@@ -10,7 +10,7 @@
 
 namespace MEngine
 {
-class MENGINE_API BasicGeometryEntityManager : public NoCopyable
+class BasicGeometryEntityManager : public NoCopyable
 {
   private:
     std::shared_ptr<entt::registry> mRegistry;

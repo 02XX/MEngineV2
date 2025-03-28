@@ -6,18 +6,18 @@ using namespace std;
 
 TEST(LoggerTest, logger_level)
 {
-    Logger::Instance().SetLevel(LogLevel::TRACE);
+    Logger::Instance().SetLevel(LogLevel::LOG_TRACE);
     EXPECT_EQ(Logger::Instance().mLogger->level(), spdlog::level::trace);
 
-    Logger::Instance().SetLevel(LogLevel::DEBUG);
+    Logger::Instance().SetLevel(LogLevel::LOG_DEBUG);
     EXPECT_EQ(Logger::Instance().mLogger->level(), spdlog::level::debug);
 
-    Logger::Instance().SetLevel(LogLevel::INFO);
+    Logger::Instance().SetLevel(LogLevel::LOG_INFO);
     EXPECT_EQ(Logger::Instance().mLogger->level(), spdlog::level::info);
 
-    Logger::Instance().SetLevel(LogLevel::ERROR);
+    Logger::Instance().SetLevel(LogLevel::LOG_ERROR);
     EXPECT_EQ(Logger::Instance().mLogger->level(), spdlog::level::err);
 
-    Logger::Instance().SetLevel(LogLevel::FATAL);
+    Logger::Instance().SetLevel(LogLevel::LOG_FATAL);
     EXPECT_EQ(Logger::Instance().mLogger->level(), spdlog::level::critical);
 }

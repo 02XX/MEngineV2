@@ -2,7 +2,7 @@
 #include "MEngine.hpp"
 #include "SDL3/SDL_events.h"
 
-class MENGINE_API IScene
+class IScene
 {
   public:
     IScene() = default;

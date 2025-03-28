@@ -6,7 +6,8 @@ Application::Application()
 {
     std::cout << "Application Started" << std::endl;
     // log
-    Logger::Instance().SetLevel(LogLevel::TRACE);
+    Logger::Instance().Init();
+    Logger::Instance().SetLevel(LogLevel::LOG_TRACE);
     // sdl
     if (!SDL_Init(SDL_INIT_VIDEO))
     {
@@ -35,12 +36,12 @@ Application::Application()
         },
         requiredExtensions);
 
-    // mCurrScene = std::make_shared<DefaultScene>();
-    // mCurrScene->OnCreate();
+    mCurrScene = std::make_shared<DefaultScene>();
+    mCurrScene->OnCreate();
 }
 Application::~Application()
 {
-    // mCurrScene->OnDestroy();
+    mCurrScene->OnDestroy();
     SDL_DestroyWindow(mWindow);
     SDL_Quit();
     std::cout << "Application Closed" << std::endl;
@@ -57,10 +58,10 @@ void Application::Run()
             {
                 mIsRunning = false;
             }
-            // mCurrScene->HandleEvent(event);
-            // mCurrScene->Update();
-            // mCurrScene->LateUpdate();
-            // mCurrScene->Draw();
+            mCurrScene->HandleEvent(event);
+            mCurrScene->Update();
+            mCurrScene->LateUpdate();
+            mCurrScene->Draw();
         }
     }
 }

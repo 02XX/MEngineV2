@@ -29,7 +29,7 @@ struct PoolSizesProportion
     };
 };
 using UniqueDescriptorSet = vk::UniqueDescriptorSet;
-class MENGINE_API DescriptorManager final : public NoCopyable
+class DescriptorManager final : public NoCopyable
 {
   private:
     PoolSizesProportion mDefaultPoolSizesProportion;

@@ -23,7 +23,7 @@ enum class ResourceType
     Shader
 };
 
-class MENGINE_API ResourceManager
+class ResourceManager
 {
   private:
     std::unordered_map<uint32_t, UniqueBuffer> mBuffers;

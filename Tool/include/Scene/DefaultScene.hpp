@@ -5,7 +5,7 @@
 #include "entt/entt.hpp"
 namespace MEngine
 {
-class MENGINE_API DefaultScene : public IScene
+class DefaultScene : public IScene
 {
   public:
     DefaultScene() = default;

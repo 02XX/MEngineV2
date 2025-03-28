@@ -53,7 +53,7 @@ class PipelineLayoutManagerTest : public ::testing::Test
 
 TEST_F(PipelineLayoutManagerTest, sharedPipelineLayout_destroy)
 {
-    Logger::Instance().SetLevel(LogLevel::TRACE);
+    Logger::Instance().SetLevel(LogLevel::LOG_TRACE);
     std::vector<DescriptorBindingInfo> descriptorBindings;
     descriptorBindings.push_back({0, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex});
     vk::PushConstantRange pushConstantRange;

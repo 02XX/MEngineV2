@@ -12,7 +12,7 @@
 #include <vector>
 namespace MEngine
 {
-class MENGINE_API Task
+class Task
 {
     friend class TaskScheduler;
 
@@ -39,7 +39,7 @@ class MENGINE_API Task
     // static void WhenAny(std::vector<std::shared_ptr<Task>> tasks);
 };
 
-class MENGINE_API TaskScheduler final
+class TaskScheduler final
 {
   private:
     uint32_t mThreadCount;

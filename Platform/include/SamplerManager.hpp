@@ -8,7 +8,7 @@
 namespace MEngine
 {
 using UniqueSampler = vk::UniqueSampler;
-class MENGINE_API SamplerManagerManager final : public NoCopyable
+class SamplerManagerManager final : public NoCopyable
 {
   public:
     SamplerManagerManager() = default;

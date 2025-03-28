@@ -109,7 +109,7 @@ SharedPipeline PipelineManager::CreateSharedGraphicsPipeline(const GraphicsPipel
     auto uniquePipeline = CreateUniqueGraphicsPipeline(config);
     return std::move(uniquePipeline);
 }
-UniquePipeline PipelineManager::CreateComputePipeline(const ComputePipelineConfig &config)
-{
-}
+// UniquePipeline PipelineManager::CreateComputePipeline(const ComputePipelineConfig &config)
+// {
+// }
 } // namespace MEngine

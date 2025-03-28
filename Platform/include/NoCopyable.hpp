@@ -3,7 +3,7 @@
 
 namespace MEngine
 {
-class MENGINE_API NoCopyable
+class NoCopyable
 {
   protected:
     NoCopyable() = default;

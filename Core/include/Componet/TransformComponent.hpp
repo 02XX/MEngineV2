@@ -10,7 +10,7 @@
 #include <memory>
 namespace MEngine
 {
-struct MENGINE_API TransformComponent
+struct TransformComponent
 {
     glm::vec3 mPosition;
     glm::vec3 mRotation;

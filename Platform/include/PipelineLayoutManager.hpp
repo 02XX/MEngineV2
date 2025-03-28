@@ -18,7 +18,7 @@ struct DescriptorBindingInfo
     vk::ShaderStageFlags stageFlags;
 };
 using UniquePipelineLayout = vk::UniquePipelineLayout;
-class MENGINE_API PipelineLayoutManager final : public NoCopyable
+class PipelineLayoutManager final : public NoCopyable
 {
   public:
     UniquePipelineLayout CreateUniquePipelineLayout(const std::vector<DescriptorBindingInfo> &descriptorBindings,

@@ -3,7 +3,7 @@
 #include "Material.hpp"
 namespace MEngine
 {
-struct MENGINE_API MaterialComponent
+struct MaterialComponent
 {
     std::shared_ptr<Material> material;
 };

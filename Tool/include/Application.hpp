@@ -13,12 +13,12 @@
 
 namespace MEngine
 {
-class MENGINE_API Application final
+class Application final
 {
   private:
     bool mIsRunning;
     SDL_Window *mWindow;
-    // std::shared_ptr<IScene> mCurrScene;
+    std::shared_ptr<IScene> mCurrScene;
 
   public:
     Application();

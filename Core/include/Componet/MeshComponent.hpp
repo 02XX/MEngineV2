@@ -3,7 +3,7 @@
 #include "Mesh.hpp"
 namespace MEngine
 {
-struct MENGINE_API MeshComponent
+struct MeshComponent
 {
     std::shared_ptr<Mesh> mesh;
 };

@@ -79,7 +79,7 @@ struct ComputePipelineConfig
     uint32_t maxThreadsZ = 1;
 };
 using UniquePipeline = vk::UniquePipeline;
-class MENGINE_API PipelineManager final : public NoCopyable
+class PipelineManager final : public NoCopyable
 {
   public:
     PipelineManager() = default;
@@ -91,6 +91,6 @@ class MENGINE_API PipelineManager final : public NoCopyable
      */
     UniquePipeline CreateUniqueGraphicsPipeline(const GraphicsPipelineConfig &config);
     SharedPipeline CreateSharedGraphicsPipeline(const GraphicsPipelineConfig &config);
-    UniquePipeline CreateComputePipeline(const ComputePipelineConfig &config);
+    // UniquePipeline CreateComputePipeline(const ComputePipelineConfig &config);
 };
 } // namespace MEngine

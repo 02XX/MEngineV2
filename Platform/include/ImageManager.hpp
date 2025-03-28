@@ -10,7 +10,7 @@
 
 namespace MEngine
 {
-class MENGINE_API ImageManager final : public NoCopyable
+class ImageManager final : public NoCopyable
 {
   private:
     std::unique_ptr<CommandBufferManager> mCommandBufferManager;

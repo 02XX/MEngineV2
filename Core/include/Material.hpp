@@ -7,7 +7,7 @@
 
 namespace MEngine
 {
-class MENGINE_API Material
+class Material
 {
   private:
     PipelineType mPipelineType;

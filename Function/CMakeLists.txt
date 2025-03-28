@@ -1,6 +1,6 @@
 
 file(GLOB_RECURSE SOURCES CMAKE_CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
-add_library(Function SHARED ${SOURCES})
+add_library(Function STATIC ${SOURCES})
 
 
 
@@ -14,4 +14,4 @@ target_link_libraries(
     EnTT::EnTT
 
 )
-target_compile_definitions(Function PRIVATE MENGINE_EXPORT)
+# target_compile_definitions(Function PRIVATE MENGINE_EXPORT)

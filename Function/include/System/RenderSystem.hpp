@@ -23,7 +23,7 @@
 namespace MEngine
 {
 
-class MENGINE_API RenderSystem
+class RenderSystem
 {
   private:
     std::shared_ptr<entt::registry> mRegistry;
