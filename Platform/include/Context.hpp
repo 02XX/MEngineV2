@@ -66,9 +66,9 @@ class MENGINE_API Context final
     ~Context();
     void Init(std::function<vk::SurfaceKHR(vk::Instance)> createSurface,
               const std::vector<const char *> instanceRequiredExtensions = {},
-              const std::vector<const char *> deviceRequiredExtensions = {"VK_LAYER_KHRONOS_validation"},
-              const std::vector<const char *> deviceRequiredLayers = {"VK_KHR_swapchain"},
-              const std::vector<const char *> instanceRequiredLayers = {});
+              const std::vector<const char *> instanceRequiredLayers = {"VK_LAYER_KHRONOS_validation"},
+              const std::vector<const char *> deviceRequiredExtensions = {"VK_KHR_swapchain"},
+              const std::vector<const char *> deviceRequiredLayers = {} );
     void Quit();
 
     inline const vk::Device &GetDevice() const

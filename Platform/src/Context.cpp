@@ -18,9 +18,9 @@ void Context::Quit()
 }
 void Context::Init(std::function<vk::SurfaceKHR(vk::Instance)> createSurface,
                    const std::vector<const char *> instanceRequiredExtensions,
+                   const std::vector<const char *> instanceRequiredLayers,
                    const std::vector<const char *> deviceRequiredExtensions,
-                   const std::vector<const char *> deviceRequiredLayers,
-                   const std::vector<const char *> instanceRequiredLayers)
+                   const std::vector<const char *> deviceRequiredLayers)
 {
     mVKInstanceEnabledExtensions = instanceRequiredExtensions;
     mVKDeviceEnabledExtensions = deviceRequiredExtensions;
