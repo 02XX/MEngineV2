@@ -14,7 +14,7 @@ Context::~Context()
 }
 void Context::Quit()
 {
-    vmaDestroyAllocator(mVmaAllocator);
+    // vmaDestroyAllocator(mVmaAllocator);
 }
 void Context::Init(std::function<vk::SurfaceKHR(vk::Instance)> createSurface,
                    const std::vector<const char *> instanceRequiredExtensions,
@@ -37,7 +37,7 @@ void Context::Init(std::function<vk::SurfaceKHR(vk::Instance)> createSurface,
     CreateDevice();
     GetQueues();
 
-    CreateVmaAllocator();
+    // CreateVmaAllocator();
 }
 
 void Context::CreateInstance()
@@ -345,20 +345,20 @@ void Context::SubmitToTransferQueue(std::vector<vk::SubmitInfo> submits, vk::Uni
 }
 void Context::CreateVmaAllocator()
 {
-    // VmaVulkanFunctions vulkanFunctions = {};
-    // vulkanFunctions.vkGetInstanceProcAddr = &vkGetInstanceProcAddr;
-    // vulkanFunctions.vkGetDeviceProcAddr = &vkGetDeviceProcAddr;
+    // // VmaVulkanFunctions vulkanFunctions = {};
+    // // vulkanFunctions.vkGetInstanceProcAddr = &vkGetInstanceProcAddr;
+    // // vulkanFunctions.vkGetDeviceProcAddr = &vkGetDeviceProcAddr;
 
-    VmaAllocatorCreateInfo allocatorCreateInfo{};
-    allocatorCreateInfo.device = mDevice.get();
-    allocatorCreateInfo.physicalDevice = mPhysicalDevice;
-    allocatorCreateInfo.instance = mVKInstance.get();
-    allocatorCreateInfo.flags =
-        VMA_ALLOCATOR_CREATE_KHR_DEDICATED_ALLOCATION_BIT | VMA_ALLOCATOR_CREATE_EXT_MEMORY_BUDGET_BIT;
-    allocatorCreateInfo.vulkanApiVersion = vk::enumerateInstanceVersion();
-    // allocatorCreateInfo.pVulkanFunctions = &vulkanFunctions;
-    vmaCreateAllocator(&allocatorCreateInfo, &mVmaAllocator);
-    LogD("VMA Allocator Created");
+    // VmaAllocatorCreateInfo allocatorCreateInfo{};
+    // allocatorCreateInfo.device = mDevice.get();
+    // allocatorCreateInfo.physicalDevice = mPhysicalDevice;
+    // allocatorCreateInfo.instance = mVKInstance.get();
+    // allocatorCreateInfo.flags =
+    //     VMA_ALLOCATOR_CREATE_KHR_DEDICATED_ALLOCATION_BIT | VMA_ALLOCATOR_CREATE_EXT_MEMORY_BUDGET_BIT;
+    // allocatorCreateInfo.vulkanApiVersion = vk::enumerateInstanceVersion();
+    // // allocatorCreateInfo.pVulkanFunctions = &vulkanFunctions;
+    // vmaCreateAllocator(&allocatorCreateInfo, &mVmaAllocator);
+    // LogD("VMA Allocator Created");
 }
 
 } // namespace MEngine
