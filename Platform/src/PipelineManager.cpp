@@ -70,10 +70,10 @@ UniquePipeline PipelineManager::CreateUniqueGraphicsPipeline(const GraphicsPipel
         .setBlendConstants(config.blendConstants);
 
     // ========== 9. 动态状态 ==========
-    std::array dynamicStates = {vk::DynamicState::eViewport, vk::DynamicState::eScissor};
+    // std::array dynamicStates = {vk::DynamicState::eViewport, vk::DynamicState::eScissor};
 
-    vk::PipelineDynamicStateCreateInfo dynamicStateInfo;
-    dynamicStateInfo.setDynamicStateCount(dynamicStates.size()).setPDynamicStates(dynamicStates.data());
+    vk::PipelineDynamicStateCreateInfo dynamicStateInfo{};
+    // dynamicStateInfo.setDynamicStateCount(dynamicStates.size()).setPDynamicStates(dynamicStates.data());
 
     // ========== 10. 组装管线信息 ==========
     vk::GraphicsPipelineCreateInfo pipelineInfo;
@@ -93,7 +93,7 @@ UniquePipeline PipelineManager::CreateUniqueGraphicsPipeline(const GraphicsPipel
 
     // ========== 11. 创建管线 ==========
     auto result = context.GetDevice().createGraphicsPipelineUnique(nullptr, // 管线缓存
-                                                                    pipelineInfo);
+                                                                   pipelineInfo);
     if (result.result != vk::Result::eSuccess)
     {
         LogD("Failed to create graphics pipeline");

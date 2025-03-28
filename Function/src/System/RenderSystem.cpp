@@ -22,7 +22,7 @@ RenderSystem::RenderSystem(std::shared_ptr<entt::registry> registry) : mRegistry
     mFrameIndex = 0;
     // command buffer
     mGraphicCommandBuffers = mCommandBufferManager->CreatePrimaryCommandBuffers(mFrameCount);
-    mSecondaryCommandBuffers.reserve(mFrameCount);
+    mSecondaryCommandBuffers = std::vector<std::vector<vk::UniqueCommandBuffer>>(mFrameCount);
     // semaphore
     for (size_t i = 0; i < mFrameCount; ++i)
     {
@@ -59,6 +59,11 @@ RenderSystem::RenderSystem(std::shared_ptr<entt::registry> registry) : mRegistry
     mShaderManager->LoadShaderModule("forward.vert", "shaders/forward.vert.spv");
     mShaderManager->LoadShaderModule("forward.frag", "shaders/forward.frag.spv");
     InitialPipeline();
+}
+RenderSystem::~RenderSystem()
+{
+    auto &context = Context::Instance();
+    context.GetDevice().waitIdle();
 }
 // Pipeline
 void RenderSystem::InitialPipeline()
@@ -118,7 +123,7 @@ void RenderSystem::CreateForwardOpaquePipeline()
     config.polygonMode = vk::PolygonMode::eFill;
     config.lineWidth = 1.0f;
     config.cullMode = vk::CullModeFlagBits::eBack;
-    config.frontFace = vk::FrontFace::eCounterClockwise;
+    config.frontFace = vk::FrontFace::eClockwise;
     config.viewport = vk::Viewport(0.0f, 0.0f, static_cast<float>(context.GetSurfaceInfo().extent.width),
                                    static_cast<float>(context.GetSurfaceInfo().extent.height), 0.0f, 1.0f);
     config.scissor = vk::Rect2D({0, 0}, context.GetSurfaceInfo().extent);
@@ -220,52 +225,61 @@ void RenderSystem::Prepare()
         .setRenderArea(vk::Rect2D({0, 0}, Context::Instance().GetSurfaceInfo().extent))
         .setFramebuffer(mFrameBuffers[mFrameIndex].get())
         .setClearValues(clearValues);
-    mGraphicCommandBuffers[mFrameIndex]->beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);
+    mGraphicCommandBuffers[mFrameIndex]->beginRenderPass(renderPassBeginInfo,
+                                                         vk::SubpassContents::eSecondaryCommandBuffers);
 }
 void RenderSystem::RenderForwardPass()
 {
     auto &context = Context::Instance();
-    std::mutex mutex;
+    // std::mutex mutex;
     mSecondaryCommandBuffers.clear();
-    std::vector<std::shared_ptr<Task>> tasks;
+    // std::vector<std::shared_ptr<Task>> tasks;
     for (auto &[type, entities] : mBatchMaterialComponents)
     {
         if (type == PipelineType::ForwardOpaque)
         {
             // 每个material批次一个线程
-            auto task = Task::Run([this, entities, &mutex, type]() {
-                auto secondary = mCommandBufferManager->CreateSecondaryCommandBuffer();
-                vk::CommandBufferBeginInfo beginInfo;
-                beginInfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
-                secondary->begin(beginInfo);
+            // auto task = Task::Run([this, &entities, &mutex, type]() {
+            auto secondary = mCommandBufferManager->CreateSecondaryCommandBuffer();
+            vk::CommandBufferBeginInfo beginInfo;
+            vk::CommandBufferInheritanceInfo inheritanceInfo;
+            inheritanceInfo.setFramebuffer(mFrameBuffers[mFrameIndex].get())
+                .setRenderPass(mRenderPass.get())
+                .setSubpass(0);
 
-                auto &material = mRegistry->get<MaterialComponent>(entities[0]);
-                auto pipeline = mPipelines[type].get();
+            beginInfo.setPInheritanceInfo(&inheritanceInfo)
+                .setFlags(vk::CommandBufferUsageFlagBits::eRenderPassContinue);
+            secondary->begin(beginInfo);
 
-                secondary->bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
-                for (auto entity : entities)
-                {
-                    auto &meshComponent = mRegistry->get<MeshComponent>(entity);
-                    auto vertexBuffer = meshComponent.mesh->GetVertexBuffer();
-                    auto indexBuffer = meshComponent.mesh->GetIndexBuffer();
-                    auto indexCount = meshComponent.mesh->GetIndexCount();
+            auto &material = mRegistry->get<MaterialComponent>(entities[0]);
+            auto pipeline = mPipelines[type].get();
 
-                    secondary->bindVertexBuffers(0, vertexBuffer, {0});
-                    secondary->bindIndexBuffer(indexBuffer, 0, vk::IndexType::eUint32);
-                    secondary->drawIndexed(indexCount, 1, 0, 0, 0);
-                }
-                secondary->end();
-                std::lock_guard<std::mutex> lock(mutex);
-                mSecondaryCommandBuffers[mFrameIndex].push_back(std::move(secondary));
-            });
-            tasks.push_back(task);
+            secondary->bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
+            for (auto entity : entities)
+            {
+                auto &meshComponent = mRegistry->get<MeshComponent>(entity);
+                auto vertexBuffer = meshComponent.mesh->GetVertexBuffer();
+                auto indexBuffer = meshComponent.mesh->GetIndexBuffer();
+                auto indexCount = meshComponent.mesh->GetIndexCount();
+
+                secondary->bindVertexBuffers(0, vertexBuffer, {0});
+                secondary->bindIndexBuffer(indexBuffer, 0, vk::IndexType::eUint32);
+                secondary->drawIndexed(indexCount, 1, 0, 0, 0);
+            }
+            secondary->end();
+            // std::lock_guard<std::mutex> lock(mutex);
+            mSecondaryCommandBuffers[mFrameIndex].push_back(std::move(secondary));
+            // });
+            // tasks.push_back(task);
         }
     }
-    Task::WhenAll(tasks);
+    // Task::WhenAll(tasks);
     std::vector<vk::CommandBuffer> rawCommandBuffers;
     rawCommandBuffers.reserve(mSecondaryCommandBuffers.size());
-    std::transform(mSecondaryCommandBuffers[mFrameIndex].begin(), mSecondaryCommandBuffers[mFrameIndex].end(),
-                   rawCommandBuffers.begin(), [](auto &secondary) { return secondary.get(); });
+    for (auto &secondary : mSecondaryCommandBuffers[mFrameIndex])
+    {
+        rawCommandBuffers.push_back(secondary.get());
+    }
     mGraphicCommandBuffers[mFrameIndex]->executeCommands(rawCommandBuffers);
 }
 void RenderSystem::Present()

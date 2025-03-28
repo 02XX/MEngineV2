@@ -73,18 +73,18 @@ std::shared_ptr<Mesh> BasicGeometryManager::CreateCube()
         {{-0.5f, -0.5f, 0.5f}, {0.0f, -1.0f, 0.0f}, {0.0f, 1.0f}},  // 23
     };
     // 索引数据（每个面2个三角形，共36个索引）
-    const std::vector<uint32_t> indices = {// 前面
-                                           0, 1, 2, 2, 3, 0,
-                                           // 后面
-                                           4, 5, 6, 6, 7, 4,
-                                           // 左面
-                                           8, 9, 10, 10, 11, 8,
-                                           // 右面
-                                           12, 13, 14, 14, 15, 12,
-                                           // 顶面
-                                           16, 17, 18, 18, 19, 16,
-                                           // 底面
-                                           20, 21, 22, 22, 23, 20};
+    const std::vector<uint32_t> indices = {// 前面 (Z+) 逆时针：0→1→2→3
+                                           0, 1, 2, 0, 2, 3,
+                                           // 后面 (Z-) 逆时针：4→5→6→7
+                                           4, 5, 6, 4, 6, 7,
+                                           // 左面 (X-) 逆时针：8→9→10→11
+                                           8, 9, 10, 8, 10, 11,
+                                           // 右面 (X+) 逆时针：12→13→14→15
+                                           12, 13, 14, 12, 14, 15,
+                                           // 顶面 (Y+) 逆时针：16→17→18→19
+                                           16, 17, 18, 16, 18, 19,
+                                           // 底面 (Y-) 逆时针：20→21→22→23
+                                           20, 21, 22, 20, 22, 23};
     return std::make_shared<Mesh>(vertices, indices);
 }
 std::shared_ptr<Mesh> BasicGeometryManager::CreateCylinder()
@@ -121,17 +121,19 @@ std::shared_ptr<Mesh> BasicGeometryManager::CreateCylinder()
     // 生成索引
     for (int i = 0; i < segments; ++i)
     {
-        // 顶部圆面
-        indices.insert(indices.end(), {0u, static_cast<uint32_t>(2 + 2 * i), static_cast<uint32_t>(2 + 2 * (i + 1))});
-        // 底部圆面
-        indices.insert(indices.end(), {1u, static_cast<uint32_t>(3 + 2 * (i + 1)), static_cast<uint32_t>(3 + 2 * i)});
-        // 侧面
+        // 顶部圆面（从外向内看为逆时针）
+        indices.insert(indices.end(), {0u, static_cast<uint32_t>(2 + 2 * (i + 1)), static_cast<uint32_t>(2 + 2 * i)});
+
+        // 底部圆面（从外向内看为逆时针）
+        indices.insert(indices.end(), {1u, static_cast<uint32_t>(3 + 2 * i), static_cast<uint32_t>(3 + 2 * (i + 1))});
+
+        // 侧面（外表面逆时针）
         uint32_t top = 4 + 2 * i;
         uint32_t nextTop = 4 + 2 * (i + 1);
         uint32_t bottom = 5 + 2 * i;
         uint32_t nextBottom = 5 + 2 * (i + 1);
-        indices.insert(indices.end(), {top, nextTop, bottom});
-        indices.insert(indices.end(), {bottom, nextTop, nextBottom});
+        indices.insert(indices.end(), {top, bottom, nextTop});
+        indices.insert(indices.end(), {nextTop, bottom, nextBottom});
     }
     return std::make_shared<Mesh>(vertices, indices);
 }
@@ -171,8 +173,9 @@ std::shared_ptr<Mesh> BasicGeometryManager::CreateSphere()
             uint32_t current = y * (segments + 1) + x;
             uint32_t next = current + segments + 1;
 
-            indices.insert(indices.end(), {current, next, current + 1});
-            indices.insert(indices.end(), {current + 1, next, next + 1});
+            // 逆时针顺序
+            indices.insert(indices.end(), {current, current + 1, next});
+            indices.insert(indices.end(), {current + 1, next + 1, next});
         }
     }
     return std::make_shared<Mesh>(vertices, indices);
@@ -186,7 +189,7 @@ std::shared_ptr<Mesh> BasicGeometryManager::CreateQuad()
         {{-0.5f, 0.0f, 0.5f}, {0, 1, 0}, {0, 1}},  // 3
     };
 
-    const std::vector<uint32_t> indices = {0, 1, 2, 2, 3, 0};
+    const std::vector<uint32_t> indices = {0, 2, 1, 0, 3, 2};
 
     return std::make_shared<Mesh>(vertices, indices);
 }

@@ -51,12 +51,14 @@ class RenderSystem
     std::vector<vk::UniqueFramebuffer> mFrameBuffers;
     std::vector<UniqueImage> mDepthStencilImages;
     std::vector<vk::UniqueImageView> mDepthStencilImageViews;
-    std::vector<std::vector<vk::UniqueCommandBuffer>> mSecondaryCommandBuffers;
 
-    std::vector<UniqueCommandBuffer> mGraphicCommandBuffers;
     // pipeline and layout
     std::unordered_map<PipelineType, UniquePipeline> mPipelines;
     std::unordered_map<PipelineType, UniquePipelineLayout> mPipelineLayouts;
+
+    std::vector<std::vector<vk::UniqueCommandBuffer>> mSecondaryCommandBuffers;
+
+    std::vector<UniqueCommandBuffer> mGraphicCommandBuffers;
 
     void InitialPipeline();
     void CreateForwardOpaquePipeline();
@@ -66,6 +68,7 @@ class RenderSystem
 
   public:
     RenderSystem(std::shared_ptr<entt::registry> registry);
+    ~RenderSystem();
     void CollectRenderEntities();
     void Tick();
     void Prepare();

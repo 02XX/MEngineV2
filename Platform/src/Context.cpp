@@ -9,6 +9,7 @@ Context &Context::Instance()
 }
 Context::~Context()
 {
+    mDevice->waitIdle();
     Quit();
     LogD("Context Destroyed");
 }
