@@ -33,15 +33,14 @@ Application::Application()
             }
             return vk::SurfaceKHR(surface);
         },
-        requiredExtensions, {});
+        requiredExtensions);
 
-    mCurrScene = std::make_shared<DefaultScene>();
-    mCurrScene->OnCreate();
+    // mCurrScene = std::make_shared<DefaultScene>();
+    // mCurrScene->OnCreate();
 }
 Application::~Application()
 {
-    auto &context = Context::Instance();
-    mCurrScene->OnDestroy();
+    // mCurrScene->OnDestroy();
     SDL_DestroyWindow(mWindow);
     SDL_Quit();
     std::cout << "Application Closed" << std::endl;
@@ -58,10 +57,10 @@ void Application::Run()
             {
                 mIsRunning = false;
             }
-            mCurrScene->HandleEvent(event);
-            mCurrScene->Update();
-            mCurrScene->LateUpdate();
-            mCurrScene->Draw();
+            // mCurrScene->HandleEvent(event);
+            // mCurrScene->Update();
+            // mCurrScene->LateUpdate();
+            // mCurrScene->Draw();
         }
     }
 }

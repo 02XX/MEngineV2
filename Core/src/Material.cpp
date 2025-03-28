@@ -2,13 +2,9 @@
 
 namespace MEngine
 {
-Material::Material(PipelineType type, vk::Pipeline pipeline, vk::DescriptorSet descriptorSet)
-    : mPipeline(pipeline), mDescriptorSet(descriptorSet), mPipelineType(type)
+Material::Material(PipelineType type, vk::DescriptorSet descriptorSet)
+    : mDescriptorSet(descriptorSet), mPipelineType(type)
 {
-}
-vk::Pipeline Material::GetPipeline() const
-{
-    return mPipeline;
 }
 vk::DescriptorSet Material::GetDescriptorSet() const
 {

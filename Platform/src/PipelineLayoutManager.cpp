@@ -23,10 +23,10 @@ UniquePipelineLayout PipelineLayoutManager::CreateUniquePipelineLayout(
     descriptorSetLayoutCreateInfo.setBindings(descriptorSetLayoutBindings);
 
     vk::UniqueDescriptorSetLayout descriptorSetLayout =
-        context.GetDevice()->createDescriptorSetLayoutUnique(descriptorSetLayoutCreateInfo);
+        context.GetDevice().createDescriptorSetLayoutUnique(descriptorSetLayoutCreateInfo);
 
     pipelineLayoutCreateInfo.setSetLayouts(descriptorSetLayout.get()).setPushConstantRanges(pushConstants);
-    auto pipelineLayout = context.GetDevice()->createPipelineLayoutUnique(pipelineLayoutCreateInfo);
+    auto pipelineLayout = context.GetDevice().createPipelineLayoutUnique(pipelineLayoutCreateInfo);
     LogI("Graphic Pipeline Layout Created.");
     return std::move(pipelineLayout);
 }

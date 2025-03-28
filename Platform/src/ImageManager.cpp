@@ -158,7 +158,7 @@ void ImageManager::CopyBufferToImage(vk::Buffer srcBuffer, vk::Image dstImage, v
     vk::SubmitInfo submitInfo;
     submitInfo.setCommandBuffers(commandBuffer.get());
     context.SubmitToTransferQueue({submitInfo}, fence);
-    auto result = context.GetDevice()->waitForFences(fence.get(), vk::True, 1'000'000'000);
+    auto result = context.GetDevice().waitForFences(fence.get(), vk::True, 1'000'000'000);
     if (result != vk::Result::eSuccess)
     {
         LogE("Copy image operation failed");
@@ -200,7 +200,7 @@ void ImageManager::TransitionLayout(vk::Image image, vk::ImageLayout oldLayout, 
     vk::SubmitInfo submitInfo;
     submitInfo.setCommandBuffers(commandBuffer.get());
     context.SubmitToTransferQueue({submitInfo}, fence);
-    auto result = context.GetDevice()->waitForFences(fence.get(), vk::True, 1'000'000'000);
+    auto result = context.GetDevice().waitForFences(fence.get(), vk::True, 1'000'000'000);
     if (result != vk::Result::eSuccess)
     {
         LogE("Transition layout operation failed");
@@ -288,7 +288,7 @@ vk::UniqueImageView ImageManager::CreateImageView(vk::Image image, vk::Format fo
         .setFormat(format)
         .setComponents(components)
         .setSubresourceRange(subresourceRange);
-    auto imageView = context.GetDevice()->createImageViewUnique(imageViewCreateInfo);
+    auto imageView = context.GetDevice().createImageViewUnique(imageViewCreateInfo);
     LogD("Image view created");
     return imageView;
 }

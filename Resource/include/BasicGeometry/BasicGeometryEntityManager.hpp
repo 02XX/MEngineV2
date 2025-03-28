@@ -4,10 +4,9 @@
 #include "Componet/TransformComponent.hpp"
 #include "Logger.hpp"
 #include "MEngine.hpp"
+#include "MaterialManager.hpp"
 #include "NoCopyable.hpp"
 #include "entt/entt.hpp"
-#include <memory>
-
 
 namespace MEngine
 {
@@ -16,9 +15,10 @@ class MENGINE_API BasicGeometryEntityManager : public NoCopyable
   private:
     std::shared_ptr<entt::registry> mRegistry;
     std::unique_ptr<BasicGeometryManager> mBasicGeometryManager;
+    std::shared_ptr<MaterialManager> mMaterialManager;
 
   public:
-    BasicGeometryEntityManager() = default;
+    BasicGeometryEntityManager(std::shared_ptr<entt::registry> registry);
     entt::entity CreateCube();
     entt::entity CreateCylinder();
     entt::entity CreateSphere();

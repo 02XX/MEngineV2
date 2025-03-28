@@ -26,7 +26,7 @@ vk::UniqueDescriptorPool &DescriptorManager::AcquireAllocatablePool()
     descriptorPoolCreateInfo
         .setPoolSizes(descriptorPoolSize) // 设置池中各类描述符的数量
         .setMaxSets(mMaxDescriptorSize);  // 设置池最多可分配的 Descriptor Set 数量
-    auto descriptorPool = context.GetDevice()->createDescriptorPoolUnique(descriptorPoolCreateInfo);
+    auto descriptorPool = context.GetDevice().createDescriptorPoolUnique(descriptorPoolCreateInfo);
     mAllocatablePools.push_back(std::move(descriptorPool));
     return mAllocatablePools.back();
 }
@@ -41,7 +41,7 @@ std::vector<UniqueDescriptorSet> DescriptorManager::AllocateUniqueDescriptorSet(
         .setSetLayouts(descriptorSetLayouts);
     try
     {
-        auto result = context.GetDevice()->allocateDescriptorSetsUnique(descriptorSetAllocateInfo);
+        auto result = context.GetDevice().allocateDescriptorSetsUnique(descriptorSetAllocateInfo);
         return std::move(result);
     }
     catch (vk::OutOfPoolMemoryError &)
@@ -83,7 +83,7 @@ void DescriptorManager::ResetDescriptorPool()
     auto &context = Context::Instance();
     for (auto &exhaustedPool : mExhaustedPools)
     {
-        context.GetDevice()->resetDescriptorPool(exhaustedPool.get());
+        context.GetDevice().resetDescriptorPool(exhaustedPool.get());
         mAllocatablePools.push_back(std::move(exhaustedPool));
     }
     mExhaustedPools.clear();
@@ -111,7 +111,7 @@ void DescriptorManager::UpdateUniformDescriptorSet(const std::vector<Buffer> uni
         .setDstArrayElement(0)
         .setDstBinding(binding)
         .setDstSet(dstSet);
-    context.GetDevice()->updateDescriptorSets({writer}, {});
+    context.GetDevice().updateDescriptorSets({writer}, {});
     LogD("Uniform descriptor set updated");
 }
 
@@ -136,7 +136,7 @@ void DescriptorManager::UpdateCombinedSamplerImageDescriptorSet(const std::vecto
         .setDstArrayElement(0)
         .setDstBinding(binding)
         .setDstSet(dstSet);
-    context.GetDevice()->updateDescriptorSets({writer}, {});
+    context.GetDevice().updateDescriptorSets({writer}, {});
     LogD("Combined sampler image descriptor set updated");
 }
 

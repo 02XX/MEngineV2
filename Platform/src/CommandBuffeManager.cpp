@@ -8,7 +8,7 @@ CommandBufferManager::CommandBufferManager(uint32_t queueFamilyIndex) : mQueueFa
     vk::CommandPoolCreateInfo commandPoolCreateInfo;
     commandPoolCreateInfo.setQueueFamilyIndex(queueFamilyIndex)
         .setFlags(vk::CommandPoolCreateFlagBits::eResetCommandBuffer);
-    mCommandPool = context.GetDevice()->createCommandPoolUnique(commandPoolCreateInfo);
+    mCommandPool = context.GetDevice().createCommandPoolUnique(commandPoolCreateInfo);
 }
 
 vk::UniqueCommandBuffer CommandBufferManager::CreatePrimaryCommandBuffer()
@@ -28,7 +28,7 @@ std::vector<vk::UniqueCommandBuffer> CommandBufferManager::CreatePrimaryCommandB
     commandBufferAllocateInfo.setLevel(vk::CommandBufferLevel::ePrimary)
         .setCommandPool(mCommandPool.get())
         .setCommandBufferCount(count);
-    auto buffers = context.GetDevice()->allocateCommandBuffersUnique(commandBufferAllocateInfo);
+    auto buffers = context.GetDevice().allocateCommandBuffersUnique(commandBufferAllocateInfo);
     LogD("Allocated {} primary command buffers.", std::to_string(count));
     return buffers;
 }
@@ -41,7 +41,7 @@ std::vector<vk::UniqueCommandBuffer> CommandBufferManager::CreateSecondaryComman
         .setCommandPool(mCommandPool.get())
         .setCommandBufferCount(count);
 
-    auto buffers = context.GetDevice()->allocateCommandBuffersUnique(commandBufferAllocateInfo);
+    auto buffers = context.GetDevice().allocateCommandBuffersUnique(commandBufferAllocateInfo);
     LogD("Allocated {} primary command buffers.", std::to_string(count));
     return buffers;
 }

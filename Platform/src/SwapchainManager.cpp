@@ -34,13 +34,9 @@ SwapchainManager::SwapchainManager(vk::Extent2D extent, vk::SurfaceKHR surface, 
         swapchainCreateInfo.setImageSharingMode(vk::SharingMode::eConcurrent)
             .setQueueFamilyIndices(queueFamilyIndicesArray);
     }
-    mSwapchain = context.GetDevice()->createSwapchainKHRUnique(swapchainCreateInfo);
+    mSwapchain = context.GetDevice().createSwapchainKHRUnique(swapchainCreateInfo);
     LogD("Swapchain Created.");
-}
-
-SwapchainManager::~SwapchainManager()
-{
-    
+    CreateSwapchainImageViews();
 }
 
 void SwapchainManager::CreateSwapchainImageViews()
@@ -59,7 +55,7 @@ void SwapchainManager::CreateSwapchainImageViews()
             .setComponents({vk::ComponentSwizzle::eIdentity, vk::ComponentSwizzle::eIdentity,
                             vk::ComponentSwizzle::eIdentity, vk::ComponentSwizzle::eIdentity})
             .setSubresourceRange({vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1});
-        auto imageView = context.GetDevice()->createImageViewUnique(imageViewCreateInfo);
+        auto imageView = context.GetDevice().createImageViewUnique(imageViewCreateInfo);
         imageViews.push_back(std::move(imageView));
     }
     mSwapchainImageViews = std::move(imageViews);
@@ -69,7 +65,7 @@ void SwapchainManager::CreateSwapchainImageViews()
 std::vector<vk::Image> SwapchainManager::GetSwapchainImages() const
 {
     auto &context = Context::Instance();
-    return context.GetDevice()->getSwapchainImagesKHR(mSwapchain.get());
+    return context.GetDevice().getSwapchainImagesKHR(mSwapchain.get());
 }
 
 vk::SwapchainKHR SwapchainManager::GetSwapchain() const

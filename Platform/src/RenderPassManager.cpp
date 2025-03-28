@@ -27,7 +27,7 @@ vk::UniqueRenderPass RenderPassManager::CreateRenderPass(const RenderPassConfigI
         .setAttachments(config.attachments)
         .setDependencies(config.dependencies);
 
-    auto renderPass = context.GetDevice()->createRenderPassUnique(renderPassCreateInfo);
+    auto renderPass = context.GetDevice().createRenderPassUnique(renderPassCreateInfo);
     LogI("Render Pass Created.");
     return renderPass;
 }
@@ -73,7 +73,8 @@ vk::UniqueRenderPass RenderPassManager::CreateSimpleRenderPass(vk::Format colorF
                                .setSrcSubpass(vk::SubpassExternal)
                                .setDstSubpass(0)
                                .setSrcStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
-                               .setDstStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
+                               .setDstStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput |
+                                                vk::PipelineStageFlagBits::eLateFragmentTests)
                                .setSrcAccessMask(vk::AccessFlagBits::eNone)
                                .setDstAccessMask(vk::AccessFlagBits::eColorAttachmentWrite |
                                                  vk::AccessFlagBits::eDepthStencilAttachmentWrite)};

@@ -46,7 +46,7 @@ class MENGINE_API RenderSystem
     std::vector<vk::UniqueSemaphore> mImageAvailableSemaphores;
     std::vector<vk::UniqueSemaphore> mRenderFinishedSemaphores;
     std::vector<vk::UniqueFence> mInFlightFences;
-    vk::UniqueSwapchainKHR mSwapchain;
+
     uint32_t mImageIndex;
     vk::UniqueRenderPass mRenderPass;
     std::vector<vk::UniqueFramebuffer> mFrameBuffers;

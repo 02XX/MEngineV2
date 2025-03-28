@@ -12,7 +12,7 @@ FrameBufferManager::FrameBufferManager(vk::RenderPass renderPass, vk::Extent2D e
         .setWidth(extent.width)
         .setHeight(extent.height)
         .setLayers(1);
-    mFramebuffer = context.GetDevice()->createFramebufferUnique(framebufferCreateInfo);
+    mFramebuffer = context.GetDevice().createFramebufferUnique(framebufferCreateInfo);
     LogI("Framebuffer Created.");
 }
 

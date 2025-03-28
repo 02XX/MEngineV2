@@ -11,12 +11,10 @@ class MENGINE_API Material
 {
   private:
     PipelineType mPipelineType;
-    vk::Pipeline mPipeline;
     vk::DescriptorSet mDescriptorSet;
 
   public:
-    Material(PipelineType type, vk::Pipeline pipeline, vk::DescriptorSet descriptorSet);
-    vk::Pipeline GetPipeline() const;
+    Material(PipelineType type, vk::DescriptorSet descriptorSet);
     vk::DescriptorSet GetDescriptorSet() const;
     PipelineType GetPipelineType() const;
 };

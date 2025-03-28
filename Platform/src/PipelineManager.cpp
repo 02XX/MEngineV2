@@ -65,6 +65,7 @@ UniquePipeline PipelineManager::CreateUniqueGraphicsPipeline(const GraphicsPipel
     // ========== 8. 颜色混合 ==========
     vk::PipelineColorBlendStateCreateInfo colorBlendInfo;
     colorBlendInfo.setLogicOpEnable(config.logicOpEnable)
+        .setAttachments(config.colorBlendAttachments)
         .setLogicOp(config.logicOp)
         .setBlendConstants(config.blendConstants);
 
@@ -91,7 +92,7 @@ UniquePipeline PipelineManager::CreateUniqueGraphicsPipeline(const GraphicsPipel
         .setSubpass(config.subPass);
 
     // ========== 11. 创建管线 ==========
-    auto result = context.GetDevice()->createGraphicsPipelineUnique(nullptr, // 管线缓存
+    auto result = context.GetDevice().createGraphicsPipelineUnique(nullptr, // 管线缓存
                                                                     pipelineInfo);
     if (result.result != vk::Result::eSuccess)
     {

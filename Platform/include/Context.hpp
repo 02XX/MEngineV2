@@ -71,9 +71,9 @@ class MENGINE_API Context final
               const std::vector<const char *> instanceRequiredLayers = {});
     void Quit();
 
-    inline const vk::UniqueDevice &GetDevice() const
+    inline const vk::Device &GetDevice() const
     {
-        return mDevice;
+        return mDevice.get();
     }
     inline const vk::PhysicalDevice GetPhysicalDevice() const
     {
@@ -91,9 +91,9 @@ class MENGINE_API Context final
     {
         return mSurfaceInfo;
     }
-    inline const vk::UniqueSurfaceKHR &GetSurface() const
+    inline const vk::SurfaceKHR &GetSurface() const
     {
-        return mSurface;
+        return mSurface.get();
     }
     void SubmitToGraphicQueue(std::vector<vk::SubmitInfo> submits, vk::UniqueFence &fence);
     void SubmitToPresnetQueue(vk::PresentInfoKHR presentInfo);

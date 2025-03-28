@@ -1,4 +1,5 @@
 #include "System/RenderSystem.hpp"
+#include "Vertex.hpp"
 
 namespace MEngine
 {
@@ -8,7 +9,7 @@ RenderSystem::RenderSystem(std::shared_ptr<entt::registry> registry) : mRegistry
     auto &context = Context::Instance();
     // manager
     mSwapchainManager = std::make_unique<SwapchainManager>(Context::Instance().GetSurfaceInfo().extent,
-                                                           Context::Instance().GetSurface().get(), nullptr);
+                                                           Context::Instance().GetSurface(), nullptr);
     mCommandBufferManager =
         std::make_unique<CommandBufferManager>(Context::Instance().GetQueueFamilyIndicates().graphicsFamily.value());
     mSyncPrimitiveManager = std::make_unique<SyncPrimitiveManager>();
@@ -23,11 +24,10 @@ RenderSystem::RenderSystem(std::shared_ptr<entt::registry> registry) : mRegistry
     mGraphicCommandBuffers = mCommandBufferManager->CreatePrimaryCommandBuffers(mFrameCount);
     mSecondaryCommandBuffers.reserve(mFrameCount);
     // semaphore
-    mImageAvailableSemaphores.resize(mFrameCount);
     for (size_t i = 0; i < mFrameCount; ++i)
     {
-        mImageAvailableSemaphores[i] = mSyncPrimitiveManager->CreateUniqueSemaphore();
-        mRenderFinishedSemaphores[i] = mSyncPrimitiveManager->CreateUniqueSemaphore();
+        mImageAvailableSemaphores.push_back(mSyncPrimitiveManager->CreateUniqueSemaphore());
+        mRenderFinishedSemaphores.push_back(mSyncPrimitiveManager->CreateUniqueSemaphore());
         mInFlightFences.push_back(mSyncPrimitiveManager->CreateFence(vk::FenceCreateFlagBits::eSignaled));
     }
     // render pass
@@ -37,8 +37,10 @@ RenderSystem::RenderSystem(std::shared_ptr<entt::registry> registry) : mRegistry
     for (size_t i = 0; i < mFrameCount; ++i)
     {
         mDepthStencilImages.push_back(mImageManager->CreateUniqueDepthStencil(context.GetSurfaceInfo().extent));
-        mDepthStencilImageViews.push_back(
-            mImageManager->CreateImageView(mDepthStencilImages[i]->GetImage(), vk::Format::eD32SfloatS8Uint));
+        auto depthStencilImageView = mImageManager->CreateImageView(
+            mDepthStencilImages[i]->GetImage(), vk::Format::eD32SfloatS8Uint, vk::ComponentMapping{},
+            vk::ImageSubresourceRange{vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil, 0, 1, 0, 1});
+        mDepthStencilImageViews.push_back(std::move(depthStencilImageView));
     }
     //  frame buffer
     auto swapchainImageViews = mSwapchainManager->GetSwapchainImageViews();
@@ -52,8 +54,10 @@ RenderSystem::RenderSystem(std::shared_ptr<entt::registry> registry) : mRegistry
             .setWidth(context.GetSurfaceInfo().extent.width)
             .setHeight(context.GetSurfaceInfo().extent.height)
             .setLayers(1);
-        mFrameBuffers.push_back(context.GetDevice()->createFramebufferUnique(framebufferCreateInfo));
+        mFrameBuffers.push_back(context.GetDevice().createFramebufferUnique(framebufferCreateInfo));
     }
+    mShaderManager->LoadShaderModule("forward.vert", "shaders/forward.vert.spv");
+    mShaderManager->LoadShaderModule("forward.frag", "shaders/forward.frag.spv");
     InitialPipeline();
 }
 // Pipeline
@@ -76,19 +80,19 @@ void RenderSystem::CreateForwardOpaquePipeline()
          .stageFlags = vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment},
 
         // Set 1: 材质纹理（每个材质实例独立）
-        {.binding = 0,
+        {.binding = 1,
          .type = vk::DescriptorType::eCombinedImageSampler, // Albedo
          .count = 1,
          .stageFlags = vk::ShaderStageFlagBits::eFragment},
-        {.binding = 1,
+        {.binding = 2,
          .type = vk::DescriptorType::eCombinedImageSampler, // 法线贴图
          .count = 1,
          .stageFlags = vk::ShaderStageFlagBits::eFragment},
-        {.binding = 2,
+        {.binding = 3,
          .type = vk::DescriptorType::eCombinedImageSampler, // 金属/粗糙度
          .count = 1,
          .stageFlags = vk::ShaderStageFlagBits::eFragment},
-        {.binding = 3,
+        {.binding = 4,
          .type = vk::DescriptorType::eCombinedImageSampler, // AO贴图
          .count = 1,
          .stageFlags = vk::ShaderStageFlagBits::eFragment}};
@@ -106,9 +110,10 @@ void RenderSystem::CreateForwardOpaquePipeline()
     config.subPass = 0;
     config.vertexShader = mShaderManager->GetShaderModule("forward.vert");
     config.fragmentShader = mShaderManager->GetShaderModule("forward.frag");
-    config.vertexBindings = {{0, sizeof(Vertex), vk::VertexInputRate::eVertex}};
-    config.vertexAttributes = std::vector<vk::VertexInputAttributeDescription>(
-        Vertex::GetVertexInputAttributeDescription().begin(), Vertex::GetVertexInputAttributeDescription().end());
+    config.vertexBindings = {Vertex::GetVertexInputBindingDescription()};
+    auto vertexInputAttributeDescription = Vertex::GetVertexInputAttributeDescription();
+    config.vertexAttributes = std::vector<vk::VertexInputAttributeDescription>(vertexInputAttributeDescription.begin(),
+                                                                               vertexInputAttributeDescription.end());
     config.topology = vk::PrimitiveTopology::eTriangleList;
     config.polygonMode = vk::PolygonMode::eFill;
     config.lineWidth = 1.0f;
@@ -178,23 +183,23 @@ void RenderSystem::Tick()
 void RenderSystem::Prepare()
 {
     auto &context = Context::Instance();
-    auto result = context.GetDevice()->waitForFences({mInFlightFences[mFrameIndex].get()}, VK_TRUE,
-                                                     1000000000); // 1s
+    auto result = context.GetDevice().waitForFences({mInFlightFences[mFrameIndex].get()}, VK_TRUE,
+                                                    1000000000); // 1s
     if (result != vk::Result::eSuccess)
     {
         throw std::runtime_error("Failed to wait fence");
     }
 
-    context.GetDevice()->resetFences(mInFlightFences[mFrameIndex].get());
+    context.GetDevice().resetFences(mInFlightFences[mFrameIndex].get());
 
     mGraphicCommandBuffers[mFrameIndex]->reset();
 
-    auto resultValue = context.GetDevice()->acquireNextImageKHR(mSwapchain.get(), 1000000000,
-                                                                mImageAvailableSemaphores[mFrameIndex].get(), nullptr);
+    auto resultValue = context.GetDevice().acquireNextImageKHR(mSwapchainManager->GetSwapchain(), 1000000000,
+                                                               mImageAvailableSemaphores[mFrameIndex].get(), nullptr);
     if (resultValue.result == vk::Result::eErrorOutOfDateKHR)
     {
         auto &context = Context::Instance();
-        context.GetDevice()->waitIdle();
+        context.GetDevice().waitIdle();
         // TODO:Recreate
         // ReCreate();
     }
@@ -278,7 +283,8 @@ void RenderSystem::Present()
     context.SubmitToGraphicQueue({submitInfo}, mInFlightFences[mFrameIndex]);
 
     vk::PresentInfoKHR presentInfo;
-    presentInfo.setSwapchains({mSwapchain.get()})
+    auto swapchain = mSwapchainManager->GetSwapchain();
+    presentInfo.setSwapchains(swapchain)
         .setImageIndices({mImageIndex})
         .setWaitSemaphores({mRenderFinishedSemaphores[mFrameIndex].get()});
     try
@@ -287,7 +293,7 @@ void RenderSystem::Present()
     }
     catch (vk::OutOfDateKHRError &)
     {
-        context.GetDevice()->waitIdle();
+        context.GetDevice().waitIdle();
         // ReCreate();
     }
     mFrameIndex = (mFrameIndex + 1) % mFrameCount;

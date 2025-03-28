@@ -16,11 +16,6 @@ class MENGINE_API SwapchainManager final : public NoCopyable
 
   public:
     SwapchainManager(vk::Extent2D extent, vk::SurfaceKHR surface, vk::SwapchainKHR oldSwapchain);
-    SwapchainManager(const SwapchainManager &) = delete;
-    SwapchainManager &operator=(const SwapchainManager &) = delete;
-    SwapchainManager(SwapchainManager &&) = delete;
-    SwapchainManager &operator=(SwapchainManager &&) = delete;
-    ~SwapchainManager();
 
     std::vector<vk::ImageView> GetSwapchainImageViews() const;
     std::vector<vk::Image> GetSwapchainImages() const;

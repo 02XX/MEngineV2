@@ -13,3 +13,5 @@ target_link_libraries(
     EnTT::EnTT
 )
 target_compile_definitions(Resource PRIVATE MENGINE_EXPORT)
+
+add_subdirectory(Shader)

@@ -102,7 +102,7 @@ void BufferManager::CopyBuffer(vk::Buffer srcBuffer, vk::Buffer dstBuffer, vk::D
     submitInfo.setCommandBuffers(commandBuffer.get());
     context.SubmitToTransferQueue({submitInfo}, fence);
 
-    auto result = context.GetDevice()->waitForFences(fence.get(), vk::True, 1'000'000'000);
+    auto result = context.GetDevice().waitForFences(fence.get(), vk::True, 1'000'000'000);
     if (result != vk::Result::eSuccess)
     {
         LogE("Copy buffer operation failed");

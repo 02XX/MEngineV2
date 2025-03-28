@@ -130,6 +130,6 @@ class MENGINE_API ImageManager final : public NoCopyable
      */
     vk::UniqueImageView CreateImageView(vk::Image image, vk::Format format, vk::ComponentMapping components = {},
                                         vk::ImageSubresourceRange subresourceRange = {vk::ImageAspectFlagBits::eColor,
-                                                                                      0, 0, 1});
+                                                                                      0, 1, 0, 1});
 };
 } // namespace MEngine

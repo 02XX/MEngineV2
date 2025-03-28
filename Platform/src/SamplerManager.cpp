@@ -37,7 +37,7 @@ vk::UniqueSampler SamplerManagerManager::CreateUniqueSampler(vk::Filter magFilte
         .setUnnormalizedCoordinates(
             unnormalizedCoordinates); // 是否使用非归一化坐标：设为 VK_TRUE 时，纹理坐标范围为 [0, texWidth]、[0,
                                       // texHeight]、[0, texDepth]，而非 [0, 1]
-    auto sampler = context.GetDevice()->createSamplerUnique(samplerCreateInfo);
+    auto sampler = context.GetDevice().createSamplerUnique(samplerCreateInfo);
     LogD("Sampler created");
     return sampler;
 }
