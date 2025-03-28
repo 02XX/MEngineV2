@@ -14,7 +14,7 @@ Context::~Context()
 }
 void Context::Quit()
 {
-    // vmaDestroyAllocator(mVmaAllocator);
+    vmaDestroyAllocator(mVmaAllocator);
 }
 void Context::Init(std::function<vk::SurfaceKHR(vk::Instance)> createSurface,
                    const std::vector<const char *> instanceRequiredExtensions,

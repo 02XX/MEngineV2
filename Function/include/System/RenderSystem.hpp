@@ -29,7 +29,6 @@ class RenderSystem
     std::shared_ptr<entt::registry> mRegistry;
     std::map<PipelineType, std::vector<entt::entity>> mBatchMaterialComponents;
 
-    std::vector<UniqueCommandBuffer> mGraphicCommandBuffers;
     // std::vector<UniqueCommandBuffer> mPresnetCommandBuffers;
     std::unique_ptr<CommandBufferManager> mCommandBufferManager;
     std::unique_ptr<SyncPrimitiveManager> mSyncPrimitiveManager;
@@ -54,6 +53,7 @@ class RenderSystem
     std::vector<vk::UniqueImageView> mDepthStencilImageViews;
     std::vector<std::vector<vk::UniqueCommandBuffer>> mSecondaryCommandBuffers;
 
+    std::vector<UniqueCommandBuffer> mGraphicCommandBuffers;
     // pipeline and layout
     std::unordered_map<PipelineType, UniquePipeline> mPipelines;
     std::unordered_map<PipelineType, UniquePipelineLayout> mPipelineLayouts;
