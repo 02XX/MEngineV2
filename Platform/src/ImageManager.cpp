@@ -31,7 +31,8 @@ UniqueImage ImageManager::CreateUniqueTexture2D(vk::Extent2D extent, vk::Format 
     if (data)
     {
         const vk::DeviceSize imageSize = extent.width * extent.height * GetFormatPixelSize(format);
-        auto stagingBuffer = mBufferManager->CreateUniqueStagingBuffer(imageSize);
+        auto stagingBuffer = mBufferManager->CreateUniqueStagingBuffer(imageSize, data);
+
         TransitionLayout(image->GetImage(), vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal,
                          {vk::ImageAspectFlagBits::eColor, 0, mipLevels, 0, 1});
         CopyBufferToImage(stagingBuffer->GetBuffer(), image->GetImage(), extent);
@@ -143,10 +144,10 @@ void ImageManager::CopyBufferToImage(vk::Buffer srcBuffer, vk::Image dstImage, v
     //     .setLayerCount(layerCount);        // 拷贝层数
     vk::BufferImageCopy region{};
     region
-        .setBufferOffset(0)                    // 缓冲区的起始字节偏移
-        .setBufferRowLength(0)                 // 缓冲区中每行的像素数（内存布局） 0-和extent一样
-        .setBufferImageHeight(0)               // 缓冲区中每列的像素行数（内存布局） 0-和extent一样
-        .setImageOffset(vk::Offset3D(0, 0, 0)) // 图像起始坐标（x,y,z）
+        .setBufferOffset(0)                      // 缓冲区的起始字节偏移
+        .setBufferRowLength(0)                   // 缓冲区中每行的像素数（内存布局） 0-和extent一样
+        .setBufferImageHeight(0)                 // 缓冲区中每列的像素行数（内存布局） 0-和extent一样
+        .setImageOffset(vk::Offset3D(0, 0, 0))   // 图像起始坐标（x,y,z）
         .setImageExtent(vk::Extent3D(extent, 1)) // 拷贝的区域尺寸
         .setImageSubresource(imageSubresourceLayers);
     vk::CommandBufferBeginInfo beginInfo;
@@ -213,7 +214,7 @@ uint32_t ImageManager::GetFormatPixelSize(vk::Format format) const
 {
     switch (format)
     {
-    case vk::Format::eR8G8B8A8Unorm:
+    case vk::Format::eR8G8B8A8Srgb:
         return 4;
     case vk::Format::eR32G32B32A32Sfloat:
         return 16;

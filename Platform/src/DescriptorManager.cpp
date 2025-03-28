@@ -115,15 +115,18 @@ void DescriptorManager::UpdateUniformDescriptorSet(const std::vector<Buffer> uni
     LogD("Uniform descriptor set updated");
 }
 
-void DescriptorManager::UpdateCombinedSamplerImageDescriptorSet(const std::vector<ImageDescriptor> &imageDescriptors,
+void DescriptorManager::UpdateCombinedSamplerImageDescriptorSet(std::vector<ImageDescriptor> imageDescriptors,
                                                                 uint32_t binding, vk::DescriptorSet dstSet)
 {
+    LogI("Updating descriptor set: handle={}", static_cast<void *>(dstSet));
     auto &context = Context::Instance();
     vk::WriteDescriptorSet writer;
     std::vector<vk::DescriptorImageInfo> descriptorImageInfos;
     descriptorImageInfos.reserve(imageDescriptors.size());
     for (auto &imageDescriptor : imageDescriptors)
     {
+        LogI("ImageView Handle: {}", static_cast<void *>(imageDescriptor.imageView));
+        LogI("Sampler Handle: {}", static_cast<void *>(imageDescriptor.sampler));
         vk::DescriptorImageInfo descriptorImageInfo;
         descriptorImageInfo.setSampler(imageDescriptor.sampler)
             .setImageView(imageDescriptor.imageView)

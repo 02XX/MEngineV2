@@ -78,29 +78,23 @@ void RenderSystem::CreateForwardOpaquePipeline()
     auto &context = Context::Instance();
     // 定义PBR材质所需的描述符绑定
     std::vector<DescriptorBindingInfo> pbrBindings = {
-        // Set 0: 场景级Uniform数据（每帧更新）
-        {.binding = 0,
-         .type = vk::DescriptorType::eUniformBuffer,
-         .count = 1,
-         .stageFlags = vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment},
-
-        // Set 1: 材质纹理（每个材质实例独立）
+        // Set 0: 材质纹理（每个材质实例独立）
         {.binding = 1,
          .type = vk::DescriptorType::eCombinedImageSampler, // Albedo
          .count = 1,
-         .stageFlags = vk::ShaderStageFlagBits::eFragment},
-        {.binding = 2,
-         .type = vk::DescriptorType::eCombinedImageSampler, // 法线贴图
-         .count = 1,
-         .stageFlags = vk::ShaderStageFlagBits::eFragment},
-        {.binding = 3,
-         .type = vk::DescriptorType::eCombinedImageSampler, // 金属/粗糙度
-         .count = 1,
-         .stageFlags = vk::ShaderStageFlagBits::eFragment},
-        {.binding = 4,
-         .type = vk::DescriptorType::eCombinedImageSampler, // AO贴图
-         .count = 1,
-         .stageFlags = vk::ShaderStageFlagBits::eFragment}};
+         .stageFlags = vk::ShaderStageFlagBits::eFragment | vk::ShaderStageFlagBits::eVertex}};
+    //   {.binding = 1,
+    //    .type = vk::DescriptorType::eCombinedImageSampler, // 法线贴图
+    //    .count = 1,
+    //    .stageFlags = vk::ShaderStageFlagBits::eFragment},
+    //   {.binding = 2,
+    //    .type = vk::DescriptorType::eCombinedImageSampler, // 金属/粗糙度
+    //    .count = 1,
+    //    .stageFlags = vk::ShaderStageFlagBits::eFragment},
+    //   {.binding = 3,
+    //    .type = vk::DescriptorType::eCombinedImageSampler, // AO贴图
+    //    .count = 1,
+    //    .stageFlags = vk::ShaderStageFlagBits::eFragment}};
 
     // Push Constant用于传递模型矩阵
     std::vector<vk::PushConstantRange> pushConstants = {vk::PushConstantRange()
@@ -264,6 +258,8 @@ void RenderSystem::RenderForwardPass()
 
                 secondary->bindVertexBuffers(0, vertexBuffer, {0});
                 secondary->bindIndexBuffer(indexBuffer, 0, vk::IndexType::eUint32);
+                secondary->bindDescriptorSets(vk::PipelineBindPoint::eGraphics, mPipelineLayouts[type].get(), 0,
+                                              {material.material->GetDescriptorSet()}, {});
                 secondary->drawIndexed(indexCount, 1, 0, 0, 0);
             }
             secondary->end();

@@ -54,7 +54,7 @@ class DescriptorManager final : public NoCopyable
     }
     void UpdateUniformDescriptorSet(const std::vector<Buffer> uniformBuffers, uint32_t binding,
                                     vk::DescriptorSet dstSet);
-    void UpdateCombinedSamplerImageDescriptorSet(const std::vector<ImageDescriptor> &imageDescriptors, uint32_t binding,
+    void UpdateCombinedSamplerImageDescriptorSet(std::vector<ImageDescriptor> imageDescriptors, uint32_t binding,
                                                  vk::DescriptorSet dstSet);
 };
 
