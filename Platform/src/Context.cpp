@@ -209,27 +209,17 @@ void Context::CreateDevice()
 
     std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos;
 
-    vk::DeviceQueueCreateInfo graphicQueueCreateInfo;
-    vk::DeviceQueueCreateInfo presentQueueCreateInfo;
-    vk::DeviceQueueCreateInfo transferQueueCreateInfo;
-    const float graphicQueuePriority = 1.0f;
-    const float presentQueuePriority = 1.0f;
-    const float transferQueuePriority = 1.0f;
-    // Graphics Queue
-    graphicQueueCreateInfo.setQueueFamilyIndex(mQueueFamilyIndicates.graphicsFamily.value())
-        .setQueueCount(1)
-        .setPQueuePriorities(&graphicQueuePriority);
-    queueCreateInfos.push_back(graphicQueueCreateInfo);
+    std::set<uint32_t> uniqueQueueFamilies = {mQueueFamilyIndicates.graphicsFamily.value(),
+                                              mQueueFamilyIndicates.presentFamily.value(),
+                                              mQueueFamilyIndicates.transferFamily.value()};
+    const float queuePriority = 1.0f;
 
-    // Present Queue
-    presentQueueCreateInfo.setQueueFamilyIndex(mQueueFamilyIndicates.presentFamily.value())
-        .setQueueCount(1)
-        .setPQueuePriorities(&presentQueuePriority);
-
-    // Transfer Queue
-    transferQueueCreateInfo.setQueueFamilyIndex(mQueueFamilyIndicates.transferFamily.value())
-        .setQueueCount(1)
-        .setPQueuePriorities(&transferQueuePriority);
+    for (uint32_t queueFamily : uniqueQueueFamilies)
+    {
+        vk::DeviceQueueCreateInfo queueCreateInfo;
+        queueCreateInfo.setQueueFamilyIndex(queueFamily).setQueueCount(1).setPQueuePriorities(&queuePriority);
+        queueCreateInfos.push_back(queueCreateInfo);
+    }
 
     vk::DeviceCreateInfo deviceCreateInfo;
     deviceCreateInfo.setQueueCreateInfos(queueCreateInfos)
