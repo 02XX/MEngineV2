@@ -1,4 +1,5 @@
 #include "Logger.hpp"
+#include "spdlog/spdlog.h"
 #include "gtest/gtest.h"
 #include <iostream>
 using namespace MEngine;
@@ -6,6 +7,8 @@ using namespace std;
 
 TEST(LoggerTest, logger_level)
 {
+    SPDLOG_INFO("LoggerTest: logger level test");
+
     Logger::Instance().SetLevel(LogLevel::LOG_TRACE);
     EXPECT_EQ(Logger::Instance().mLogger->level(), spdlog::level::trace);
 

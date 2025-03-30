@@ -1,5 +1,6 @@
 #pragma once
 #include "MEngine.hpp"
+#include "spdlog/common.h"
 #include "spdlog/logger.h"
 #include "spdlog/sinks/rotating_file_sink.h"
 #include "spdlog/sinks/sink.h"
@@ -30,41 +31,48 @@ class Logger
     static Logger &Instance();
     void SetLevel(LogLevel level);
 
-    template <typename... Args> void trace(fmt::format_string<Args...> fmt, Args &&...args)
+    template <typename... Args> void trace(const char *file, int line, fmt::format_string<Args...> fmt, Args &&...args)
     {
-        mLogger->trace(fmt, std::forward<Args>(args)...);
+        mLogger->log(spdlog::source_loc{file, line, SPDLOG_FUNCTION}, spdlog::level::trace, fmt,
+                     std::forward<Args>(args)...);
     }
 
-    template <typename... Args> void debug(fmt::format_string<Args...> fmt, Args &&...args)
+    template <typename... Args> void debug(const char *file, int line, fmt::format_string<Args...> fmt, Args &&...args)
     {
-        mLogger->debug(fmt, std::forward<Args>(args)...);
+        mLogger->log(spdlog::source_loc{file, line, SPDLOG_FUNCTION}, spdlog::level::debug, fmt,
+                     std::forward<Args>(args)...);
     }
 
-    template <typename... Args> void info(fmt::format_string<Args...> fmt, Args &&...args)
+    template <typename... Args> void info(const char *file, int line, fmt::format_string<Args...> fmt, Args &&...args)
     {
-        mLogger->info(fmt, std::forward<Args>(args)...);
+        mLogger->log(spdlog::source_loc{file, line, SPDLOG_FUNCTION}, spdlog::level::info, fmt,
+                     std::forward<Args>(args)...);
     }
 
-    template <typename... Args> void warn(fmt::format_string<Args...> fmt, Args &&...args)
+    template <typename... Args> void warn(const char *file, int line, fmt::format_string<Args...> fmt, Args &&...args)
     {
-        mLogger->warn(fmt, std::forward<Args>(args)...);
+        mLogger->log(spdlog::source_loc{file, line, SPDLOG_FUNCTION}, spdlog::level::warn, fmt,
+                     std::forward<Args>(args)...);
     }
 
-    template <typename... Args> void error(fmt::format_string<Args...> fmt, Args &&...args)
+    template <typename... Args> void error(const char *file, int line, fmt::format_string<Args...> fmt, Args &&...args)
     {
-        mLogger->error(fmt, std::forward<Args>(args)...);
+        mLogger->log(spdlog::source_loc{file, line, SPDLOG_FUNCTION}, spdlog::level::err, fmt,
+                     std::forward<Args>(args)...);
     }
 
-    template <typename... Args> void critical(fmt::format_string<Args...> fmt, Args &&...args)
+    template <typename... Args>
+    void critical(const char *file, int line, fmt::format_string<Args...> fmt, Args &&...args)
     {
-        mLogger->critical(fmt, std::forward<Args>(args)...);
+        mLogger->log(spdlog::source_loc{file, line, SPDLOG_FUNCTION}, spdlog::level::critical, fmt,
+                     std::forward<Args>(args)...);
     }
 };
 
-#define LogT(...) Logger::Instance().trace(__VA_ARGS__)
-#define LogD(...) Logger::Instance().debug(__VA_ARGS__)
-#define LogI(...) Logger::Instance().info(__VA_ARGS__)
-#define LogW(...) Logger::Instance().warn(__VA_ARGS__)
-#define LogE(...) Logger::Instance().error(__VA_ARGS__)
-#define LogC(...) Logger::Instance().critical(__VA_ARGS__)
+#define LogT(...) Logger::Instance().trace(__FILE__, __LINE__, __VA_ARGS__)
+#define LogD(...) Logger::Instance().debug(__FILE__, __LINE__, __VA_ARGS__)
+#define LogI(...) Logger::Instance().info(__FILE__, __LINE__, __VA_ARGS__)
+#define LogW(...) Logger::Instance().warn(__FILE__, __LINE__, __VA_ARGS__)
+#define LogE(...) Logger::Instance().error(__FILE__, __LINE__, __VA_ARGS__)
+#define LogC(...) Logger::Instance().critical(__FILE__, __LINE__, __VA_ARGS__)
 } // namespace MEngine
