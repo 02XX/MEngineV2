@@ -10,8 +10,9 @@
 #include "RenderPassManager.hpp"
 #include "ResourceManager.hpp"
 #include "ShaderManager.hpp"
-#include "SwapchainManager.hpp"
 #include "SyncPrimitiveManager.hpp"
+#include "System.hpp"
+#include "System/UISystem.hpp"
 #include "TaskScheduler.hpp"
 #include "Vertex.hpp"
 #include "entt/entity/fwd.hpp"
@@ -23,22 +24,17 @@
 namespace MEngine
 {
 
-class RenderSystem
+class RenderSystem : public System
 {
   private:
     std::shared_ptr<entt::registry> mRegistry;
     std::map<PipelineType, std::vector<entt::entity>> mBatchMaterialComponents;
 
-    // std::vector<UniqueCommandBuffer> mPresnetCommandBuffers;
-    std::unique_ptr<CommandBufferManager> mCommandBufferManager;
-    std::unique_ptr<SyncPrimitiveManager> mSyncPrimitiveManager;
-    std::unique_ptr<SwapchainManager> mSwapchainManager;
-    std::unique_ptr<RenderPassManager> mRenderPassManager;
-    std::unique_ptr<ImageManager> mImageManager;
-    std::unique_ptr<PipelineLayoutManager> mPipelineLayoutManager;
-    std::unique_ptr<PipelineManager> mPipelineManager;
-    std::shared_ptr<ResourceManager> mResourceManager;
-    std::unique_ptr<ShaderManager> mShaderManager;
+    std::shared_ptr<CommandBufferManager> mCommandBufferManager;
+    std::shared_ptr<SyncPrimitiveManager> mSyncPrimitiveManager;
+    std::shared_ptr<RenderPassManager> mRenderPassManager;
+    std::shared_ptr<PipelineLayoutManager> mPipelineLayoutManager;
+    std::shared_ptr<PipelineManager> mPipelineManager;
 
     int64_t mFrameIndex;
     int64_t mFrameCount;
@@ -47,32 +43,27 @@ class RenderSystem
     std::vector<vk::UniqueFence> mInFlightFences;
 
     uint32_t mImageIndex;
-    vk::UniqueRenderPass mRenderPass;
-    std::vector<vk::UniqueFramebuffer> mFrameBuffers;
-    std::vector<UniqueImage> mDepthStencilImages;
-    std::vector<vk::UniqueImageView> mDepthStencilImageViews;
-
-    // pipeline and layout
-    std::unordered_map<PipelineType, UniquePipeline> mPipelines;
-    std::unordered_map<PipelineType, UniquePipelineLayout> mPipelineLayouts;
-
     std::vector<std::vector<vk::UniqueCommandBuffer>> mSecondaryCommandBuffers;
-
     std::vector<UniqueCommandBuffer> mGraphicCommandBuffers;
-
-    void InitialPipeline();
-    void CreateForwardOpaquePipeline();
-    void CreateDeferredGBufferPipeline();
-    void CreateShadowDepthPipeline();
-    void CreatePostProcessPipeline();
+    void Prepare();
+    void RenderShadowDepthPass();
+    void RenderDefferPass();
+    void RenderTranslucencyPass();
+    void RenderPostProcessPass();
+    void RenderSkyPass();
+    void RenderUIPass();
+    void Present();
 
   public:
-    RenderSystem(std::shared_ptr<entt::registry> registry);
+    RenderSystem(std::shared_ptr<entt::registry> registry, std::shared_ptr<CommandBufferManager> commandBufferManager,
+                 std::shared_ptr<SyncPrimitiveManager> syncPrimitiveManager,
+                 std::shared_ptr<RenderPassManager> renderPassManager,
+                 std::shared_ptr<PipelineLayoutManager> pipelineLayoutManager,
+                 std::shared_ptr<PipelineManager> pipelineManager);
     ~RenderSystem();
     void CollectRenderEntities();
-    void Tick();
-    void Prepare();
-    void RenderForwardPass();
-    void Present();
+    void Init() override;
+    void Tick(float deltaTime) override;
+    void Shutdown() override;
 };
 } // namespace MEngine

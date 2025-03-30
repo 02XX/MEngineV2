@@ -16,5 +16,6 @@ target_link_libraries(
     PUBLIC
     spdlog::spdlog_header_only
     GPUOpen::VulkanMemoryAllocator
+    glm::glm-header-only
 )
 # target_compile_definitions(Platform PRIVATE MENGINE_EXPORT)

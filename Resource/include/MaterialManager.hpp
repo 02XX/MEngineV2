@@ -25,7 +25,7 @@ class MaterialManager : public NoCopyable
     std::shared_ptr<Material> CreateDefaultMaterial();
     std::shared_ptr<Material> CreatePBRMaterial();
     std::unique_ptr<ImageManager> mImageManager;
-    std::unique_ptr<SamplerManagerManager> mSamplerManager;
+    // std::unique_ptr<SamplerManagerManager> mSamplerManager;
 
   public:
     MaterialManager();

@@ -1,4 +1,6 @@
 #include "Application.hpp"
+#include "Context.hpp"
+#include "ShaderManager.hpp"
 
 namespace MEngine
 {
@@ -36,15 +38,39 @@ Application::Application()
         },
         requiredExtensions);
 
-    mCurrScene = std::make_shared<DefaultScene>();
-    mCurrScene->OnCreate();
+    // manager
+    mRegistry = std::make_shared<entt::registry>();
+    mShaderManager = std::make_shared<ShaderManager>();
+    mPipelineLayoutManager = std::make_shared<PipelineLayoutManager>();
+    mImageManager = std::make_shared<ImageManager>();
+    mRenderPassManager = std::make_shared<RenderPassManager>(mImageManager);
+    mPipelineManager = std::make_shared<PipelineManager>(mShaderManager, mPipelineLayoutManager, mRenderPassManager);
+    mCommandBufferManager =
+        std::make_shared<CommandBufferManager>(context.GetQueueFamilyIndicates().graphicsFamily.value());
+    mSyncPrimitiveManager = std::make_shared<SyncPrimitiveManager>();
+    mDescriptorManager = std::make_shared<DescriptorManager>();
+    mSamplerManager = std::make_shared<SamplerManager>();
+    mBufferManager = std::make_shared<BufferManager>();
+    InitSystem();
 }
 Application::~Application()
 {
-    mCurrScene->OnDestroy();
+    // mCurrScene->OnDestroy();
+    ShutdownSystem();
     SDL_DestroyWindow(mWindow);
     SDL_Quit();
+    // Context::Instance().Quit();
     std::cout << "Application Closed" << std::endl;
+}
+void Application::InitSystem()
+{
+    mRenderSystem = std::make_shared<RenderSystem>(mRegistry, mCommandBufferManager, mSyncPrimitiveManager,
+                                                   mRenderPassManager, mPipelineLayoutManager, mPipelineManager);
+    mRenderSystem->Init();
+}
+void Application::ShutdownSystem()
+{
+    mRenderSystem->Shutdown();
 }
 void Application::Run()
 {
@@ -58,10 +84,7 @@ void Application::Run()
             {
                 mIsRunning = false;
             }
-            mCurrScene->HandleEvent(event);
-            mCurrScene->Update();
-            mCurrScene->LateUpdate();
-            mCurrScene->Draw();
+            mRenderSystem->Tick(1.0f);
         }
     }
 }

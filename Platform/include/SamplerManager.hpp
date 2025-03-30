@@ -8,10 +8,10 @@
 namespace MEngine
 {
 using UniqueSampler = vk::UniqueSampler;
-class SamplerManagerManager final : public NoCopyable
+class SamplerManager final : public NoCopyable
 {
   public:
-    SamplerManagerManager() = default;
+    SamplerManager() = default;
     UniqueSampler CreateUniqueSampler(vk::Filter magFilter = vk::Filter::eLinear,
                                       vk::Filter minFilter = vk::Filter::eLinear,
                                       vk::SamplerMipmapMode mipmapMode = vk::SamplerMipmapMode::eLinear,

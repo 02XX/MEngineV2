@@ -1,6 +1,7 @@
 #include "ImageManager.hpp"
 #include "Image.hpp"
 #include "Logger.hpp"
+#include <vulkan/vulkan_enums.hpp>
 #include <vulkan/vulkan_structs.hpp>
 
 namespace MEngine
@@ -25,7 +26,8 @@ UniqueImage ImageManager::CreateUniqueTexture2D(vk::Extent2D extent, vk::Format 
         .setSamples(vk::SampleCountFlagBits::e1)
         .setTiling(vk::ImageTiling::eOptimal)
         .setUsage(vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled |
-                  vk::ImageUsageFlagBits::eTransferSrc)
+                  vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eColorAttachment |
+                  vk::ImageUsageFlagBits::eInputAttachment)
         .setInitialLayout(vk::ImageLayout::eUndefined);
     auto image = std::make_unique<Image>(imageCreateInfo, VMA_MEMORY_USAGE_GPU_ONLY);
     if (data)
@@ -207,7 +209,7 @@ void ImageManager::TransitionLayout(vk::Image image, vk::ImageLayout oldLayout, 
         LogE("Transition layout operation failed");
         throw std::runtime_error("Transition layout operation failed");
     }
-    LogD("Transition layout operation failed");
+    LogD("Transition layout operation success");
 }
 
 uint32_t ImageManager::GetFormatPixelSize(vk::Format format) const
@@ -290,7 +292,6 @@ vk::UniqueImageView ImageManager::CreateImageView(vk::Image image, vk::Format fo
         .setComponents(components)
         .setSubresourceRange(subresourceRange);
     auto imageView = context.GetDevice().createImageViewUnique(imageViewCreateInfo);
-    LogD("Image view created");
     return imageView;
 }
 } // namespace MEngine

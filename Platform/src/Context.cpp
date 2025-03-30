@@ -37,7 +37,8 @@ void Context::Init(std::function<vk::SurfaceKHR(vk::Instance)> createSurface,
     QueryQueueFamilyIndicates();
     CreateDevice();
     GetQueues();
-
+    CreateSwapchain();
+    CreateSwapchainImageViews();
     CreateVmaAllocator();
 }
 
@@ -50,18 +51,18 @@ void Context::CreateInstance()
 
     vk::ApplicationInfo appInfo;
     // query instance max supported version
-    auto instanceVersion = vk::enumerateInstanceVersion();
-    auto variant = vk::apiVersionVariant(instanceVersion);
-    auto major = vk::apiVersionMajor(instanceVersion);
-    auto minor = vk::apiVersionMinor(instanceVersion);
-    auto patch = vk::apiVersionPatch(instanceVersion);
+    mInstanceVersion = vk::enumerateInstanceVersion();
+    auto variant = vk::apiVersionVariant(mInstanceVersion);
+    auto major = vk::apiVersionMajor(mInstanceVersion);
+    auto minor = vk::apiVersionMinor(mInstanceVersion);
+    auto patch = vk::apiVersionPatch(mInstanceVersion);
     // set app info
     auto appVersion = vk::makeApiVersion(0, 0, 0, 1);
     appInfo.setPApplicationName("MEngine")
         .setApplicationVersion(appVersion)
         .setPEngineName({})
         .setEngineVersion({})
-        .setApiVersion(instanceVersion);
+        .setApiVersion(mInstanceVersion);
     instanceCreateInfo.setFlags({})
         .setPApplicationInfo(&appInfo)
         .setPEnabledLayerNames(mVKInstanceEnabledLayers)
@@ -351,5 +352,50 @@ void Context::CreateVmaAllocator()
     vmaCreateAllocator(&allocatorCreateInfo, &mVmaAllocator);
     LogD("VMA Allocator Created");
 }
-
+void Context::CreateSwapchain()
+{
+    vk::SwapchainCreateInfoKHR swapchainCreateInfo;
+    swapchainCreateInfo.setSurface(mSurface.get())
+        .setMinImageCount(mSurfaceInfo.imageCount)
+        .setImageFormat(mSurfaceInfo.format.format)
+        .setImageColorSpace(mSurfaceInfo.format.colorSpace)
+        .setImageExtent(mSurfaceInfo.extent)
+        .setImageArrayLayers(mSurfaceInfo.imageArrayLayer)
+        .setImageUsage(vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransferSrc)
+        .setPreTransform(vk::SurfaceTransformFlagBitsKHR::eIdentity)
+        .setCompositeAlpha(vk::CompositeAlphaFlagBitsKHR::eOpaque)
+        .setPresentMode(mSurfaceInfo.presentMode)
+        .setClipped(true);
+    if (mQueueFamilyIndicates.graphicsFamily == mQueueFamilyIndicates.presentFamily)
+    {
+        swapchainCreateInfo.setImageSharingMode(vk::SharingMode::eExclusive)
+            .setQueueFamilyIndices({mQueueFamilyIndicates.graphicsFamily.value()});
+    }
+    else
+    {
+        std::array<uint32_t, 2> queueFamilyIndicesArray = {mQueueFamilyIndicates.graphicsFamily.value(),
+                                                           mQueueFamilyIndicates.presentFamily.value()};
+        swapchainCreateInfo.setImageSharingMode(vk::SharingMode::eConcurrent)
+            .setQueueFamilyIndices(queueFamilyIndicesArray);
+    }
+    mSwapchain = mDevice->createSwapchainKHRUnique(swapchainCreateInfo);
+    LogD("Swapchain Created");
+}
+void Context::CreateSwapchainImageViews()
+{
+    auto swapchainImages = mDevice->getSwapchainImagesKHR(mSwapchain.get());
+    mSwapchainImageViews.reserve(swapchainImages.size());
+    for (auto &image : swapchainImages)
+    {
+        vk::ImageViewCreateInfo imageViewCreateInfo;
+        imageViewCreateInfo.setImage(image)
+            .setViewType(vk::ImageViewType::e2D)
+            .setFormat(mSurfaceInfo.format.format)
+            .setComponents(vk::ComponentMapping{})
+            .setSubresourceRange(vk::ImageSubresourceRange{vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1});
+        mSwapchainImageViews.push_back(mDevice->createImageViewUnique(imageViewCreateInfo));
+    }
+    LogD("Swapchain Image Views Created");
+    LogT("Swapchain Image Count: {}", mSwapchainImageViews.size());
+}
 } // namespace MEngine

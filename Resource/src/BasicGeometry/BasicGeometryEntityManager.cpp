@@ -14,7 +14,7 @@ entt::entity BasicGeometryEntityManager::CreateCube()
     mRegistry->emplace<TransformComponent>(entity, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f),
                                            glm::vec3(1.0f, 1.0f, 1.0f));
     mRegistry->emplace<MeshComponent>(entity, mesh);
-    auto pbrMaterial = mMaterialManager->GetMaterial(MaterialType::PBR);
+    auto pbrMaterial = mMaterialManager->GetMaterial(MaterialType::Default);
     mRegistry->emplace<MaterialComponent>(entity, pbrMaterial);
 
     return entity;

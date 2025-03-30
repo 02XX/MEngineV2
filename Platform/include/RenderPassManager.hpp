@@ -1,56 +1,84 @@
 #pragma once
 
 #include "Context.hpp"
+#include "Image.hpp"
+#include "ImageManager.hpp"
 #include "Logger.hpp"
 #include "MEngine.hpp"
 #include "NoCopyable.hpp"
+#include <cstdint>
+#include <memory>
+#include <unordered_map>
+#include <vector>
 #include <vulkan/vulkan.hpp>
+#include <vulkan/vulkan_handles.hpp>
 
 namespace MEngine
 {
-struct SubpassConfig
+enum class RenderPassType
 {
-    // 当前子流程的颜色附件引用
-    std::vector<vk::AttachmentReference> colorAttachments;
-
-    // 输入附件引用（从前面子流程读取）
-    std::vector<vk::AttachmentReference> inputAttachments;
-
-    // 解析附件引用（将MSAA结果解析到单采样附件）
-    std::vector<vk::AttachmentReference> resolveAttachments;
-
-    // 需保留的附件索引（不被当前子流程修改）
-    std::vector<uint32_t> preserveAttachments;
-
-    // 深度模板附件引用（可选）
-    std::optional<vk::AttachmentReference> depthStencilAttachment;
-
-    // 其他 Vulkan 子流程参数
-    vk::PipelineBindPoint bindPoint = vk::PipelineBindPoint::eGraphics;
+    Forward,      // 前向渲染
+    Deffer,       // 延迟渲染
+    ShadowDepth,  // 阴影深度图渲染
+    Translucency, // 半透明物体渲染
+    PostProcess,  // 后处理特效
+    Sky,          // 天空盒/大气渲染
+    UI            // 界面渲染
 };
-struct RenderPassConfigInfo
+struct DefferFrameResource
 {
-    // 所有附件描述（全局）
-    std::vector<vk::AttachmentDescription> attachments;
-
-    // 子流程配置数组（每个元素对应一个子流程）
-    std::vector<SubpassConfig> subpasses;
-
-    // 子流程间依赖关系
-    std::vector<vk::SubpassDependency> dependencies;
+    // 1. world space position
+    UniqueImage positionImage;
+    vk::UniqueImageView positionImageView;
+    // 2. normal
+    UniqueImage normalImage;
+    vk::UniqueImageView normalImageView;
+    // 3. albedo
+    UniqueImage albedoImage;
+    vk::UniqueImageView albedoImageView;
+    // 4. metal rough
+    UniqueImage metalRoughImage;
+    vk::UniqueImageView metalRoughImageView;
+    // 5. ao
+    UniqueImage aoImage;
+    vk::UniqueImageView aoImageView;
+    // 6. depth stencil
+    UniqueImage depthStencilImage;
+    vk::UniqueImageView depthStencilImageView;
+    // 7. swapchain image
+    vk::ImageView swapchainImageView;
 };
 class RenderPassManager final : public NoCopyable
 {
+  private:
+    std::shared_ptr<ImageManager> mImageManager;
+
+  private:
+    std::unordered_map<RenderPassType, vk::UniqueRenderPass> mRenderPasses;
+    std::unordered_map<RenderPassType, std::vector<vk::UniqueFramebuffer>> mFrameBuffers;
+    std::vector<DefferFrameResource> mDefferFrameResources;
+
+  private:
+    void CreateGBufferRenderPass();
+    void CreateShadowDepthRenderPass();
+    void CreateLightingRenderPass();
+    void CreateTranslucencyRenderPass();
+    void CreatePostProcessRenderPass();
+    void CreateSkyRenderPass();
+    void CreateUIRenderPass();
+
+    void CreateDefferFrameBuffer();
+    void CreateShadowDepthFrameBuffer();
+    void CreateLightingFrameBuffer();
+    void CreateTranslucencyFrameBuffer();
+    void CreatePostProcessFrameBuffer();
+    void CreateSkyFrameBuffer();
+    void CreateUIFrameBuffer();
+
   public:
-    RenderPassManager() = default;
-    vk::UniqueRenderPass CreateRenderPass(const RenderPassConfigInfo &config);
-    vk::UniqueRenderPass CreateSimpleRenderPass(vk::Format colorFormat,           // 颜色附件格式
-                                                vk::ImageLayout colorFinalLayout, // 颜色最终布局（如ePresentSrcKHR）
-                                                vk::Format depthFormat            // 深度附件格式
-    );
-    vk::UniqueRenderPass CreateMSAARenderPass(vk::Format colorFormat, vk::ImageLayout colorFinalLayout,
-                                              vk::Format resolveFormat, vk::Format depthFormat,
-                                              vk::SampleCountFlagBits samples);
+    RenderPassManager(std::shared_ptr<ImageManager> imageManager);
+    vk::RenderPass GetRenderPass(RenderPassType type) const;
+    vk::Framebuffer GetFrameBuffer(RenderPassType type, uint32_t index) const;
 };
 
 } // namespace MEngine

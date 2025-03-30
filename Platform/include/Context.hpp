@@ -2,13 +2,16 @@
 #include "Logger.hpp"
 #include "MEngine.hpp"
 #include "VMA.hpp"
+#include <cstdint>
 #include <vulkan/vulkan.hpp>
+#include <vulkan/vulkan_handles.hpp>
 
 namespace MEngine
 {
 class Context final
 {
   private:
+    uint32_t mInstanceVersion = 0;
     struct QueueFamilyIndicates
     {
         std::optional<uint32_t> graphicsFamily;
@@ -26,7 +29,6 @@ class Context final
         uint32_t imageCount;
         uint32_t imageArrayLayer;
     } surfaceInfo;
-
     QueueFamilyIndicates mQueueFamilyIndicates;
     SurfaceInfo mSurfaceInfo;
     vk::UniqueInstance mVKInstance;
@@ -37,6 +39,8 @@ class Context final
     vk::Queue mPresentQueue;
     vk::Queue mTransferQueue;
     VmaAllocator mVmaAllocator;
+    vk::UniqueSwapchainKHR mSwapchain;
+    std::vector<vk::UniqueImageView> mSwapchainImageViews;
 
     std::vector<const char *> mVKInstanceEnabledExtensions;
     std::vector<const char *> mVKInstanceEnabledLayers;
@@ -51,7 +55,6 @@ class Context final
     Context &operator=(Context &&) = delete;
     void CreateInstance();
     void QueryQueueFamilyIndicates();
-    void QuerySwapchainInfo(uint32_t width, uint32_t height);
     void GetQueues();
     void PickPhysicalDevice();
     void CreateDevice();
@@ -60,6 +63,8 @@ class Context final
     void CreateSurface(std::function<vk::SurfaceKHR(vk::Instance)> createSurface);
     int RatePhysicalDevices(vk::PhysicalDevice &physicalDevice);
     void CreateVmaAllocator();
+    void CreateSwapchain();
+    void CreateSwapchainImageViews();
 
   public:
     static Context &Instance();
@@ -70,7 +75,10 @@ class Context final
               const std::vector<const char *> deviceRequiredExtensions = {"VK_KHR_swapchain"},
               const std::vector<const char *> deviceRequiredLayers = {});
     void Quit();
-
+    inline uint32_t GetInstanceVersion() const
+    {
+        return mInstanceVersion;
+    }
     inline const vk::Device &GetDevice() const
     {
         return mDevice.get();
@@ -94,6 +102,24 @@ class Context final
     inline const vk::SurfaceKHR &GetSurface() const
     {
         return mSurface.get();
+    }
+    inline const vk::Instance &GetInstance() const
+    {
+        return mVKInstance.get();
+    }
+    inline const vk::SwapchainKHR &GetSwapchain() const
+    {
+        return mSwapchain.get();
+    }
+    inline const std::vector<vk::ImageView> &GetSwapchainImageViews() const
+    {
+        static std::vector<vk::ImageView> swapchainImageViewsRaw;
+        swapchainImageViewsRaw.clear();
+        for (const auto &uniqueImageView : mSwapchainImageViews)
+        {
+            swapchainImageViewsRaw.push_back(uniqueImageView.get());
+        }
+        return swapchainImageViewsRaw;
     }
     void SubmitToGraphicQueue(std::vector<vk::SubmitInfo> submits, vk::UniqueFence &fence);
     void SubmitToPresnetQueue(vk::PresentInfoKHR presentInfo);

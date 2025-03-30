@@ -2,6 +2,7 @@
 #include "IScene.hpp"
 #include "MEngine.hpp"
 #include "System/RenderSystem.hpp"
+#include "System/UISystem.hpp"
 #include "entt/entt.hpp"
 namespace MEngine
 {
@@ -19,7 +20,8 @@ class DefaultScene : public IScene
 
   private:
     std::shared_ptr<entt::registry> mRegistry;
-    std::unique_ptr<RenderSystem> mRenderSystem;
-    std::unique_ptr<BasicGeometryEntityManager> mBasicGeometryEntityManager;
+    // std::unique_ptr<RenderSystem> mRenderSystem;
+    // std::unique_ptr<UISystem> mUISystem;
+    // std::unique_ptr<BasicGeometryEntityManager> mBasicGeometryEntityManager;
 };
 } // namespace MEngine

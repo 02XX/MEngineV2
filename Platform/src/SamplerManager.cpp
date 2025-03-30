@@ -2,13 +2,13 @@
 
 namespace MEngine
 {
-vk::UniqueSampler SamplerManagerManager::CreateUniqueSampler(vk::Filter magFilter, vk::Filter minFilter,
-                                                             vk::SamplerMipmapMode mipmapMode,
-                                                             vk::SamplerAddressMode addressMode, float mipLodBias,
-                                                             vk::Bool32 anisotropyEnable, float maxAnisotropy,
-                                                             vk::Bool32 compareEnable, vk::CompareOp compareOp,
-                                                             float minLod, float maxLod, vk::BorderColor borderColor,
-                                                             vk::Bool32 unnormalizedCoordinates)
+vk::UniqueSampler SamplerManager::CreateUniqueSampler(vk::Filter magFilter, vk::Filter minFilter,
+                                                      vk::SamplerMipmapMode mipmapMode,
+                                                      vk::SamplerAddressMode addressMode, float mipLodBias,
+                                                      vk::Bool32 anisotropyEnable, float maxAnisotropy,
+                                                      vk::Bool32 compareEnable, vk::CompareOp compareOp, float minLod,
+                                                      float maxLod, vk::BorderColor borderColor,
+                                                      vk::Bool32 unnormalizedCoordinates)
 {
     auto &context = Context::Instance();
     vk::SamplerCreateInfo samplerCreateInfo;
@@ -43,13 +43,12 @@ vk::UniqueSampler SamplerManagerManager::CreateUniqueSampler(vk::Filter magFilte
     LogD("Sampler created");
     return sampler;
 }
-SharedSampler SamplerManagerManager::CreateSharedSampler(vk::Filter magFilter, vk::Filter minFilter,
-                                                         vk::SamplerMipmapMode mipmapMode,
-                                                         vk::SamplerAddressMode addressMode, float mipLodBias,
-                                                         vk::Bool32 anisotropyEnable, float maxAnisotropy,
-                                                         vk::Bool32 compareEnable, vk::CompareOp compareOp,
-                                                         float minLod, float maxLod, vk::BorderColor borderColor,
-                                                         vk::Bool32 unnormalizedCoordinates)
+SharedSampler SamplerManager::CreateSharedSampler(vk::Filter magFilter, vk::Filter minFilter,
+                                                  vk::SamplerMipmapMode mipmapMode, vk::SamplerAddressMode addressMode,
+                                                  float mipLodBias, vk::Bool32 anisotropyEnable, float maxAnisotropy,
+                                                  vk::Bool32 compareEnable, vk::CompareOp compareOp, float minLod,
+                                                  float maxLod, vk::BorderColor borderColor,
+                                                  vk::Bool32 unnormalizedCoordinates)
 {
     auto uniqueSampler =
         CreateUniqueSampler(magFilter, minFilter, mipmapMode, addressMode, mipLodBias, anisotropyEnable, maxAnisotropy,

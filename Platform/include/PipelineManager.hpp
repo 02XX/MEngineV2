@@ -3,94 +3,65 @@
 #include "Logger.hpp"
 #include "MEngine.hpp"
 #include "NoCopyable.hpp"
+#include "PipelineLayoutManager.hpp"
+#include "RenderPassManager.hpp"
+#include "ShaderManager.hpp"
 #include "SharedHandle.hpp"
+#include "Vertex.hpp"
+#include <memory>
 #include <vulkan/vulkan.hpp>
 
 namespace MEngine
 {
 enum class PipelineType
 {
-    ForwardOpaque,   // 前向渲染（不透明物体）
-    DeferredGBuffer, // 延迟渲染-GBuffer阶段
-    ShadowDepth,     // 阴影深度渲染
-    PostProcess      // 后处理（可按需扩展）
+    DefferGBuffer,  // 延迟渲染的几何缓冲区生成
+    ShadowDepth,    // 阴影深度图渲染
+    DefferLighting, // 光照计算（直接/间接光）
+    Translucency,   // 半透明物体渲染
+    PostProcess,    // 后处理特效
+    Sky,            // 天空盒/大气渲染
+    UI              // 界面渲染
 };
-struct GraphicsPipelineConfig
-{
-    // ===== 核心必需 =====
-    vk::PipelineLayout pipelineLayout;
-    vk::RenderPass renderPass;
-    uint32_t subPass = 0;
-
-    // ===== 着色器阶段 =====
-    vk::ShaderModule vertexShader;
-    vk::ShaderModule fragmentShader;
-
-    // ===== 顶点输入 =====
-    std::vector<vk::VertexInputBindingDescription> vertexBindings;
-    std::vector<vk::VertexInputAttributeDescription> vertexAttributes;
-
-    // ===== 光栅化 =====
-    vk::PrimitiveTopology topology = vk::PrimitiveTopology::eTriangleList;
-    vk::PolygonMode polygonMode = vk::PolygonMode::eFill;
-    float lineWidth = 1.0f;
-    vk::CullModeFlags cullMode = vk::CullModeFlagBits::eBack;
-    vk::FrontFace frontFace = vk::FrontFace::eCounterClockwise;
-
-    vk::Viewport viewport;
-    vk::Rect2D scissor;
-
-    // ===== 多重采样 =====
-    vk::SampleCountFlagBits rasterizationSamples = vk::SampleCountFlagBits::e1;
-    float minSampleShading = 1.0f;
-    vk::Bool32 sampleShadingEnable = vk::False;
-    vk::Bool32 alphaToCoverageEnable = vk::False;
-    vk::Bool32 alphaToOneEnable = vk::False;
-    std::vector<vk::SampleMask> sampleMasks = {0xFFFFFFFF}; // 默认全采样
-
-    // ===== 颜色混合 =====
-    std::vector<vk::PipelineColorBlendAttachmentState> colorBlendAttachments;
-    vk::Bool32 logicOpEnable = vk::False;
-    vk::LogicOp logicOp = vk::LogicOp::eCopy;
-    std::array<float, 4> blendConstants = {0.0f, 0.0f, 0.0f, 0.0f};
-    // ===== 深度/模板 =====
-    vk::Bool32 depthTestEnable = VK_TRUE;
-    vk::Bool32 depthWriteEnable = VK_TRUE;
-    vk::CompareOp depthCompareOp = vk::CompareOp::eLess;
-
-    // ===== 深度边界测试 =====
-    vk::Bool32 depthBoundsTestEnable = vk::False;
-    float minDepthBounds = 0.0f;
-    float maxDepthBounds = 1.0f;
-
-    // ===== 模板测试 =====
-    vk::Bool32 stencilTestEnable = vk::False;
-    vk::StencilOpState frontStencilOp = vk::StencilOpState()
-                                            .setFailOp(vk::StencilOp::eKeep)
-                                            .setPassOp(vk::StencilOp::eKeep)
-                                            .setDepthFailOp(vk::StencilOp::eKeep)
-                                            .setCompareOp(vk::CompareOp::eNever);
-    vk::StencilOpState backStencilOp = frontStencilOp;
-};
-struct ComputePipelineConfig
-{
-    uint32_t maxThreadsX = 256;
-    uint32_t maxThreadsY = 1;
-    uint32_t maxThreadsZ = 1;
-};
-using UniquePipeline = vk::UniquePipeline;
 class PipelineManager final : public NoCopyable
 {
+  private:
+    std::unordered_map<PipelineType, vk::UniquePipeline> mPipelines;
+    std::shared_ptr<ShaderManager> mShaderManager;
+    std::shared_ptr<PipelineLayoutManager> mPipelineLayoutManager;
+    std::shared_ptr<RenderPassManager> mRenderPassManager;
+
+  private:
+    void CommonSetting();
+    void CreateGBufferPipeline();
+    void CreateShadowDepthPipeline();
+    void CreateLightingPipeline();
+    void CreateTranslucencyPipeline();
+    void CreatePostProcessPipeline();
+    void CreateSkyPipeline();
+    void CreateUIPipeline();
+
+  private:
+    std::vector<vk::VertexInputAttributeDescription> mVertexAttributeDescriptions;
+    vk::VertexInputBindingDescription mVertexBindingDescription;
+    vk::PipelineVertexInputStateCreateInfo mVertexInputInfo;
+    vk::PipelineInputAssemblyStateCreateInfo mInputAssemblyInfo;
+    vk::PipelineViewportStateCreateInfo mViewportInfo;
+
+    vk::PipelineRasterizationStateCreateInfo mRasterizationInfo;
+    vk::Viewport mViewport;
+    vk::Rect2D mScissor;
+
+    vk::PipelineMultisampleStateCreateInfo mMultisampleInfo;
+    vk::PipelineDepthStencilStateCreateInfo mDepthStencilInfo;
+    vk::PipelineColorBlendStateCreateInfo mColorBlendInfo;
+
+    vk::GraphicsPipelineCreateInfo mConfig;
+
   public:
-    PipelineManager() = default;
-    /**
-     * @brief Create a Graphics Pipeline object
-     *
-     * @param config
-     * @return vk::UniquePipeline
-     */
-    UniquePipeline CreateUniqueGraphicsPipeline(const GraphicsPipelineConfig &config);
-    SharedPipeline CreateSharedGraphicsPipeline(const GraphicsPipelineConfig &config);
-    // UniquePipeline CreateComputePipeline(const ComputePipelineConfig &config);
+    PipelineManager(std::shared_ptr<ShaderManager> shaderManager,
+                    std::shared_ptr<PipelineLayoutManager> pipelineLayoutManager,
+                    std::shared_ptr<RenderPassManager> renderPassManager);
+    vk::Pipeline GetPipeline(PipelineType type) const;
 };
 } // namespace MEngine
