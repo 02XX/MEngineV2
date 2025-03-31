@@ -1,9 +1,8 @@
 #include "System/RenderSystem.hpp"
-#include "Logger.hpp"
 namespace MEngine
 {
 
-RenderSystem::RenderSystem(std::shared_ptr<entt::registry> registry,
+RenderSystem::RenderSystem(SDL_Window *window, std::shared_ptr<entt::registry> registry,
                            std::shared_ptr<CommandBufferManager> commandBufferManager,
                            std::shared_ptr<SyncPrimitiveManager> syncPrimitiveManager,
                            std::shared_ptr<RenderPassManager> renderPassManager,
@@ -11,7 +10,7 @@ RenderSystem::RenderSystem(std::shared_ptr<entt::registry> registry,
                            std::shared_ptr<PipelineManager> pipelineManager)
     : mRegistry(registry), mCommandBufferManager(commandBufferManager), mSyncPrimitiveManager(syncPrimitiveManager),
       mRenderPassManager(renderPassManager), mPipelineLayoutManager(pipelineLayoutManager),
-      mPipelineManager(pipelineManager)
+      mPipelineManager(pipelineManager), mWindow(window)
 {
 }
 void RenderSystem::Init()
@@ -29,6 +28,31 @@ void RenderSystem::Init()
         mRenderFinishedSemaphores.push_back(mSyncPrimitiveManager->CreateUniqueSemaphore());
         mInFlightFences.push_back(mSyncPrimitiveManager->CreateFence(vk::FenceCreateFlagBits::eSignaled));
     }
+    // UI
+    //  Initialize ImGui context
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    mIO = &ImGui::GetIO();
+    mIO->ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
+
+    // Initialize ImGui Vulkan Backend
+    ImGui_ImplSDL3_InitForVulkan(mWindow);
+    ImGui_ImplVulkan_InitInfo initInfo{};
+    initInfo.ApiVersion = context.GetInstanceVersion();
+    initInfo.Instance = context.GetInstance();
+    initInfo.PhysicalDevice = context.GetPhysicalDevice();
+    initInfo.Device = context.GetDevice();
+    initInfo.QueueFamily = context.GetQueueFamilyIndicates().graphicsFamily.value();
+    initInfo.Queue = context.GetGraphicQueue();
+    // initInfo.DescriptorPool;
+    initInfo.RenderPass = mRenderPassManager->GetRenderPass(RenderPassType::UI);
+    initInfo.MinImageCount = context.GetSurfaceInfo().imageCount;
+    initInfo.ImageCount = context.GetSurfaceInfo().imageCount;
+    initInfo.MSAASamples = static_cast<VkSampleCountFlagBits>(vk::SampleCountFlagBits::e1);
+    initInfo.DescriptorPoolSize = 1000;
+    // optional
+    initInfo.Subpass = 0;
+    ImGui_ImplVulkan_Init(&initInfo);
     mIsInit = true;
     LogI("RenderSystem Initialized");
 }
@@ -59,15 +83,15 @@ void RenderSystem::CollectRenderEntities()
 
 void RenderSystem::Tick(float deltaTime)
 {
-    CollectRenderEntities();  // Collect same material render entities
-    Prepare();                // Prepare
-    RenderDefferPass();       // Deffer pass
-    RenderShadowDepthPass();  // Shadow pass
-    RenderTranslucencyPass(); // Translucency pass
-    RenderPostProcessPass();  // Post process pass
-    RenderSkyPass();          // Sky pass
-    RenderUIPass();           // UI pass
-    Present();                // Present
+    CollectRenderEntities(); // Collect same material render entities
+    Prepare();               // Prepare
+    // RenderDefferPass();       // Deffer pass
+    // RenderShadowDepthPass();  // Shadow pass
+    // RenderTranslucencyPass(); // Translucency pass
+    // RenderPostProcessPass();  // Post process pass
+    // RenderSkyPass();          // Sky pass
+    RenderUIPass(); // UI pass
+    Present();      // Present
 }
 
 void RenderSystem::Prepare()
@@ -137,6 +161,37 @@ void RenderSystem::RenderSkyPass()
 }
 void RenderSystem::RenderUIPass()
 {
+    // 转换图像布局
+    // vk::ImageMemoryBarrier barrier;
+    // barrier.setSrcAccessMask(vk::AccessFlagBits::eColorAttachmentWrite)
+    //     .setDstAccessMask(vk::AccessFlagBits::eColorAttachmentRead)
+    //     .setOldLayout(vk::ImageLayout::ePresentSrcKHR)
+    //     .setNewLayout(vk::ImageLayout::eColorAttachmentOptimal)
+    //     .setImage(mRenderPassManager->GetUIFrameResource(mImageIndex).swapchainImage)
+    //     .setSubresourceRange(vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1));
+    // mGraphicCommandBuffers[mFrameIndex]->pipelineBarrier(vk::PipelineStageFlagBits::eColorAttachmentOutput,
+    //                                                      vk::PipelineStageFlagBits::eColorAttachmentOutput, {},
+    //                                                      nullptr, nullptr, barrier);
+
+    vk::ClearValue clearValue(std::array<float, 4>{0, 0, 0, 0});
+    vk::RenderPassBeginInfo renderPassBeginInfo;
+    renderPassBeginInfo.setRenderPass(mRenderPassManager->GetRenderPass(RenderPassType::UI))
+        .setFramebuffer(mRenderPassManager->GetFrameBuffer(RenderPassType::UI, mImageIndex))
+        .setRenderArea(vk::Rect2D({0, 0}, Context::Instance().GetSurfaceInfo().extent))
+        .setClearValues(clearValue);
+    mGraphicCommandBuffers[mFrameIndex]->beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);
+    ImGui_ImplVulkan_NewFrame();
+    ImGui_ImplSDL3_NewFrame();
+    ImGui::NewFrame();
+    ImGui::ShowDemoWindow();
+    ImGui::Render();
+    ImDrawData *drawData = ImGui::GetDrawData();
+    bool isMinimized = (drawData->DisplaySize.x <= 0.0f || drawData->DisplaySize.y <= 0.0f);
+    if (!isMinimized)
+    {
+        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), mGraphicCommandBuffers[mFrameIndex].get());
+    }
+    mGraphicCommandBuffers[mFrameIndex]->endRenderPass();
 }
 void RenderSystem::Present()
 {

@@ -36,8 +36,10 @@ void Context::Init(std::function<vk::SurfaceKHR(vk::Instance)> createSurface,
 
     QueryQueueFamilyIndicates();
     CreateDevice();
+
     GetQueues();
     CreateSwapchain();
+    CreateSwapchainImages();
     CreateSwapchainImageViews();
     CreateVmaAllocator();
 }
@@ -69,7 +71,11 @@ void Context::CreateInstance()
         .setPEnabledExtensionNames(mVKInstanceEnabledExtensions);
     LogT("Instance Version: {}.{}.{}.{}", variant, major, minor, patch);
     mVKInstance = vk::createInstanceUnique(instanceCreateInfo);
-
+    if (!mVKInstance)
+    {
+        LogE("Failed to create instance");
+        throw std::runtime_error("Failed to create instance");
+    }
     // log
     for (auto &layer : mVKInstanceEnabledLayers)
     {
@@ -230,7 +236,11 @@ void Context::CreateDevice()
         .setPEnabledFeatures(nullptr);
 
     mDevice = mPhysicalDevice.createDeviceUnique(deviceCreateInfo);
-
+    if (!mDevice)
+    {
+        LogE("Failed to create device");
+        throw std::runtime_error("Failed to create device");
+    }
     // log
     for (auto &layer : mVKDeviceEnabledLayers)
     {
@@ -361,7 +371,7 @@ void Context::CreateSwapchain()
         .setImageColorSpace(mSurfaceInfo.format.colorSpace)
         .setImageExtent(mSurfaceInfo.extent)
         .setImageArrayLayers(mSurfaceInfo.imageArrayLayer)
-        .setImageUsage(vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransferSrc)
+        .setImageUsage(vk::ImageUsageFlagBits::eColorAttachment)
         .setPreTransform(vk::SurfaceTransformFlagBitsKHR::eIdentity)
         .setCompositeAlpha(vk::CompositeAlphaFlagBitsKHR::eOpaque)
         .setPresentMode(mSurfaceInfo.presentMode)
@@ -379,13 +389,28 @@ void Context::CreateSwapchain()
             .setQueueFamilyIndices(queueFamilyIndicesArray);
     }
     mSwapchain = mDevice->createSwapchainKHRUnique(swapchainCreateInfo);
+    if (!mSwapchain)
+    {
+        LogE("Failed to create swapchain");
+        throw std::runtime_error("Failed to create swapchain");
+    }
     LogD("Swapchain Created");
+}
+void Context::CreateSwapchainImages()
+{
+    auto swapchainImages = mDevice->getSwapchainImagesKHR(mSwapchain.get());
+    mSwapchainImages.reserve(swapchainImages.size());
+    for (auto &image : swapchainImages)
+    {
+        mSwapchainImages.push_back(image);
+    }
+    LogD("Swapchain Images Created");
+    LogT("Swapchain Image Count: {}", mSwapchainImages.size());
 }
 void Context::CreateSwapchainImageViews()
 {
-    auto swapchainImages = mDevice->getSwapchainImagesKHR(mSwapchain.get());
-    mSwapchainImageViews.reserve(swapchainImages.size());
-    for (auto &image : swapchainImages)
+    mSwapchainImageViews.reserve(mSwapchainImages.size());
+    for (auto &image : mSwapchainImages)
     {
         vk::ImageViewCreateInfo imageViewCreateInfo;
         imageViewCreateInfo.setImage(image)

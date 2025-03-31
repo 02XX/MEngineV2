@@ -3,6 +3,7 @@
 #include "MEngine.hpp"
 #include "VMA.hpp"
 #include <cstdint>
+#include <vector>
 #include <vulkan/vulkan.hpp>
 #include <vulkan/vulkan_handles.hpp>
 
@@ -41,7 +42,7 @@ class Context final
     VmaAllocator mVmaAllocator;
     vk::UniqueSwapchainKHR mSwapchain;
     std::vector<vk::UniqueImageView> mSwapchainImageViews;
-
+    std::vector<vk::Image> mSwapchainImages;
     std::vector<const char *> mVKInstanceEnabledExtensions;
     std::vector<const char *> mVKInstanceEnabledLayers;
     std::vector<const char *> mVKDeviceEnabledExtensions;
@@ -64,6 +65,7 @@ class Context final
     int RatePhysicalDevices(vk::PhysicalDevice &physicalDevice);
     void CreateVmaAllocator();
     void CreateSwapchain();
+    void CreateSwapchainImages();
     void CreateSwapchainImageViews();
 
   public:
@@ -120,6 +122,22 @@ class Context final
             swapchainImageViewsRaw.push_back(uniqueImageView.get());
         }
         return swapchainImageViewsRaw;
+    }
+    inline const std::vector<vk::Image> &GetSwapchainImages() const
+    {
+        return mSwapchainImages;
+    }
+    inline const vk::Queue &GetGraphicQueue() const
+    {
+        return mGraphicQueue;
+    }
+    inline const vk::Queue &GetPresentQueue() const
+    {
+        return mPresentQueue;
+    }
+    inline const vk::Queue &GetTransferQueue() const
+    {
+        return mTransferQueue;
     }
     void SubmitToGraphicQueue(std::vector<vk::SubmitInfo> submits, vk::UniqueFence &fence);
     void SubmitToPresnetQueue(vk::PresentInfoKHR presentInfo);

@@ -59,12 +59,11 @@ Application::~Application()
     ShutdownSystem();
     SDL_DestroyWindow(mWindow);
     SDL_Quit();
-    // Context::Instance().Quit();
     std::cout << "Application Closed" << std::endl;
 }
 void Application::InitSystem()
 {
-    mRenderSystem = std::make_shared<RenderSystem>(mRegistry, mCommandBufferManager, mSyncPrimitiveManager,
+    mRenderSystem = std::make_shared<RenderSystem>(mWindow, mRegistry, mCommandBufferManager, mSyncPrimitiveManager,
                                                    mRenderPassManager, mPipelineLayoutManager, mPipelineManager);
     mRenderSystem->Init();
 }

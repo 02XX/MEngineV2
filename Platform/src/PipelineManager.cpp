@@ -1,6 +1,7 @@
 #include "PipelineManager.hpp"
 #include "Logger.hpp"
 #include "PipelineLayoutManager.hpp"
+#include <vulkan/vulkan.hpp>
 
 namespace MEngine
 {
@@ -11,7 +12,7 @@ PipelineManager::PipelineManager(std::shared_ptr<ShaderManager> shaderManager,
       mRenderPassManager(renderPassManager)
 {
     // 创建延迟渲染管线
-    CreateGBufferPipeline();
+    // CreateGBufferPipeline();
     // // 创建阴影深度图管线
     // CreateShadowDepthPipeline();
     // // 创建光照管线
@@ -140,11 +141,37 @@ void PipelineManager::CreateGBufferPipeline()
                                                                          .setStage(vk::ShaderStageFlagBits::eFragment)
                                                                          .setModule(fragmentShader)
                                                                          .setPName("main")};
+    std::array<vk::PipelineColorBlendAttachmentState, 5> colorBlendAttachments;
+    // 1.1 位置附件
+    colorBlendAttachments[0].setBlendEnable(vk::False).setColorWriteMask(
+        vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB |
+        vk::ColorComponentFlagBits::eA);
+    // 1.2 法线附件
+    colorBlendAttachments[1].setBlendEnable(vk::False).setColorWriteMask(
+        vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB |
+        vk::ColorComponentFlagBits::eA);
+    // 1.3 Albedo附件
+    colorBlendAttachments[2].setBlendEnable(vk::False).setColorWriteMask(
+        vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB |
+        vk::ColorComponentFlagBits::eA);
+    // 1.4 金属度/粗糙度附件
+    colorBlendAttachments[3].setBlendEnable(vk::False).setColorWriteMask(
+        vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB |
+        vk::ColorComponentFlagBits::eA);
+    // 1.5 环境光遮蔽附件
+    colorBlendAttachments[4].setBlendEnable(vk::False).setColorWriteMask(
+        vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB |
+        vk::ColorComponentFlagBits::eA);
+
+    auto blendConstants = std::array<float, 4>{0.0f, 0.0f, 0.0f, 0.0f}; // 混合常量
+    mColorBlendInfo.setLogicOpEnable(vk::False)
+        .setAttachments(colorBlendAttachments)
+        .setLogicOp(vk::LogicOp::eCopy)
+        .setBlendConstants(blendConstants);
     mConfig.setStages(shaderStages)
         .setLayout(mPipelineLayoutManager->GetPipelineLayout(PipelineLayoutType::DefferLayout))
         .setRenderPass(mRenderPassManager->GetRenderPass(RenderPassType::Deffer))
         .setSubpass(0);
-
     auto pipline = context.GetDevice().createGraphicsPipelineUnique(nullptr, mConfig);
     if (pipline.result != vk::Result::eSuccess)
     {

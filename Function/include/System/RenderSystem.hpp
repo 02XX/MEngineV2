@@ -12,15 +12,16 @@
 #include "ShaderManager.hpp"
 #include "SyncPrimitiveManager.hpp"
 #include "System.hpp"
-#include "System/UISystem.hpp"
 #include "TaskScheduler.hpp"
 #include "Vertex.hpp"
 #include "entt/entity/fwd.hpp"
 #include "entt/entt.hpp"
+#include "imgui.h"
+#include "imgui_impl_sdl3.h"
+#include "imgui_impl_vulkan.h"
 #include <cstdint>
 #include <memory>
 #include <vector>
-
 namespace MEngine
 {
 
@@ -44,7 +45,13 @@ class RenderSystem : public System
 
     uint32_t mImageIndex;
     std::vector<std::vector<vk::UniqueCommandBuffer>> mSecondaryCommandBuffers;
-    std::vector<UniqueCommandBuffer> mGraphicCommandBuffers;
+    std::vector<vk::UniqueCommandBuffer> mGraphicCommandBuffers;
+
+    // UI
+    ImGuiIO *mIO;
+    SDL_Window *mWindow;
+
+  private:
     void Prepare();
     void RenderShadowDepthPass();
     void RenderDefferPass();
@@ -55,7 +62,8 @@ class RenderSystem : public System
     void Present();
 
   public:
-    RenderSystem(std::shared_ptr<entt::registry> registry, std::shared_ptr<CommandBufferManager> commandBufferManager,
+    RenderSystem(SDL_Window *window, std::shared_ptr<entt::registry> registry,
+                 std::shared_ptr<CommandBufferManager> commandBufferManager,
                  std::shared_ptr<SyncPrimitiveManager> syncPrimitiveManager,
                  std::shared_ptr<RenderPassManager> renderPassManager,
                  std::shared_ptr<PipelineLayoutManager> pipelineLayoutManager,

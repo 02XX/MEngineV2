@@ -30,3 +30,130 @@
 [2025-03-18 16:25:24.402] [                    :    ] debug - Queues Getted
 [2025-03-18 16:25:24.402] [                    :    ] debug - VMA Allocator Created
 [2025-03-18 16:25:25.614] [                    :    ] debug - Context Destroyed
+[2025-03-31 09:20:33.577] [         Context.cpp:70  ] trace - Instance Version: 0.1.4.309
+[2025-03-31 09:20:33.667] [         Context.cpp:76  ] trace - Instance enabled layer: VK_LAYER_KHRONOS_validation
+[2025-03-31 09:20:33.667] [         Context.cpp:80  ] trace - Instance enabled extension: VK_KHR_surface
+[2025-03-31 09:20:33.667] [         Context.cpp:80  ] trace - Instance enabled extension: VK_KHR_xlib_surface
+[2025-03-31 09:20:33.667] [         Context.cpp:82  ] debug - Instance Created
+[2025-03-31 09:20:33.668] [         Context.cpp:199 ] debug - Physical Device Selected: NVIDIA GeForce RTX 2080 Ti
+[2025-03-31 09:20:33.669] [         Context.cpp:91  ] debug - Surface Created
+[2025-03-31 09:20:33.675] [         Context.cpp:144 ] trace - Current Surface Info:
+[2025-03-31 09:20:33.675] [         Context.cpp:145 ] trace - Support Image Count: 2~8
+[2025-03-31 09:20:33.675] [         Context.cpp:146 ] trace - Support Array Layer: 1~1
+[2025-03-31 09:20:33.675] [         Context.cpp:147 ] trace - Support Transforms
+[2025-03-31 09:20:33.675] [         Context.cpp:148 ] trace - Support Usage Flags
+[2025-03-31 09:20:33.675] [         Context.cpp:149 ] trace - Support CompositeAlpha { Opaque }
+[2025-03-31 09:20:33.675] [         Context.cpp:151 ] trace - Support Extent: 800x600~800x600
+[2025-03-31 09:20:33.675] [         Context.cpp:154 ] trace - Support Format: B8G8R8A8Unorm
+[2025-03-31 09:20:33.675] [         Context.cpp:154 ] trace - Support Format: B8G8R8A8Srgb
+[2025-03-31 09:20:33.675] [         Context.cpp:158 ] trace - Support Present Mode: Fifo
+[2025-03-31 09:20:33.675] [         Context.cpp:158 ] trace - Support Present Mode: FifoRelaxed
+[2025-03-31 09:20:33.675] [         Context.cpp:158 ] trace - Support Present Mode: Immediate
+[2025-03-31 09:20:33.675] [         Context.cpp:160 ] debug - Current Format: B8G8R8A8Srgb
+[2025-03-31 09:20:33.675] [         Context.cpp:161 ] debug - Current Color Space: SrgbNonlinear
+[2025-03-31 09:20:33.675] [         Context.cpp:162 ] debug - Current Present Mode: Fifo
+[2025-03-31 09:20:33.675] [         Context.cpp:163 ] debug - Current Extent: 800x600
+[2025-03-31 09:20:33.675] [         Context.cpp:164 ] debug - Current Image Count: 2
+[2025-03-31 09:20:33.675] [         Context.cpp:165 ] debug - Current Image Array Layer: 1
+[2025-03-31 09:20:33.675] [         Context.cpp:256 ] trace - Queue Family Index: 0 Supports Graphics. Supports Queue Index:0~15
+[2025-03-31 09:20:33.675] [         Context.cpp:261 ] trace - Queue Family Index: 0 Supports Presentation. Supports Queue Index:0~15
+[2025-03-31 09:20:33.675] [         Context.cpp:267 ] trace - Queue Family Index: 0 Supports Transfer. Supports Queue Index:0~15
+[2025-03-31 09:20:33.852] [         Context.cpp:241 ] trace - Device enabled extension: VK_KHR_swapchain
+[2025-03-31 09:20:33.852] [         Context.cpp:243 ] debug - Device Created
+[2025-03-31 09:20:33.852] [         Context.cpp:284 ] debug - Queues Getted
+[2025-03-31 09:20:33.945] [         Context.cpp:382 ] debug - Swapchain Created
+[2025-03-31 09:20:33.945] [         Context.cpp:398 ] debug - Swapchain Image Views Created
+[2025-03-31 09:20:33.945] [         Context.cpp:399 ] trace - Swapchain Image Count: 2
+[2025-03-31 09:20:33.945] [         Context.cpp:353 ] debug - VMA Allocator Created
+[2025-03-31 09:20:33.956] [PipelineLayoutManager.cpp:81  ] debug - Deffer pipeline layout created successfully
+[2025-03-31 09:20:33.957] [RenderPassManager.cpp:193 ] debug - Deffer render pass created successfully
+[2025-03-31 09:20:33.957] [    ImageManager.cpp:45  ] debug - Created Texture2D with 800x600, format: R32G32B32A32Sfloat
+[2025-03-31 09:20:33.957] [    ImageManager.cpp:45  ] debug - Created Texture2D with 800x600, format: R16G16B16A16Sfloat
+[2025-03-31 09:20:33.959] [    ImageManager.cpp:45  ] debug - Created Texture2D with 800x600, format: R8G8B8A8Unorm
+[2025-03-31 09:20:33.959] [    ImageManager.cpp:45  ] debug - Created Texture2D with 800x600, format: R8G8B8A8Unorm
+[2025-03-31 09:20:33.959] [    ImageManager.cpp:45  ] debug - Created Texture2D with 800x600, format: R8Unorm
+[20[2025-03-31 09:20:46.778] [         Context.cpp:70  ] trace - Instance Version: 0.1.4.309
+[2025-03-31 09:20:46.856] [         Context.cpp:76  ] trace - Instance enabled layer: VK_LAYER_KHRONOS_validation
+[2025-03-31 09:20:46.856] [         Context.cpp:80  ] trace - Instance enabled extension: VK_KHR_surface
+[2025-03-31 09:20:46.856] [         Context.cpp:80  ] trace - Instance enabled extension: VK_KHR_xlib_surface
+[2025-03-31 09:20:46.856] [         Context.cpp:82  ] debug - Instance Created
+[2025-03-31 09:20:46.857] [         Context.cpp:199 ] debug - Physical Device Selected: NVIDIA GeForce RTX 2080 Ti
+[2025-03-31 09:20:46.857] [         Context.cpp:91  ] debug - Surface Created
+[2025-03-31 09:20:46.864] [         Context.cpp:144 ] trace - Current Surface Info:
+[2025-03-31 09:20:46.864] [         Context.cpp:145 ] trace - Support Image Count: 2~8
+[2025-03-31 09:20:46.864] [         Context.cpp:146 ] trace - Support Array Layer: 1~1
+[2025-03-31 09:20:46.864] [         Context.cpp:147 ] trace - Support Transforms
+[2025-03-31 09:20:46.864] [         Context.cpp:148 ] trace - Support Usage Flags
+[2025-03-31 09:20:46.864] [         Context.cpp:149 ] trace - Support CompositeAlpha { Opaque }
+[2025-03-31 09:20:46.864] [         Context.cpp:151 ] trace - Support Extent: 800x600~800x600
+[2025-03-31 09:20:46.864] [         Context.cpp:154 ] trace - Support Format: B8G8R8A8Unorm
+[2025-03-31 09:20:46.864] [         Context.cpp:154 ] trace - Support Format: B8G8R8A8Srgb
+[2025-03-31 09:20:46.864] [         Context.cpp:158 ] trace - Support Present Mode: Fifo
+[2025-03-31 09:20:46.864] [         Context.cpp:158 ] trace - Support Present Mode: FifoRelaxed
+[2025-03-31 09:20:46.864] [         Context.cpp:158 ] trace - Support Present Mode: Immediate
+[2025-03-31 09:20:46.864] [         Context.cpp:160 ] debug - Current Format: B8G8R8A8Srgb
+[2025-03-31 09:20:46.864] [         Context.cpp:161 ] debug - Current Color Space: SrgbNonlinear
+[2025-03-31 09:20:46.864] [         Context.cpp:162 ] debug - Current Present Mode: Fifo
+[2025-03-31 09:20:46.864] [         Context.cpp:163 ] debug - Current Extent: 800x600
+[2025-03-31 09:20:46.864] [         Context.cpp:164 ] debug - Current Image Count: 2
+[2025-03-31 09:20:46.864] [         Context.cpp:165 ] debug - Current Image Array Layer: 1
+[2025-03-31 09:20:46.864] [         Context.cpp:256 ] trace - Queue Family Index: 0 Supports Graphics. Supports Queue Index:0~15
+[2025-03-31 09:20:46.864] [         Context.cpp:261 ] trace - Queue Family Index: 0 Supports Presentation. Supports Queue Index:0~15
+[2025-03-31 09:20:46.864] [         Context.cpp:267 ] trace - Queue Family Index: 0 Supports Transfer. Supports Queue Index:0~15
+[2025-03-31 09:20:47.040] [         Context.cpp:241 ] trace - Device enabled extension: VK_KHR_swapchain
+[2025-03-31 09:20:47.040] [         Context.cpp:243 ] debug - Device Created
+[2025-03-31 09:20:47.040] [         Context.cpp:284 ] debug - Queues Getted
+[2025-03-31 09:20:47.122] [         Context.cpp:382 ] debug - Swapchain Created
+[2025-03-31 09:20:47.122] [         Context.cpp:398 ] debug - Swapchain Image Views Created
+[2025-03-31 09:20:47.122] [         Context.cpp:399 ] trace - Swapchain Image Count: 2
+[2025-03-31 09:20:47.122] [         Context.cpp:353 ] debug - VMA Allocator Created
+[2025-03-31 09:20:47.123] [PipelineLayoutManager.cpp:81  ] debug - Deffer pipeline layout created successfully
+[2025-03-31 09:20:47.123] [RenderPassManager.cpp:193 ] debug - Deffer render pass created successfully
+[2025-03-31 09:20:47.123] [    ImageManager.cpp:45  ] debug - Created Texture2D with 800x600, format: R32G32B32A32Sfloat
+[2025-03-31 09:20:47.123] [    ImageManager.cpp:45  ] debug - Created Texture2D with 800x600, format: R16G16B16A16Sfloat
+[2025-03-31 09:20:47.124] [    ImageManager.cpp:45  ] debug - Created Texture2D with 800x600, format: R8G8B8A8Unorm
+[2025-03-31 09:20:47.124] [    ImageManager.cpp:45  ] debug - Created Texture2D with 800x600, format: R8G8B8A8Unorm
+[2025-03-31 09:20:47.124] [    ImageManager.cpp:45  ] debug - Created Texture2D with 800x600, format: R8Unorm
+[20[2025-03-31 09:21:27.745] [         Context.cpp:70  ] trace - Instance Version: 0.1.4.309
+[2025-03-31 09:21:27.808] [         Context.cpp:76  ] trace - Instance enabled layer: VK_LAYER_KHRONOS_validation
+[2025-03-31 09:21:27.808] [         Context.cpp:80  ] trace - Instance enabled extension: VK_KHR_surface
+[2025-03-31 09:21:27.808] [         Context.cpp:80  ] trace - Instance enabled extension: VK_KHR_xlib_surface
+[2025-03-31 09:21:27.808] [         Context.cpp:82  ] debug - Instance Created
+[2025-03-31 09:21:27.809] [         Context.cpp:199 ] debug - Physical Device Selected: NVIDIA GeForce RTX 2080 Ti
+[2025-03-31 09:21:27.809] [         Context.cpp:91  ] debug - Surface Created
+[2025-03-31 09:21:27.816] [         Context.cpp:144 ] trace - Current Surface Info:
+[2025-03-31 09:21:27.816] [         Context.cpp:145 ] trace - Support Image Count: 2~8
+[2025-03-31 09:21:27.816] [         Context.cpp:146 ] trace - Support Array Layer: 1~1
+[2025-03-31 09:21:27.816] [         Context.cpp:147 ] trace - Support Transforms
+[2025-03-31 09:21:27.816] [         Context.cpp:148 ] trace - Support Usage Flags
+[2025-03-31 09:21:27.816] [         Context.cpp:149 ] trace - Support CompositeAlpha { Opaque }
+[2025-03-31 09:21:27.816] [         Context.cpp:151 ] trace - Support Extent: 800x600~800x600
+[2025-03-31 09:21:27.816] [         Context.cpp:154 ] trace - Support Format: B8G8R8A8Unorm
+[2025-03-31 09:21:27.816] [         Context.cpp:154 ] trace - Support Format: B8G8R8A8Srgb
+[2025-03-31 09:21:27.816] [         Context.cpp:158 ] trace - Support Present Mode: Fifo
+[2025-03-31 09:21:27.816] [         Context.cpp:158 ] trace - Support Present Mode: FifoRelaxed
+[2025-03-31 09:21:27.816] [         Context.cpp:158 ] trace - Support Present Mode: Immediate
+[2025-03-31 09:21:27.816] [         Context.cpp:160 ] debug - Current Format: B8G8R8A8Srgb
+[2025-03-31 09:21:27.816] [         Context.cpp:161 ] debug - Current Color Space: SrgbNonlinear
+[2025-03-31 09:21:27.816] [         Context.cpp:162 ] debug - Current Present Mode: Fifo
+[2025-03-31 09:21:27.816] [         Context.cpp:163 ] debug - Current Extent: 800x600
+[2025-03-31 09:21:27.816] [         Context.cpp:164 ] debug - Current Image Count: 2
+[2025-03-31 09:21:27.816] [         Context.cpp:165 ] debug - Current Image Array Layer: 1
+[2025-03-31 09:21:27.816] [         Context.cpp:256 ] trace - Queue Family Index: 0 Supports Graphics. Supports Queue Index:0~15
+[2025-03-31 09:21:27.816] [         Context.cpp:261 ] trace - Queue Family Index: 0 Supports Presentation. Supports Queue Index:0~15
+[2025-03-31 09:21:27.816] [         Context.cpp:267 ] trace - Queue Family Index: 0 Supports Transfer. Supports Queue Index:0~15
+[2025-03-31 09:21:27.984] [         Context.cpp:241 ] trace - Device enabled extension: VK_KHR_swapchain
+[2025-03-31 09:21:27.984] [         Context.cpp:243 ] debug - Device Created
+[2025-03-31 09:21:27.984] [         Context.cpp:284 ] debug - Queues Getted
+[2025-03-31 09:21:28.071] [         Context.cpp:382 ] debug - Swapchain Created
+[2025-03-31 09:21:28.071] [         Context.cpp:398 ] debug - Swapchain Image Views Created
+[2025-03-31 09:21:28.071] [         Context.cpp:399 ] trace - Swapchain Image Count: 2
+[2025-03-31 09:21:28.071] [         Context.cpp:353 ] debug - VMA Allocator Created
+[2025-03-31 09:21:28.071] [PipelineLayoutManager.cpp:81  ] debug - Deffer pipeline layout created successfully
+[2025-03-31 09:21:28.072] [RenderPassManager.cpp:193 ] debug - Deffer render pass created successfully
+[2025-03-31 09:21:28.072] [    ImageManager.cpp:45  ] debug - Created Texture2D with 800x600, format: R32G32B32A32Sfloat
+[2025-03-31 09:21:28.072] [    ImageManager.cpp:45  ] debug - Created Texture2D with 800x600, format: R16G16B16A16Sfloat
+[2025-03-31 09:21:28.073] [    ImageManager.cpp:45  ] debug - Created Texture2D with 800x600, format: R8G8B8A8Unorm
+[2025-03-31 09:21:28.073] [    ImageManager.cpp:45  ] debug - Created Texture2D with 800x600, format: R8G8B8A8Unorm
+[2025-03-31 09:21:28.073] [    ImageManager.cpp:45  ] debug - Created Texture2D with 800x600, format: R8Unorm
+[20

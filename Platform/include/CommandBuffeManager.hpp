@@ -7,7 +7,7 @@
 
 namespace MEngine
 {
-using UniqueCommandBuffer = vk::UniqueCommandBuffer;
+
 class CommandBufferManager final : public NoCopyable
 {
   private:

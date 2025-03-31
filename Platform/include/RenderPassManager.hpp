@@ -11,7 +11,6 @@
 #include <unordered_map>
 #include <vector>
 #include <vulkan/vulkan.hpp>
-#include <vulkan/vulkan_handles.hpp>
 
 namespace MEngine
 {
@@ -46,7 +45,14 @@ struct DefferFrameResource
     UniqueImage depthStencilImage;
     vk::UniqueImageView depthStencilImageView;
     // 7. swapchain image
+    vk::Image swapchainImage;
     vk::ImageView swapchainImageView;
+};
+struct UIFrameResource
+{
+    // 1. swapchain image
+    vk::Image swapchainImage;
+    vk::ImageView imageView;
 };
 class RenderPassManager final : public NoCopyable
 {
@@ -57,6 +63,7 @@ class RenderPassManager final : public NoCopyable
     std::unordered_map<RenderPassType, vk::UniqueRenderPass> mRenderPasses;
     std::unordered_map<RenderPassType, std::vector<vk::UniqueFramebuffer>> mFrameBuffers;
     std::vector<DefferFrameResource> mDefferFrameResources;
+    std::vector<UIFrameResource> mUIFrameResources;
 
   private:
     void CreateGBufferRenderPass();
@@ -79,6 +86,14 @@ class RenderPassManager final : public NoCopyable
     RenderPassManager(std::shared_ptr<ImageManager> imageManager);
     vk::RenderPass GetRenderPass(RenderPassType type) const;
     vk::Framebuffer GetFrameBuffer(RenderPassType type, uint32_t index) const;
+    const DefferFrameResource &GetDefferFrameResource(uint32_t index) const
+    {
+        return mDefferFrameResources[index];
+    }
+    const UIFrameResource &GetUIFrameResource(uint32_t index) const
+    {
+        return mUIFrameResources[index];
+    }
 };
 
 } // namespace MEngine
