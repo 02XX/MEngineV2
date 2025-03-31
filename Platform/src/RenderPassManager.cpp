@@ -1,10 +1,4 @@
 #include "RenderPassManager.hpp"
-#include "Logger.hpp"
-#include <array>
-#include <vector>
-#include <vulkan/vulkan.hpp>
-#include <vulkan/vulkan_enums.hpp>
-#include <vulkan/vulkan_handles.hpp>
 
 namespace MEngine
 {
@@ -16,14 +10,14 @@ RenderPassManager::RenderPassManager(std::shared_ptr<ImageManager> imageManager)
     // CreateShadowDepthRenderPass();
     // // 创建光照渲染通道
     // CreateLightingRenderPass();
-    // // 创建半透明物体渲染通道
-    // CreateTranslucencyRenderPass();
+    // 创建半透明物体渲染通道
+    CreateTranslucencyRenderPass();
     // // 创建后处理渲染通道
     // CreatePostProcessRenderPass();
     // // 创建天空盒渲染通道
     // CreateSkyRenderPass();
     // 创建UI渲染通道
-    CreateUIRenderPass();
+    // CreateUIRenderPass();
 
     // 创建延迟渲染的GBuffer帧缓冲
     // CreateDefferFrameBuffer();
@@ -31,14 +25,14 @@ RenderPassManager::RenderPassManager(std::shared_ptr<ImageManager> imageManager)
     // CreateShadowDepthFrameBuffer();
     // // 创建光照帧缓冲
     // CreateLightingFrameBuffer();
-    // // 创建半透明物体帧缓冲
-    // CreateTranslucencyFrameBuffer();
+    // 创建半透明物体帧缓冲
+    CreateTranslucencyFrameBuffer();
     // // 创建后处理帧缓冲
     // CreatePostProcessFrameBuffer();
     // // 创建天空盒帧缓冲
     // CreateSkyFrameBuffer();
     // 创建UI帧缓冲
-    CreateUIFrameBuffer();
+    // CreateUIFrameBuffer();
 }
 void RenderPassManager::CreateGBufferRenderPass()
 {
@@ -201,6 +195,66 @@ void RenderPassManager::CreateLightingRenderPass()
 }
 void RenderPassManager::CreateTranslucencyRenderPass()
 {
+    auto &context = Context::Instance();
+    // 1. 创建附件
+    std::array<vk::AttachmentDescription, 2> attachments;
+    attachments[0]
+        .setFormat(context.GetSurfaceInfo().format.format) // Swapchain格式
+        .setSamples(vk::SampleCountFlagBits::e1)
+        .setLoadOp(vk::AttachmentLoadOp::eClear)
+        .setStoreOp(vk::AttachmentStoreOp::eStore)
+        .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
+        .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
+        .setInitialLayout(vk::ImageLayout::eUndefined)
+        .setFinalLayout(vk::ImageLayout::ePresentSrcKHR);
+    // 2. 创建深度模板附件
+    attachments[1]
+        .setFormat(vk::Format::eD32SfloatS8Uint) // 32位深度+8位模板存储
+        .setSamples(vk::SampleCountFlagBits::e1)
+        .setLoadOp(vk::AttachmentLoadOp::eClear)
+        .setStoreOp(vk::AttachmentStoreOp::eDontCare)
+        .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
+        .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
+        .setInitialLayout(vk::ImageLayout::eUndefined)
+        .setFinalLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
+    // 2. 创建子通道
+    std::array<vk::SubpassDescription, 1> subpasses;
+    std::array<vk::AttachmentReference, 1> colorRefs = {
+        vk::AttachmentReference(0, vk::ImageLayout::eColorAttachmentOptimal) // Swapchain
+    };
+    vk::AttachmentReference depthRef(1, vk::ImageLayout::eDepthStencilAttachmentOptimal);
+    subpasses[0]
+        .setColorAttachments(colorRefs)                         // 颜色附件引用
+        .setPipelineBindPoint(vk::PipelineBindPoint::eGraphics) // 图形管线绑定点
+        .setPDepthStencilAttachment(&depthRef)                  // 深度模板附件引用（无）
+        .setInputAttachments(nullptr)                           // 输入附件引用（无）
+        .setPreserveAttachments(nullptr)                        // 保留附件（无）
+        .setResolveAttachments(nullptr);                        // 解析附件（无）
+    // 3. 定义子通道依赖关系
+    std::array<vk::SubpassDependency, 1> dependencies;
+    // 外部->subpass0
+    dependencies[0]
+        .setSrcSubpass(vk::SubpassExternal)
+        .setDstSubpass(0)
+        .setSrcStageMask(vk::PipelineStageFlagBits::eTopOfPipe)
+        .setDstStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput |
+                         vk::PipelineStageFlagBits::eEarlyFragmentTests)
+        .setSrcAccessMask(vk::AccessFlagBits::eNone)
+        .setDstAccessMask(vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eDepthStencilAttachmentWrite)
+        .setDependencyFlags(vk::DependencyFlagBits::eByRegion);
+    // 4. 创建渲染通道
+    vk::RenderPassCreateInfo renderPassCreateInfo;
+    renderPassCreateInfo
+        .setAttachments(attachments)    // 附件描述
+        .setSubpasses(subpasses)        // 子通道描述
+        .setDependencies(dependencies); // 依赖关系描述
+    auto renderPass = Context::Instance().GetDevice().createRenderPassUnique(renderPassCreateInfo);
+    if (!renderPass)
+    {
+        LogE("Failed to create translucency render pass");
+    }
+    mRenderPasses[RenderPassType::Translucency] = std::move(renderPass);
+    LogD("Translucency render pass created successfully");
 }
 void RenderPassManager::CreatePostProcessRenderPass()
 {
@@ -220,7 +274,7 @@ void RenderPassManager::CreateUIRenderPass()
         .setStoreOp(vk::AttachmentStoreOp::eStore) // 存储以便后续使用
         .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
         .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
-        .setInitialLayout(vk::ImageLayout::eColorAttachmentOptimal)
+        .setInitialLayout(vk::ImageLayout::eUndefined)
         .setFinalLayout(vk::ImageLayout::ePresentSrcKHR); // 最终布局为呈现
     // 2. 创建子通道
     std::array<vk::SubpassDescription, 1> subpasses;
@@ -240,7 +294,7 @@ void RenderPassManager::CreateUIRenderPass()
     dependencies[0]
         .setSrcSubpass(vk::SubpassExternal)
         .setDstSubpass(0)
-        .setSrcStageMask(vk::PipelineStageFlagBits::eTopOfPipe)
+        .setSrcStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
         .setDstStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
         .setSrcAccessMask(vk::AccessFlagBits::eNone)
         .setDstAccessMask(vk::AccessFlagBits::eColorAttachmentWrite)
@@ -361,6 +415,45 @@ void RenderPassManager::CreateLightingFrameBuffer()
 }
 void RenderPassManager::CreateTranslucencyFrameBuffer()
 {
+    auto &context = Context::Instance();
+    auto swapchainImages = context.GetSwapchainImages();
+    auto swapchainImageViews = context.GetSwapchainImageViews();
+    auto extent = context.GetSurfaceInfo().extent;
+    for (size_t i = 0; i < swapchainImageViews.size(); ++i)
+    {
+        auto translucencyFrameResource = TranslucencyFrameResource{};
+        // 1. 创建Swapchain图像和视图
+        auto swapchainImageView = swapchainImageViews[i];
+        auto swapchainImage = swapchainImages[i];
+        translucencyFrameResource.swapchainImage = swapchainImage;
+        translucencyFrameResource.imageView = swapchainImageView;
+        // 2. 创建深度模板图像和视图
+        auto depthImage = mImageManager->CreateUniqueDepthStencil(extent);
+        auto depthImageView = mImageManager->CreateImageView(
+            depthImage->GetImage(), vk::Format::eD32SfloatS8Uint, vk::ComponentMapping{},
+            vk::ImageSubresourceRange{vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil, 0, 1, 0, 1});
+        translucencyFrameResource.depthStencilImage = std::move(depthImage);
+        translucencyFrameResource.depthStencilImageView = std::move(depthImageView);
+        // 保存资源
+        mTranslucencyFrameResources.push_back(std::move(translucencyFrameResource));
+        // 创建帧缓冲
+        std::array<vk::ImageView, 2> attachments = {mTranslucencyFrameResources.back().imageView,
+                                                    mTranslucencyFrameResources.back().depthStencilImageView.get()};
+        vk::FramebufferCreateInfo framebufferCreateInfo;
+        framebufferCreateInfo.setRenderPass(mRenderPasses[RenderPassType::Translucency].get())
+            .setAttachments(attachments)
+            .setWidth(extent.width)
+            .setHeight(extent.height)
+            .setLayers(1);
+        auto framebuffer = context.GetDevice().createFramebufferUnique(framebufferCreateInfo);
+        if (!framebuffer)
+        {
+            LogE("Failed to create framebuffer for Translucency render pass");
+        }
+        mFrameBuffers[RenderPassType::Translucency].push_back(std::move(framebuffer));
+        LogD("Framebuffer {} for Translucency render pass created successfully", i);
+    }
+    LogD("{} Translucency frame buffers created successfully", mFrameBuffers[RenderPassType::Translucency].size());
 }
 void RenderPassManager::CreatePostProcessFrameBuffer()
 {
@@ -400,6 +493,7 @@ void RenderPassManager::CreateUIFrameBuffer()
         mFrameBuffers[RenderPassType::UI].push_back(std::move(framebuffer));
         LogD("Framebuffer {} for UI render pass created successfully", i);
     }
+
     LogD("{} UI frame buffers created successfully", mFrameBuffers[RenderPassType::UI].size());
 }
 vk::RenderPass RenderPassManager::GetRenderPass(RenderPassType type) const
@@ -411,7 +505,7 @@ vk::RenderPass RenderPassManager::GetRenderPass(RenderPassType type) const
     }
     else
     {
-        LogE("Render pass not found for type {}", static_cast<int>(type));
+        LogE("Render pass not found for type {}", magic_enum::enum_name(type));
         return nullptr;
     }
 }

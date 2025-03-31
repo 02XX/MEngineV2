@@ -4,8 +4,10 @@
 #include "Componet/TransformComponent.hpp"
 #include "Logger.hpp"
 #include "MEngine.hpp"
-#include "MaterialManager.hpp"
+// #include "MaterialManager.hpp"
 #include "NoCopyable.hpp"
+#include "PipelineLayoutManager.hpp"
+#include "PipelineManager.hpp"
 #include "entt/entt.hpp"
 
 namespace MEngine
@@ -15,7 +17,7 @@ class BasicGeometryEntityManager : public NoCopyable
   private:
     std::shared_ptr<entt::registry> mRegistry;
     std::unique_ptr<BasicGeometryManager> mBasicGeometryManager;
-    std::shared_ptr<MaterialManager> mMaterialManager;
+    // std::shared_ptr<MaterialManager> mMaterialManager;
 
   public:
     BasicGeometryEntityManager(std::shared_ptr<entt::registry> registry);

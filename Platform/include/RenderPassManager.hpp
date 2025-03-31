@@ -6,6 +6,7 @@
 #include "Logger.hpp"
 #include "MEngine.hpp"
 #include "NoCopyable.hpp"
+#include "magic_enum/magic_enum.hpp"
 #include <cstdint>
 #include <memory>
 #include <unordered_map>
@@ -54,6 +55,15 @@ struct UIFrameResource
     vk::Image swapchainImage;
     vk::ImageView imageView;
 };
+struct TranslucencyFrameResource
+{
+    // 1. swapchain image
+    vk::Image swapchainImage;
+    vk::ImageView imageView;
+    // 2. depth stencil
+    UniqueImage depthStencilImage;
+    vk::UniqueImageView depthStencilImageView;
+};
 class RenderPassManager final : public NoCopyable
 {
   private:
@@ -64,6 +74,7 @@ class RenderPassManager final : public NoCopyable
     std::unordered_map<RenderPassType, std::vector<vk::UniqueFramebuffer>> mFrameBuffers;
     std::vector<DefferFrameResource> mDefferFrameResources;
     std::vector<UIFrameResource> mUIFrameResources;
+    std::vector<TranslucencyFrameResource> mTranslucencyFrameResources;
 
   private:
     void CreateGBufferRenderPass();
@@ -93,6 +104,10 @@ class RenderPassManager final : public NoCopyable
     const UIFrameResource &GetUIFrameResource(uint32_t index) const
     {
         return mUIFrameResources[index];
+    }
+    const TranslucencyFrameResource &GetTranslucencyFrameResource(uint32_t index) const
+    {
+        return mTranslucencyFrameResources[index];
     }
 };
 

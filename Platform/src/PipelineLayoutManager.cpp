@@ -5,11 +5,11 @@ namespace MEngine
 PipelineLayoutManager::PipelineLayoutManager()
 {
     // 创建延迟渲染管线布局
-    CreateDefferPipelineLayout();
+    // CreateDefferPipelineLayout();
     // // 创建阴影深度图管线布局
     // CreateShadowDepthPipelineLayout();
-    // // 创建半透明物体管线布局
-    // CreateTranslucencyPipelineLayout();
+    // 创建半透明物体管线布局
+    CreateTranslucencyPipelineLayout();
     // // 创建后处理管线布局
     // CreatePostProcessPipelineLayout();
     // // 创建天空盒管线布局
@@ -85,6 +85,35 @@ void PipelineLayoutManager::CreateShadowDepthPipelineLayout()
 }
 void PipelineLayoutManager::CreateTranslucencyPipelineLayout()
 {
+    // 1. 创建描述符集布局
+    std::array<vk::DescriptorSetLayoutBinding, 1> descriptorSetLayoutBindings;
+    // Binding 0: 模型视图投影矩阵（应该用 Uniform Buffer）
+    descriptorSetLayoutBindings[0]
+        .setBinding(0)
+        .setDescriptorType(vk::DescriptorType::eUniformBuffer)
+        .setDescriptorCount(1)
+        .setStageFlags(vk::ShaderStageFlagBits::eVertex); // 仅顶点阶段需要
+    // 2. 创建描述符集布局
+    vk::DescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo;
+    descriptorSetLayoutCreateInfo.setBindings({descriptorSetLayoutBindings}); // set: 0
+    auto descriptorSetLayout =
+        Context::Instance().GetDevice().createDescriptorSetLayoutUnique(descriptorSetLayoutCreateInfo);
+    if (!descriptorSetLayout)
+    {
+        LogE("Failed to create descriptor set layout for TranslucencyPipelineLayout");
+    }
+    mDescriptorSetLayouts[PipelineLayoutType::TranslucencyLayout] = std::move(descriptorSetLayout);
+    // 3. 创建管线布局
+    vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo;
+    pipelineLayoutCreateInfo.setSetLayouts(mDescriptorSetLayouts[PipelineLayoutType::TranslucencyLayout].get())
+        .setPushConstantRanges(nullptr);
+    auto pipelineLayout = Context::Instance().GetDevice().createPipelineLayoutUnique(pipelineLayoutCreateInfo);
+    if (!pipelineLayout)
+    {
+        LogE("Failed to create pipeline layout for TranslucencyPipelineLayout");
+    }
+    mPipelineLayouts[PipelineLayoutType::TranslucencyLayout] = std::move(pipelineLayout);
+    LogD("Translucency pipeline layout created successfully");
 }
 void PipelineLayoutManager::CreatePostProcessPipelineLayout()
 {

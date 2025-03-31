@@ -25,7 +25,7 @@
 namespace MEngine
 {
 
-class RenderSystem : public System
+class RenderSystem final : public System
 {
   private:
     std::shared_ptr<entt::registry> mRegistry;
@@ -36,7 +36,6 @@ class RenderSystem : public System
     std::shared_ptr<RenderPassManager> mRenderPassManager;
     std::shared_ptr<PipelineLayoutManager> mPipelineLayoutManager;
     std::shared_ptr<PipelineManager> mPipelineManager;
-
     int64_t mFrameIndex;
     int64_t mFrameCount;
     std::vector<vk::UniqueSemaphore> mImageAvailableSemaphores;
@@ -48,10 +47,12 @@ class RenderSystem : public System
     std::vector<vk::UniqueCommandBuffer> mGraphicCommandBuffers;
 
     // UI
+    vk::UniqueDescriptorPool mUIDescriptorPool;
     ImGuiIO *mIO;
     SDL_Window *mWindow;
 
   private:
+    void InitUI();
     void Prepare();
     void RenderShadowDepthPass();
     void RenderDefferPass();
@@ -68,7 +69,7 @@ class RenderSystem : public System
                  std::shared_ptr<RenderPassManager> renderPassManager,
                  std::shared_ptr<PipelineLayoutManager> pipelineLayoutManager,
                  std::shared_ptr<PipelineManager> pipelineManager);
-    ~RenderSystem();
+    ~RenderSystem() override;
     void CollectRenderEntities();
     void Init() override;
     void Tick(float deltaTime) override;

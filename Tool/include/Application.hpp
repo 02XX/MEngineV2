@@ -1,6 +1,8 @@
 #pragma once
 
+#include "Application.hpp"
 #include "Context.hpp"
+#include "DescriptorManager.hpp"
 #include "IScene.hpp"
 #include "Logger.hpp"
 #include "MEngine.hpp"
@@ -37,6 +39,8 @@ class Application final
     std::shared_ptr<DescriptorManager> mDescriptorManager;
     std::shared_ptr<SamplerManager> mSamplerManager;
     std::shared_ptr<BufferManager> mBufferManager;
+
+    std::shared_ptr<BasicGeometryEntityManager> mBasicGeometryEntityManager;
 
   private:
     void InitSystem();

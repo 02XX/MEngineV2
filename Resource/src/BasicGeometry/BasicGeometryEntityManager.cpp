@@ -1,11 +1,13 @@
 #include "BasicGeometry/BasicGeometryEntityManager.hpp"
+#include "PipelineLayoutManager.hpp"
+#include "PipelineManager.hpp"
 
 namespace MEngine
 {
 BasicGeometryEntityManager::BasicGeometryEntityManager(std::shared_ptr<entt::registry> registry) : mRegistry(registry)
 {
     mBasicGeometryManager = std::make_unique<BasicGeometryManager>();
-    mMaterialManager = std::make_unique<MaterialManager>();
+    // mMaterialManager = std::make_unique<MaterialManager>();
 }
 entt::entity BasicGeometryEntityManager::CreateCube()
 {
@@ -14,9 +16,7 @@ entt::entity BasicGeometryEntityManager::CreateCube()
     mRegistry->emplace<TransformComponent>(entity, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f),
                                            glm::vec3(1.0f, 1.0f, 1.0f));
     mRegistry->emplace<MeshComponent>(entity, mesh);
-    auto pbrMaterial = mMaterialManager->GetMaterial(MaterialType::Default);
-    mRegistry->emplace<MaterialComponent>(entity, pbrMaterial);
-
+    mRegistry->emplace<MaterialComponent>(entity, PipelineType::Translucency, PipelineLayoutType::TranslucencyLayout);
     return entity;
 }
 entt::entity BasicGeometryEntityManager::CreateQuad()
@@ -26,8 +26,8 @@ entt::entity BasicGeometryEntityManager::CreateQuad()
     mRegistry->emplace<TransformComponent>(entity, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f),
                                            glm::vec3(1.0f, 1.0f, 1.0f));
     mRegistry->emplace<MeshComponent>(entity, mesh);
-    auto defaultMaterial = mMaterialManager->GetMaterial(MaterialType::Default);
-    mRegistry->emplace<MaterialComponent>(entity, defaultMaterial);
+    // auto defaultMaterial = mMaterialManager->GetMaterial(MaterialType::Default);
+    // mRegistry->emplace<MaterialComponent>(entity, defaultMaterial);
 
     return entity;
 }
@@ -38,8 +38,8 @@ entt::entity BasicGeometryEntityManager::CreateCylinder()
     mRegistry->emplace<TransformComponent>(entity, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f),
                                            glm::vec3(1.0f, 1.0f, 1.0f));
     mRegistry->emplace<MeshComponent>(entity, mesh);
-    auto defaultMaterial = mMaterialManager->GetMaterial(MaterialType::Default);
-    mRegistry->emplace<MaterialComponent>(entity, defaultMaterial);
+    // auto defaultMaterial = mMaterialManager->GetMaterial(MaterialType::Default);
+    // mRegistry->emplace<MaterialComponent>(entity, defaultMaterial);
     return entity;
 }
 entt::entity BasicGeometryEntityManager::CreateSphere()
@@ -49,8 +49,8 @@ entt::entity BasicGeometryEntityManager::CreateSphere()
     mRegistry->emplace<TransformComponent>(entity, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f),
                                            glm::vec3(1.0f, 1.0f, 1.0f));
     mRegistry->emplace<MeshComponent>(entity, mesh);
-    auto defaultMaterial = mMaterialManager->GetMaterial(MaterialType::Default);
-    mRegistry->emplace<MaterialComponent>(entity, defaultMaterial);
+    // auto defaultMaterial = mMaterialManager->GetMaterial(MaterialType::Default);
+    // mRegistry->emplace<MaterialComponent>(entity, defaultMaterial);
     return entity;
 }
 

@@ -1,4 +1,6 @@
 #include "System/RenderSystem.hpp"
+#include "Logger.hpp"
+#include <vulkan/vulkan_structs.hpp>
 namespace MEngine
 {
 
@@ -28,13 +30,29 @@ void RenderSystem::Init()
         mRenderFinishedSemaphores.push_back(mSyncPrimitiveManager->CreateUniqueSemaphore());
         mInFlightFences.push_back(mSyncPrimitiveManager->CreateFence(vk::FenceCreateFlagBits::eSignaled));
     }
+    // InitUI();
+    mIsInit = true;
+    LogI("RenderSystem Initialized");
+}
+void RenderSystem::InitUI()
+{
+    auto &context = Context::Instance();
     // UI
+    // DescriptorPool
+    vk::DescriptorPoolCreateInfo poolInfo;
+    vk::DescriptorPoolSize poolSize(vk::DescriptorType::eCombinedImageSampler, 1000);
+    poolInfo.setMaxSets(1000).setPoolSizes(poolSize).setFlags(vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet);
+    mUIDescriptorPool = context.GetDevice().createDescriptorPoolUnique(poolInfo);
+    if (!mUIDescriptorPool)
+    {
+        LogE("Failed to create UI descriptor pool");
+    }
     //  Initialize ImGui context
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     mIO = &ImGui::GetIO();
     mIO->ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
-
+    ImGui::StyleColorsDark();
     // Initialize ImGui Vulkan Backend
     ImGui_ImplSDL3_InitForVulkan(mWindow);
     ImGui_ImplVulkan_InitInfo initInfo{};
@@ -44,17 +62,16 @@ void RenderSystem::Init()
     initInfo.Device = context.GetDevice();
     initInfo.QueueFamily = context.GetQueueFamilyIndicates().graphicsFamily.value();
     initInfo.Queue = context.GetGraphicQueue();
-    // initInfo.DescriptorPool;
+    initInfo.DescriptorPool = mUIDescriptorPool.get();
     initInfo.RenderPass = mRenderPassManager->GetRenderPass(RenderPassType::UI);
     initInfo.MinImageCount = context.GetSurfaceInfo().imageCount;
     initInfo.ImageCount = context.GetSurfaceInfo().imageCount;
     initInfo.MSAASamples = static_cast<VkSampleCountFlagBits>(vk::SampleCountFlagBits::e1);
-    initInfo.DescriptorPoolSize = 1000;
     // optional
     initInfo.Subpass = 0;
+    // initInfo.DescriptorPoolSize = 1000;
     ImGui_ImplVulkan_Init(&initInfo);
-    mIsInit = true;
-    LogI("RenderSystem Initialized");
+    LogD("ImGui Vulkan Backend Initialized");
 }
 RenderSystem::~RenderSystem()
 {
@@ -65,6 +82,11 @@ void RenderSystem::Shutdown()
 {
     auto &context = Context::Instance();
     context.GetDevice().waitIdle();
+
+    // ImGui_ImplVulkan_Shutdown();
+    // ImGui_ImplSDL3_Shutdown();
+    // ImGui::DestroyContext();
+
     mIsShutdown = true;
     LogI("RenderSystem Shutdown");
 }
@@ -77,7 +99,7 @@ void RenderSystem::CollectRenderEntities()
     {
         auto &material = mRegistry->get<MaterialComponent>(entity);
         auto &mesh = entities.get<MeshComponent>(entity);
-        mBatchMaterialComponents[material.material->GetPipelineType()].push_back(entity);
+        mBatchMaterialComponents[material.pipelineType].push_back(entity);
     }
 }
 
@@ -87,11 +109,11 @@ void RenderSystem::Tick(float deltaTime)
     Prepare();               // Prepare
     // RenderDefferPass();       // Deffer pass
     // RenderShadowDepthPass();  // Shadow pass
-    // RenderTranslucencyPass(); // Translucency pass
+    RenderTranslucencyPass(); // Translucency pass
     // RenderPostProcessPass();  // Post process pass
     // RenderSkyPass();          // Sky pass
-    RenderUIPass(); // UI pass
-    Present();      // Present
+    // RenderUIPass(); // UI pass
+    Present(); // Present
 }
 
 void RenderSystem::Prepare()
@@ -152,6 +174,48 @@ void RenderSystem::RenderDefferPass()
 }
 void RenderSystem::RenderTranslucencyPass()
 {
+    auto &context = Context::Instance();
+    auto extent = context.GetSurfaceInfo().extent;
+    // Translucency entities
+    auto entities = mBatchMaterialComponents[PipelineType::Translucency];
+    auto pipelineLayout = mPipelineLayoutManager->GetPipelineLayout(PipelineLayoutType::TranslucencyLayout);
+    auto pipeline = mPipelineManager->GetPipeline(PipelineType::Translucency);
+    auto renderPass = mRenderPassManager->GetRenderPass(RenderPassType::Translucency);
+    auto frameBuffer = mRenderPassManager->GetFrameBuffer(RenderPassType::Translucency, mFrameIndex);
+    vk::RenderPassBeginInfo renderPassBeginInfo;
+    std::array<vk::ClearValue, 2> clearValues{
+        vk::ClearValue(std::array<float, 4>{0.0f, 0.0f, 0.0f, 1.0f}), // 附件0: swapchain
+        vk::ClearDepthStencilValue(1.0f, 0)                           // 附件1: depth
+    };
+    clearValues[0].color = vk::ClearColorValue(std::array<float, 4>{1.0f, 0.0f, 0.0f, 1.0f}); // 附件0: Swapchain
+    renderPassBeginInfo.setRenderPass(renderPass)
+        .setFramebuffer(frameBuffer)
+        .setRenderArea(vk::Rect2D({0, 0}, extent))
+        .setClearValues(clearValues);
+    mGraphicCommandBuffers[mFrameIndex]->beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);
+    {
+        // 1. 绑定管线
+        mGraphicCommandBuffers[mFrameIndex]->bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
+        // 2. 绑定描述符集
+        for (auto entity : entities)
+        {
+            auto &material = mRegistry->get<MaterialComponent>(entity);
+            auto &mesh = mRegistry->get<MeshComponent>(entity);
+            // auto descriptorSet = mPipelineLayoutManager->GetDescriptorSet(material.pipelineLayoutType, entity);
+            // mGraphicCommandBuffers[mFrameIndex]->bindDescriptorSets(
+            //     vk::PipelineBindPoint::eGraphics,
+            //     mPipelineLayoutManager->GetPipelineLayout(material.pipelineLayoutType), 0, descriptorSet, {});
+            // 3. 绑定顶点缓冲区
+            auto vertexBuffer = mesh.mesh->GetVertexBuffer();
+            mGraphicCommandBuffers[mFrameIndex]->bindVertexBuffers(0, vertexBuffer, {0});
+            // 4. 绑定索引缓冲区
+            auto indexBuffer = mesh.mesh->GetIndexBuffer();
+            mGraphicCommandBuffers[mFrameIndex]->bindIndexBuffer(indexBuffer, 0, vk::IndexType::eUint32);
+            // 5. 绘制
+            mGraphicCommandBuffers[mFrameIndex]->drawIndexed(mesh.mesh->GetIndexCount(), 1, 0, 0, 0);
+        }
+    }
+    mGraphicCommandBuffers[mFrameIndex]->endRenderPass();
 }
 void RenderSystem::RenderPostProcessPass()
 {
@@ -161,28 +225,21 @@ void RenderSystem::RenderSkyPass()
 }
 void RenderSystem::RenderUIPass()
 {
-    // 转换图像布局
-    // vk::ImageMemoryBarrier barrier;
-    // barrier.setSrcAccessMask(vk::AccessFlagBits::eColorAttachmentWrite)
-    //     .setDstAccessMask(vk::AccessFlagBits::eColorAttachmentRead)
-    //     .setOldLayout(vk::ImageLayout::ePresentSrcKHR)
-    //     .setNewLayout(vk::ImageLayout::eColorAttachmentOptimal)
-    //     .setImage(mRenderPassManager->GetUIFrameResource(mImageIndex).swapchainImage)
-    //     .setSubresourceRange(vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1));
-    // mGraphicCommandBuffers[mFrameIndex]->pipelineBarrier(vk::PipelineStageFlagBits::eColorAttachmentOutput,
-    //                                                      vk::PipelineStageFlagBits::eColorAttachmentOutput, {},
-    //                                                      nullptr, nullptr, barrier);
-
-    vk::ClearValue clearValue(std::array<float, 4>{0, 0, 0, 0});
+    vk::ClearValue clearValue(std::array<float, 4>{1.0, 0.0, 0.0, 1.0}); // 明亮的红色
     vk::RenderPassBeginInfo renderPassBeginInfo;
-    renderPassBeginInfo.setRenderPass(mRenderPassManager->GetRenderPass(RenderPassType::UI))
-        .setFramebuffer(mRenderPassManager->GetFrameBuffer(RenderPassType::UI, mImageIndex))
+    auto frameBuffer = mRenderPassManager->GetFrameBuffer(RenderPassType::UI, mImageIndex);
+    auto renderPass = mRenderPassManager->GetRenderPass(RenderPassType::UI);
+    renderPassBeginInfo.setRenderPass(renderPass)
+        .setFramebuffer(frameBuffer)
         .setRenderArea(vk::Rect2D({0, 0}, Context::Instance().GetSurfaceInfo().extent))
         .setClearValues(clearValue);
     mGraphicCommandBuffers[mFrameIndex]->beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);
     ImGui_ImplVulkan_NewFrame();
     ImGui_ImplSDL3_NewFrame();
     ImGui::NewFrame();
+    ImGui::Begin("Debug Window", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+    ImGui::Text("If you can see this, UI is working!");
+    ImGui::End();
     ImGui::ShowDemoWindow();
     ImGui::Render();
     ImDrawData *drawData = ImGui::GetDrawData();

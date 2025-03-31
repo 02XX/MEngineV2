@@ -17,8 +17,8 @@ PipelineManager::PipelineManager(std::shared_ptr<ShaderManager> shaderManager,
     // CreateShadowDepthPipeline();
     // // 创建光照管线
     // CreateLightingPipeline();
-    // // 创建半透明物体管线
-    // CreateTranslucencyPipeline();
+    // 创建半透明物体管线
+    CreateTranslucencyPipeline();
     // // 创建后处理管线
     // CreatePostProcessPipeline();
     // // 创建天空盒管线
@@ -99,7 +99,7 @@ void PipelineManager::CommonSetting()
     // ========== 8. 颜色混合 ==========
     std::array<vk::PipelineColorBlendAttachmentState, 1> colorBlendAttachments;
     colorBlendAttachments[0]
-        .setBlendEnable(vk::True) // 是否启用混合
+        .setBlendEnable(vk::False) // 是否启用混合
         .setColorWriteMask(vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
                            vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA) // 写入掩码
         .setSrcColorBlendFactor(vk::BlendFactor::eSrcAlpha)                                 // 源颜色混合因子

@@ -52,6 +52,8 @@ Application::Application()
     mSamplerManager = std::make_shared<SamplerManager>();
     mBufferManager = std::make_shared<BufferManager>();
     InitSystem();
+    mBasicGeometryEntityManager = std::make_shared<BasicGeometryEntityManager>(mRegistry);
+    mBasicGeometryEntityManager->CreateCube();
 }
 Application::~Application()
 {

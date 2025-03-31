@@ -1,10 +1,12 @@
 #pragma once
 #include "MEngine.hpp"
-#include "Material.hpp"
+#include "PipelineLayoutManager.hpp"
+#include "PipelineManager.hpp"
 namespace MEngine
 {
 struct MaterialComponent
 {
-    std::shared_ptr<Material> material;
+    PipelineType pipelineType;             // 渲染管线类型
+    PipelineLayoutType pipelineLayoutType; // 管线布局类型
 };
 } // namespace MEngine
