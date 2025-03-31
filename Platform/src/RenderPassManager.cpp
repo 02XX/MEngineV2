@@ -196,19 +196,10 @@ void RenderPassManager::CreateLightingRenderPass()
 void RenderPassManager::CreateTranslucencyRenderPass()
 {
     auto &context = Context::Instance();
-    // 1. 创建附件
+    // 2. 创建附件
     std::array<vk::AttachmentDescription, 2> attachments;
+    // 1. 创建深度模板附件
     attachments[0]
-        .setFormat(context.GetSurfaceInfo().format.format) // Swapchain格式
-        .setSamples(vk::SampleCountFlagBits::e1)
-        .setLoadOp(vk::AttachmentLoadOp::eClear)
-        .setStoreOp(vk::AttachmentStoreOp::eStore)
-        .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
-        .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
-        .setInitialLayout(vk::ImageLayout::eUndefined)
-        .setFinalLayout(vk::ImageLayout::ePresentSrcKHR);
-    // 2. 创建深度模板附件
-    attachments[1]
         .setFormat(vk::Format::eD32SfloatS8Uint) // 32位深度+8位模板存储
         .setSamples(vk::SampleCountFlagBits::e1)
         .setLoadOp(vk::AttachmentLoadOp::eClear)
@@ -217,12 +208,21 @@ void RenderPassManager::CreateTranslucencyRenderPass()
         .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
         .setInitialLayout(vk::ImageLayout::eUndefined)
         .setFinalLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
+    attachments[1]
+        .setFormat(context.GetSurfaceInfo().format.format) // Swapchain格式
+        .setSamples(vk::SampleCountFlagBits::e1)
+        .setLoadOp(vk::AttachmentLoadOp::eClear)
+        .setStoreOp(vk::AttachmentStoreOp::eStore)
+        .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
+        .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
+        .setInitialLayout(vk::ImageLayout::eUndefined)
+        .setFinalLayout(vk::ImageLayout::ePresentSrcKHR);
     // 2. 创建子通道
     std::array<vk::SubpassDescription, 1> subpasses;
     std::array<vk::AttachmentReference, 1> colorRefs = {
-        vk::AttachmentReference(0, vk::ImageLayout::eColorAttachmentOptimal) // Swapchain
+        vk::AttachmentReference(1, vk::ImageLayout::eColorAttachmentOptimal) // Swapchain
     };
-    vk::AttachmentReference depthRef(1, vk::ImageLayout::eDepthStencilAttachmentOptimal);
+    vk::AttachmentReference depthRef(0, vk::ImageLayout::eDepthStencilAttachmentOptimal);
     subpasses[0]
         .setColorAttachments(colorRefs)                         // 颜色附件引用
         .setPipelineBindPoint(vk::PipelineBindPoint::eGraphics) // 图形管线绑定点
@@ -419,28 +419,26 @@ void RenderPassManager::CreateTranslucencyFrameBuffer()
     auto swapchainImages = context.GetSwapchainImages();
     auto swapchainImageViews = context.GetSwapchainImageViews();
     auto extent = context.GetSurfaceInfo().extent;
+    auto renderPass = mRenderPasses[RenderPassType::Translucency].get();
+
+    mTranslucencyFrameResources.resize(swapchainImageViews.size());
     for (size_t i = 0; i < swapchainImageViews.size(); ++i)
     {
-        auto translucencyFrameResource = TranslucencyFrameResource{};
-        // 1. 创建Swapchain图像和视图
-        auto swapchainImageView = swapchainImageViews[i];
-        auto swapchainImage = swapchainImages[i];
-        translucencyFrameResource.swapchainImage = swapchainImage;
-        translucencyFrameResource.imageView = swapchainImageView;
-        // 2. 创建深度模板图像和视图
+        mTranslucencyFrameResources[i].swapchainImage = swapchainImages[i];
+        mTranslucencyFrameResources[i].imageView = swapchainImageViews[i];
+        // 创建深度模板图像和视图
         auto depthImage = mImageManager->CreateUniqueDepthStencil(extent);
         auto depthImageView = mImageManager->CreateImageView(
             depthImage->GetImage(), vk::Format::eD32SfloatS8Uint, vk::ComponentMapping{},
             vk::ImageSubresourceRange{vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil, 0, 1, 0, 1});
-        translucencyFrameResource.depthStencilImage = std::move(depthImage);
-        translucencyFrameResource.depthStencilImageView = std::move(depthImageView);
-        // 保存资源
-        mTranslucencyFrameResources.push_back(std::move(translucencyFrameResource));
-        // 创建帧缓冲
-        std::array<vk::ImageView, 2> attachments = {mTranslucencyFrameResources.back().imageView,
-                                                    mTranslucencyFrameResources.back().depthStencilImageView.get()};
+        mTranslucencyFrameResources[i].depthStencilImage = std::move(depthImage);
+        mTranslucencyFrameResources[i].depthStencilImageView = std::move(depthImageView);
+        auto attachments = std::array<vk::ImageView, 2>{
+            mTranslucencyFrameResources[i].depthStencilImageView.get(), // 深度模板图像视图
+            mTranslucencyFrameResources[i].imageView,                   // Swapchain图像视图
+        };
         vk::FramebufferCreateInfo framebufferCreateInfo;
-        framebufferCreateInfo.setRenderPass(mRenderPasses[RenderPassType::Translucency].get())
+        framebufferCreateInfo.setRenderPass(renderPass)
             .setAttachments(attachments)
             .setWidth(extent.width)
             .setHeight(extent.height)

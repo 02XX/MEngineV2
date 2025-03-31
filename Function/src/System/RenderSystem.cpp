@@ -187,33 +187,33 @@ void RenderSystem::RenderTranslucencyPass()
         vk::ClearValue(std::array<float, 4>{0.0f, 0.0f, 0.0f, 1.0f}), // 附件0: swapchain
         vk::ClearDepthStencilValue(1.0f, 0)                           // 附件1: depth
     };
-    clearValues[0].color = vk::ClearColorValue(std::array<float, 4>{1.0f, 0.0f, 0.0f, 1.0f}); // 附件0: Swapchain
+    clearValues[0].color = vk::ClearColorValue(std::array<float, 4>{0.0f, 1.0f, 0.0f, 1.0f}); // 附件0: Swapchain
     renderPassBeginInfo.setRenderPass(renderPass)
         .setFramebuffer(frameBuffer)
         .setRenderArea(vk::Rect2D({0, 0}, extent))
         .setClearValues(clearValues);
     mGraphicCommandBuffers[mFrameIndex]->beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);
     {
-        // 1. 绑定管线
-        mGraphicCommandBuffers[mFrameIndex]->bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
-        // 2. 绑定描述符集
-        for (auto entity : entities)
-        {
-            auto &material = mRegistry->get<MaterialComponent>(entity);
-            auto &mesh = mRegistry->get<MeshComponent>(entity);
-            // auto descriptorSet = mPipelineLayoutManager->GetDescriptorSet(material.pipelineLayoutType, entity);
-            // mGraphicCommandBuffers[mFrameIndex]->bindDescriptorSets(
-            //     vk::PipelineBindPoint::eGraphics,
-            //     mPipelineLayoutManager->GetPipelineLayout(material.pipelineLayoutType), 0, descriptorSet, {});
-            // 3. 绑定顶点缓冲区
-            auto vertexBuffer = mesh.mesh->GetVertexBuffer();
-            mGraphicCommandBuffers[mFrameIndex]->bindVertexBuffers(0, vertexBuffer, {0});
-            // 4. 绑定索引缓冲区
-            auto indexBuffer = mesh.mesh->GetIndexBuffer();
-            mGraphicCommandBuffers[mFrameIndex]->bindIndexBuffer(indexBuffer, 0, vk::IndexType::eUint32);
-            // 5. 绘制
-            mGraphicCommandBuffers[mFrameIndex]->drawIndexed(mesh.mesh->GetIndexCount(), 1, 0, 0, 0);
-        }
+        // // 1. 绑定管线
+        // mGraphicCommandBuffers[mFrameIndex]->bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
+        // // 2. 绑定描述符集
+        // for (auto entity : entities)
+        // {
+        //     auto &material = mRegistry->get<MaterialComponent>(entity);
+        //     auto &mesh = mRegistry->get<MeshComponent>(entity);
+        //     // auto descriptorSet = mPipelineLayoutManager->GetDescriptorSet(material.pipelineLayoutType, entity);
+        //     // mGraphicCommandBuffers[mFrameIndex]->bindDescriptorSets(
+        //     //     vk::PipelineBindPoint::eGraphics,
+        //     //     mPipelineLayoutManager->GetPipelineLayout(material.pipelineLayoutType), 0, descriptorSet, {});
+        //     // 3. 绑定顶点缓冲区
+        //     auto vertexBuffer = mesh.mesh->GetVertexBuffer();
+        //     mGraphicCommandBuffers[mFrameIndex]->bindVertexBuffers(0, vertexBuffer, {0});
+        //     // 4. 绑定索引缓冲区
+        //     auto indexBuffer = mesh.mesh->GetIndexBuffer();
+        //     mGraphicCommandBuffers[mFrameIndex]->bindIndexBuffer(indexBuffer, 0, vk::IndexType::eUint32);
+        //     // 5. 绘制
+        //     mGraphicCommandBuffers[mFrameIndex]->drawIndexed(mesh.mesh->GetIndexCount(), 1, 0, 0, 0);
+        // }
     }
     mGraphicCommandBuffers[mFrameIndex]->endRenderPass();
 }

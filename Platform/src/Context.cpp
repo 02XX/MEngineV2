@@ -366,16 +366,18 @@ void Context::CreateSwapchain()
 {
     vk::SwapchainCreateInfoKHR swapchainCreateInfo;
     swapchainCreateInfo.setSurface(mSurface.get())
-        .setMinImageCount(mSurfaceInfo.imageCount)
-        .setImageFormat(mSurfaceInfo.format.format)
-        .setImageColorSpace(mSurfaceInfo.format.colorSpace)
-        .setImageExtent(mSurfaceInfo.extent)
-        .setImageArrayLayers(mSurfaceInfo.imageArrayLayer)
-        .setImageUsage(vk::ImageUsageFlagBits::eColorAttachment)
-        .setPreTransform(vk::SurfaceTransformFlagBitsKHR::eIdentity)
+        .setClipped(true)
         .setCompositeAlpha(vk::CompositeAlphaFlagBitsKHR::eOpaque)
-        .setPresentMode(mSurfaceInfo.presentMode)
-        .setClipped(true);
+        .setImageArrayLayers(surfaceInfo.imageArrayLayer)
+        .setMinImageCount(surfaceInfo.imageCount)
+        .setImageColorSpace(surfaceInfo.format.colorSpace)
+        .setImageExtent(surfaceInfo.extent)
+        .setImageFormat(surfaceInfo.format.format)
+        .setImageUsage(vk::ImageUsageFlagBits::eColorAttachment)
+        .setPresentMode(surfaceInfo.presentMode)
+        .setPreTransform(vk::SurfaceTransformFlagBitsKHR::eIdentity)
+        .setMinImageCount(surfaceInfo.imageCount)
+        .setOldSwapchain(nullptr);
     if (mQueueFamilyIndicates.graphicsFamily == mQueueFamilyIndicates.presentFamily)
     {
         swapchainCreateInfo.setImageSharingMode(vk::SharingMode::eExclusive)
@@ -399,7 +401,6 @@ void Context::CreateSwapchain()
 void Context::CreateSwapchainImages()
 {
     auto swapchainImages = mDevice->getSwapchainImagesKHR(mSwapchain.get());
-    mSwapchainImages.reserve(swapchainImages.size());
     for (auto &image : swapchainImages)
     {
         mSwapchainImages.push_back(image);
@@ -409,7 +410,6 @@ void Context::CreateSwapchainImages()
 }
 void Context::CreateSwapchainImageViews()
 {
-    mSwapchainImageViews.reserve(mSwapchainImages.size());
     for (auto &image : mSwapchainImages)
     {
         vk::ImageViewCreateInfo imageViewCreateInfo;
@@ -418,7 +418,13 @@ void Context::CreateSwapchainImageViews()
             .setFormat(mSurfaceInfo.format.format)
             .setComponents(vk::ComponentMapping{})
             .setSubresourceRange(vk::ImageSubresourceRange{vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1});
-        mSwapchainImageViews.push_back(mDevice->createImageViewUnique(imageViewCreateInfo));
+        auto imageView = mDevice->createImageViewUnique(imageViewCreateInfo);
+        if (!imageView)
+        {
+            LogE("Failed to create image view for swapchain image");
+            throw std::runtime_error("Failed to create image view for swapchain image");
+        }
+        mSwapchainImageViews.push_back(std::move(imageView));
     }
     LogD("Swapchain Image Views Created");
     LogT("Swapchain Image Count: {}", mSwapchainImageViews.size());
