@@ -65,18 +65,6 @@ std::vector<UniqueDescriptorSet> DescriptorManager::AllocateUniqueDescriptorSet(
         return AllocateUniqueDescriptorSet(descriptorSetLayouts);
     }
 }
-std::vector<SharedDescriptorSet> DescriptorManager::AllocateSharedDescriptorSet(
-    std::vector<vk::DescriptorSetLayout> descriptorSetLayouts)
-{
-    auto uniqueDescriptorSets = AllocateUniqueDescriptorSet(descriptorSetLayouts);
-    std::vector<SharedDescriptorSet> sharedDescriptorSets;
-    sharedDescriptorSets.reserve(uniqueDescriptorSets.size());
-    for (auto &uniqueDescriptorSet : uniqueDescriptorSets)
-    {
-        sharedDescriptorSets.push_back(std::move(uniqueDescriptorSet));
-    }
-    return sharedDescriptorSets;
-}
 
 void DescriptorManager::ResetDescriptorPool()
 {

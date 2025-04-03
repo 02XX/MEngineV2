@@ -1,6 +1,7 @@
 #include "Application.hpp"
 #include "Context.hpp"
 #include "ShaderManager.hpp"
+#include <vector>
 
 namespace MEngine
 {
@@ -23,7 +24,13 @@ Application::Application()
     }
     Uint32 extensionCount = 0;
     auto extensions = SDL_Vulkan_GetInstanceExtensions(&extensionCount);
-    std::vector<const char *> requiredExtensions(extensions, extensions + extensionCount);
+    std::vector<const char *> instanceRequiredExtensions(extensions, extensions + extensionCount);
+    std::vector<const char *> deviceRequiredExtension;
+    deviceRequiredExtension.push_back("VK_KHR_swapchain");
+#ifdef PLATFORM_MACOS
+    instanceRequiredExtensions.push_back("VK_KHR_portability_enumeration");
+    deviceRequiredExtension.push_back("VK_KHR_portability_subset");
+#endif
     // vulkan
     auto &context = Context::Instance();
     context.Init(
@@ -36,7 +43,7 @@ Application::Application()
             }
             return vk::SurfaceKHR(surface);
         },
-        requiredExtensions);
+        instanceRequiredExtensions, {"VK_LAYER_KHRONOS_validation"}, deviceRequiredExtension, {""});
 
     // manager
     mRegistry = std::make_shared<entt::registry>();

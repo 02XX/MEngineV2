@@ -1,4 +1,5 @@
 #include "Context.hpp"
+#include <vulkan/vulkan_enums.hpp>
 
 namespace MEngine
 {
@@ -70,6 +71,9 @@ void Context::CreateInstance()
         .setPEnabledLayerNames(mVKInstanceEnabledLayers)
         .setPEnabledExtensionNames(mVKInstanceEnabledExtensions);
     LogT("Instance Version: {}.{}.{}.{}", variant, major, minor, patch);
+#ifdef PLATFORM_MACOS
+    instanceCreateInfo.setFlags(vk::InstanceCreateFlagBits::eEnumeratePortabilityKHR);
+#endif
     mVKInstance = vk::createInstanceUnique(instanceCreateInfo);
     if (!mVKInstance)
     {
@@ -368,15 +372,15 @@ void Context::CreateSwapchain()
     swapchainCreateInfo.setSurface(mSurface.get())
         .setClipped(true)
         .setCompositeAlpha(vk::CompositeAlphaFlagBitsKHR::eOpaque)
-        .setImageArrayLayers(surfaceInfo.imageArrayLayer)
-        .setMinImageCount(surfaceInfo.imageCount)
-        .setImageColorSpace(surfaceInfo.format.colorSpace)
-        .setImageExtent(surfaceInfo.extent)
-        .setImageFormat(surfaceInfo.format.format)
+        .setImageArrayLayers(mSurfaceInfo.imageArrayLayer)
+        .setMinImageCount(mSurfaceInfo.imageCount)
+        .setImageColorSpace(mSurfaceInfo.format.colorSpace)
+        .setImageExtent(mSurfaceInfo.extent)
+        .setImageFormat(mSurfaceInfo.format.format)
         .setImageUsage(vk::ImageUsageFlagBits::eColorAttachment)
-        .setPresentMode(surfaceInfo.presentMode)
+        .setPresentMode(mSurfaceInfo.presentMode)
         .setPreTransform(vk::SurfaceTransformFlagBitsKHR::eIdentity)
-        .setMinImageCount(surfaceInfo.imageCount)
+        .setMinImageCount(mSurfaceInfo.imageCount)
         .setOldSwapchain(nullptr);
     if (mQueueFamilyIndicates.graphicsFamily == mQueueFamilyIndicates.presentFamily)
     {

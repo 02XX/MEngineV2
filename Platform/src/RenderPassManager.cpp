@@ -1,4 +1,5 @@
 #include "RenderPassManager.hpp"
+#include "magic_enum/magic_enum.hpp"
 
 namespace MEngine
 {
@@ -17,7 +18,7 @@ RenderPassManager::RenderPassManager(std::shared_ptr<ImageManager> imageManager)
     // // 创建天空盒渲染通道
     // CreateSkyRenderPass();
     // 创建UI渲染通道
-    // CreateUIRenderPass();
+    CreateUIRenderPass();
 
     // 创建延迟渲染的GBuffer帧缓冲
     // CreateDefferFrameBuffer();
@@ -32,7 +33,7 @@ RenderPassManager::RenderPassManager(std::shared_ptr<ImageManager> imageManager)
     // // 创建天空盒帧缓冲
     // CreateSkyFrameBuffer();
     // 创建UI帧缓冲
-    // CreateUIFrameBuffer();
+    CreateUIFrameBuffer();
 }
 void RenderPassManager::CreateGBufferRenderPass()
 {
@@ -196,19 +197,9 @@ void RenderPassManager::CreateLightingRenderPass()
 void RenderPassManager::CreateTranslucencyRenderPass()
 {
     auto &context = Context::Instance();
-    // 2. 创建附件
+    // 1. 创建颜色附件
     std::array<vk::AttachmentDescription, 2> attachments;
-    // 1. 创建深度模板附件
     attachments[0]
-        .setFormat(vk::Format::eD32SfloatS8Uint) // 32位深度+8位模板存储
-        .setSamples(vk::SampleCountFlagBits::e1)
-        .setLoadOp(vk::AttachmentLoadOp::eClear)
-        .setStoreOp(vk::AttachmentStoreOp::eDontCare)
-        .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
-        .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
-        .setInitialLayout(vk::ImageLayout::eUndefined)
-        .setFinalLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
-    attachments[1]
         .setFormat(context.GetSurfaceInfo().format.format) // Swapchain格式
         .setSamples(vk::SampleCountFlagBits::e1)
         .setLoadOp(vk::AttachmentLoadOp::eClear)
@@ -217,12 +208,23 @@ void RenderPassManager::CreateTranslucencyRenderPass()
         .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
         .setInitialLayout(vk::ImageLayout::eUndefined)
         .setFinalLayout(vk::ImageLayout::ePresentSrcKHR);
+    // 2. 创建深度模板附件
+    attachments[1]
+        .setFormat(vk::Format::eD32SfloatS8Uint) // 32位深度+8位模板存储
+        .setSamples(vk::SampleCountFlagBits::e1)
+        .setLoadOp(vk::AttachmentLoadOp::eClear)
+        .setStoreOp(vk::AttachmentStoreOp::eStore)
+        .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
+        .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
+        .setInitialLayout(vk::ImageLayout::eUndefined)
+        .setFinalLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
+
     // 2. 创建子通道
     std::array<vk::SubpassDescription, 1> subpasses;
     std::array<vk::AttachmentReference, 1> colorRefs = {
-        vk::AttachmentReference(1, vk::ImageLayout::eColorAttachmentOptimal) // Swapchain
+        vk::AttachmentReference(0, vk::ImageLayout::eColorAttachmentOptimal) // Swapchain
     };
-    vk::AttachmentReference depthRef(0, vk::ImageLayout::eDepthStencilAttachmentOptimal);
+    vk::AttachmentReference depthRef(1, vk::ImageLayout::eDepthStencilAttachmentOptimal);
     subpasses[0]
         .setColorAttachments(colorRefs)                         // 颜色附件引用
         .setPipelineBindPoint(vk::PipelineBindPoint::eGraphics) // 图形管线绑定点
@@ -236,7 +238,7 @@ void RenderPassManager::CreateTranslucencyRenderPass()
     dependencies[0]
         .setSrcSubpass(vk::SubpassExternal)
         .setDstSubpass(0)
-        .setSrcStageMask(vk::PipelineStageFlagBits::eTopOfPipe)
+        .setSrcStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
         .setDstStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput |
                          vk::PipelineStageFlagBits::eEarlyFragmentTests)
         .setSrcAccessMask(vk::AccessFlagBits::eNone)
@@ -270,12 +272,12 @@ void RenderPassManager::CreateUIRenderPass()
     attachments[0]
         .setFormat(context.GetSurfaceInfo().format.format) // Swapchain格式
         .setSamples(vk::SampleCountFlagBits::e1)
-        .setLoadOp(vk::AttachmentLoadOp::eClear)   // 不需要清空
-        .setStoreOp(vk::AttachmentStoreOp::eStore) // 存储以便后续使用
+        .setLoadOp(vk::AttachmentLoadOp::eClear)
+        .setStoreOp(vk::AttachmentStoreOp::eStore)
         .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
         .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
         .setInitialLayout(vk::ImageLayout::eUndefined)
-        .setFinalLayout(vk::ImageLayout::ePresentSrcKHR); // 最终布局为呈现
+        .setFinalLayout(vk::ImageLayout::ePresentSrcKHR);
     // 2. 创建子通道
     std::array<vk::SubpassDescription, 1> subpasses;
     std::array<vk::AttachmentReference, 1> colorRefs = {
@@ -434,8 +436,8 @@ void RenderPassManager::CreateTranslucencyFrameBuffer()
         mTranslucencyFrameResources[i].depthStencilImage = std::move(depthImage);
         mTranslucencyFrameResources[i].depthStencilImageView = std::move(depthImageView);
         auto attachments = std::array<vk::ImageView, 2>{
-            mTranslucencyFrameResources[i].depthStencilImageView.get(), // 深度模板图像视图
             mTranslucencyFrameResources[i].imageView,                   // Swapchain图像视图
+            mTranslucencyFrameResources[i].depthStencilImageView.get(), // 深度模板图像视图
         };
         vk::FramebufferCreateInfo framebufferCreateInfo;
         framebufferCreateInfo.setRenderPass(renderPass)
@@ -516,7 +518,7 @@ vk::Framebuffer RenderPassManager::GetFrameBuffer(RenderPassType type, uint32_t 
     }
     else
     {
-        LogE("Framebuffer not found for type {} and index {}", static_cast<int>(type), index);
+        LogE("Framebuffer not found for type {} and index {}", magic_enum::enum_name(type), index);
         return nullptr;
     }
 }

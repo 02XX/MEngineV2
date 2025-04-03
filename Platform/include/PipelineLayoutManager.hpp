@@ -3,7 +3,6 @@
 #include "Logger.hpp"
 #include "MEngine.hpp"
 #include "NoCopyable.hpp"
-#include "SharedHandle.hpp"
 #include <memory>
 #include <unordered_map>
 #include <vulkan/vulkan.hpp>

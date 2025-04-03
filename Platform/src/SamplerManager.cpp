@@ -43,16 +43,5 @@ vk::UniqueSampler SamplerManager::CreateUniqueSampler(vk::Filter magFilter, vk::
     LogD("Sampler created");
     return sampler;
 }
-SharedSampler SamplerManager::CreateSharedSampler(vk::Filter magFilter, vk::Filter minFilter,
-                                                  vk::SamplerMipmapMode mipmapMode, vk::SamplerAddressMode addressMode,
-                                                  float mipLodBias, vk::Bool32 anisotropyEnable, float maxAnisotropy,
-                                                  vk::Bool32 compareEnable, vk::CompareOp compareOp, float minLod,
-                                                  float maxLod, vk::BorderColor borderColor,
-                                                  vk::Bool32 unnormalizedCoordinates)
-{
-    auto uniqueSampler =
-        CreateUniqueSampler(magFilter, minFilter, mipmapMode, addressMode, mipLodBias, anisotropyEnable, maxAnisotropy,
-                            compareEnable, compareOp, minLod, maxLod, borderColor, unnormalizedCoordinates);
-    return std::move(uniqueSampler);
-}
+
 } // namespace MEngine

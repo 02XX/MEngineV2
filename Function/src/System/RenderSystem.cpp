@@ -1,6 +1,4 @@
 #include "System/RenderSystem.hpp"
-#include "Logger.hpp"
-#include <vulkan/vulkan_structs.hpp>
 namespace MEngine
 {
 
@@ -30,7 +28,7 @@ void RenderSystem::Init()
         mRenderFinishedSemaphores.push_back(mSyncPrimitiveManager->CreateUniqueSemaphore());
         mInFlightFences.push_back(mSyncPrimitiveManager->CreateFence(vk::FenceCreateFlagBits::eSignaled));
     }
-    // InitUI();
+    InitUI();
     mIsInit = true;
     LogI("RenderSystem Initialized");
 }
@@ -83,9 +81,9 @@ void RenderSystem::Shutdown()
     auto &context = Context::Instance();
     context.GetDevice().waitIdle();
 
-    // ImGui_ImplVulkan_Shutdown();
-    // ImGui_ImplSDL3_Shutdown();
-    // ImGui::DestroyContext();
+    ImGui_ImplVulkan_Shutdown();
+    ImGui_ImplSDL3_Shutdown();
+    ImGui::DestroyContext();
 
     mIsShutdown = true;
     LogI("RenderSystem Shutdown");
@@ -181,11 +179,11 @@ void RenderSystem::RenderTranslucencyPass()
     auto pipelineLayout = mPipelineLayoutManager->GetPipelineLayout(PipelineLayoutType::TranslucencyLayout);
     auto pipeline = mPipelineManager->GetPipeline(PipelineType::Translucency);
     auto renderPass = mRenderPassManager->GetRenderPass(RenderPassType::Translucency);
-    auto frameBuffer = mRenderPassManager->GetFrameBuffer(RenderPassType::Translucency, mFrameIndex);
+    auto frameBuffer = mRenderPassManager->GetFrameBuffer(RenderPassType::Translucency, mImageIndex);
     vk::RenderPassBeginInfo renderPassBeginInfo;
     std::array<vk::ClearValue, 2> clearValues{
-        vk::ClearValue(std::array<float, 4>{0.0f, 0.0f, 0.0f, 1.0f}), // 附件0: swapchain
-        vk::ClearDepthStencilValue(1.0f, 0)                           // 附件1: depth
+        vk::ClearValue(std::array<float, 4>{1.0f, 1.0f, 0.0f, 1.0f}), // 附件0: swapchain
+        vk::ClearDepthStencilValue(1.0f, 0)                         // 附件1: depth
     };
     clearValues[0].color = vk::ClearColorValue(std::array<float, 4>{0.0f, 1.0f, 0.0f, 1.0f}); // 附件0: Swapchain
     renderPassBeginInfo.setRenderPass(renderPass)
@@ -225,7 +223,7 @@ void RenderSystem::RenderSkyPass()
 }
 void RenderSystem::RenderUIPass()
 {
-    vk::ClearValue clearValue(std::array<float, 4>{1.0, 0.0, 0.0, 1.0}); // 明亮的红色
+    vk::ClearValue clearValue(std::array<float, 4>{0.1, 0.1, 0.1, 1.0});
     vk::RenderPassBeginInfo renderPassBeginInfo;
     auto frameBuffer = mRenderPassManager->GetFrameBuffer(RenderPassType::UI, mImageIndex);
     auto renderPass = mRenderPassManager->GetRenderPass(RenderPassType::UI);

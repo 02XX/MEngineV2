@@ -6,7 +6,7 @@
 #include "PipelineLayoutManager.hpp"
 #include "RenderPassManager.hpp"
 #include "ShaderManager.hpp"
-#include "SharedHandle.hpp"
+
 #include "Vertex.hpp"
 #include <memory>
 #include <vulkan/vulkan.hpp>

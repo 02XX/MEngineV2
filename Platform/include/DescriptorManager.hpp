@@ -4,7 +4,7 @@
 #include "Logger.hpp"
 #include "MEngine.hpp"
 #include "NoCopyable.hpp"
-#include "SharedHandle.hpp"
+
 #include <vector>
 #include <vulkan/vulkan.hpp>
 
@@ -44,9 +44,6 @@ class DescriptorManager final : public NoCopyable
 
     std::vector<UniqueDescriptorSet> AllocateUniqueDescriptorSet(
         std::vector<vk::DescriptorSetLayout> descriptorSetLayouts);
-    std::vector<SharedDescriptorSet> AllocateSharedDescriptorSet(
-        std::vector<vk::DescriptorSetLayout> descriptorSetLayouts);
-
     void ResetDescriptorPool();
     void SetDefaultPoolSizesProportion(PoolSizesProportion defaultPoolSizesProportion)
     {

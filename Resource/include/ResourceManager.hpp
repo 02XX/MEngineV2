@@ -6,7 +6,6 @@
 #include "MEngine.hpp"
 #include "PipelineLayoutManager.hpp"
 #include "PipelineManager.hpp"
-#include "SharedHandle.hpp"
 #include <cstdint>
 #include <memory>
 #include <unordered_map>

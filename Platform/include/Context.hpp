@@ -29,7 +29,7 @@ class Context final
         vk::PresentModeKHR presentMode;
         uint32_t imageCount;
         uint32_t imageArrayLayer;
-    } surfaceInfo;
+    };
     QueueFamilyIndicates mQueueFamilyIndicates;
     SurfaceInfo mSurfaceInfo;
     vk::UniqueInstance mVKInstance;
