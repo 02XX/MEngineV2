@@ -1,6 +1,5 @@
 #include "PipelineManager.hpp"
 
-
 namespace MEngine
 {
 PipelineManager::PipelineManager(std::shared_ptr<ShaderManager> shaderManager,
@@ -53,7 +52,7 @@ void PipelineManager::CommonSetting()
         .setRasterizerDiscardEnable(vk::False)
         .setPolygonMode(vk::PolygonMode::eFill)
         .setLineWidth(1.0f)
-        .setCullMode(vk::CullModeFlagBits::eBack)
+        .setCullMode(vk::CullModeFlagBits::eNone)
         .setFrontFace(vk::FrontFace::eCounterClockwise)
         .setDepthBiasEnable(vk::False);
 
