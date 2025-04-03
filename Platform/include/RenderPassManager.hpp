@@ -53,13 +53,13 @@ struct UIFrameResource
 {
     // 1. swapchain image
     vk::Image swapchainImage;
-    vk::ImageView imageView;
+    vk::ImageView swapchainImageView;
 };
 struct TranslucencyFrameResource
 {
     // 1. swapchain image
     vk::Image swapchainImage;
-    vk::ImageView imageView;
+    vk::ImageView swapchainImageView;
     // 2. depth stencil
     UniqueImage depthStencilImage;
     vk::UniqueImageView depthStencilImageView;

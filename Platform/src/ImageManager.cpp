@@ -160,7 +160,7 @@ void ImageManager::CopyBufferToImage(vk::Buffer srcBuffer, vk::Image dstImage, v
     auto fence = mSyncPrimitiveManager->CreateFence();
     vk::SubmitInfo submitInfo;
     submitInfo.setCommandBuffers(commandBuffer.get());
-    context.SubmitToTransferQueue({submitInfo}, fence);
+    context.SubmitToTransferQueue({submitInfo}, fence.get());
     auto result = context.GetDevice().waitForFences(fence.get(), vk::True, 1'000'000'000);
     if (result != vk::Result::eSuccess)
     {
@@ -202,7 +202,7 @@ void ImageManager::TransitionLayout(vk::Image image, vk::ImageLayout oldLayout, 
     auto fence = mSyncPrimitiveManager->CreateFence();
     vk::SubmitInfo submitInfo;
     submitInfo.setCommandBuffers(commandBuffer.get());
-    context.SubmitToTransferQueue({submitInfo}, fence);
+    context.SubmitToTransferQueue({submitInfo}, fence.get());
     auto result = context.GetDevice().waitForFences(fence.get(), vk::True, 1'000'000'000);
     if (result != vk::Result::eSuccess)
     {

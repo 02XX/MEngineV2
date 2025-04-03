@@ -332,9 +332,9 @@ So then it means you can just have an std::mutex to do the submission. Or else y
 vector and then call submit on it (all command buffers will be submitted in a single call as submit info takes pointer +
 size).
 */
-void Context::SubmitToGraphicQueue(std::vector<vk::SubmitInfo> submits, vk::UniqueFence &fence)
+void Context::SubmitToGraphicQueue(std::vector<vk::SubmitInfo> submits, vk::Fence fence)
 {
-    mGraphicQueue.submit(submits, fence.get());
+    mGraphicQueue.submit(submits, fence);
 }
 void Context::SubmitToPresnetQueue(vk::PresentInfoKHR presentInfo)
 {
@@ -345,9 +345,9 @@ void Context::SubmitToPresnetQueue(vk::PresentInfoKHR presentInfo)
         throw std::runtime_error("Failed to present to the queue");
     }
 }
-void Context::SubmitToTransferQueue(std::vector<vk::SubmitInfo> submits, vk::UniqueFence &fence)
+void Context::SubmitToTransferQueue(std::vector<vk::SubmitInfo> submits, vk::Fence fence)
 {
-    mTransferQueue.submit(submits, fence.get());
+    mTransferQueue.submit(submits, fence);
 }
 void Context::CreateVmaAllocator()
 {
@@ -377,7 +377,7 @@ void Context::CreateSwapchain()
         .setImageColorSpace(mSurfaceInfo.format.colorSpace)
         .setImageExtent(mSurfaceInfo.extent)
         .setImageFormat(mSurfaceInfo.format.format)
-        .setImageUsage(vk::ImageUsageFlagBits::eColorAttachment)
+        .setImageUsage(vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransferDst)
         .setPresentMode(mSurfaceInfo.presentMode)
         .setPreTransform(vk::SurfaceTransformFlagBitsKHR::eIdentity)
         .setMinImageCount(mSurfaceInfo.imageCount)
@@ -414,7 +414,7 @@ void Context::CreateSwapchainImages()
 }
 void Context::CreateSwapchainImageViews()
 {
-    for (auto &image : mSwapchainImages)
+    for (auto image : mSwapchainImages)
     {
         vk::ImageViewCreateInfo imageViewCreateInfo;
         imageViewCreateInfo.setImage(image)

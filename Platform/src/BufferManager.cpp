@@ -100,7 +100,7 @@ void BufferManager::CopyBuffer(vk::Buffer srcBuffer, vk::Buffer dstBuffer, vk::D
     commandBuffer->end();
     vk::SubmitInfo submitInfo{};
     submitInfo.setCommandBuffers(commandBuffer.get());
-    context.SubmitToTransferQueue({submitInfo}, fence);
+    context.SubmitToTransferQueue({submitInfo}, fence.get());
 
     auto result = context.GetDevice().waitForFences(fence.get(), vk::True, 1'000'000'000);
     if (result != vk::Result::eSuccess)

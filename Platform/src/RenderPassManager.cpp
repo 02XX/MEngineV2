@@ -426,8 +426,9 @@ void RenderPassManager::CreateTranslucencyFrameBuffer()
     mTranslucencyFrameResources.resize(swapchainImageViews.size());
     for (size_t i = 0; i < swapchainImageViews.size(); ++i)
     {
+        // 获取Swapchain图像和视图
         mTranslucencyFrameResources[i].swapchainImage = swapchainImages[i];
-        mTranslucencyFrameResources[i].imageView = swapchainImageViews[i];
+        mTranslucencyFrameResources[i].swapchainImageView = swapchainImageViews[i];
         // 创建深度模板图像和视图
         auto depthImage = mImageManager->CreateUniqueDepthStencil(extent);
         auto depthImageView = mImageManager->CreateImageView(
@@ -435,8 +436,9 @@ void RenderPassManager::CreateTranslucencyFrameBuffer()
             vk::ImageSubresourceRange{vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil, 0, 1, 0, 1});
         mTranslucencyFrameResources[i].depthStencilImage = std::move(depthImage);
         mTranslucencyFrameResources[i].depthStencilImageView = std::move(depthImageView);
+
         auto attachments = std::array<vk::ImageView, 2>{
-            mTranslucencyFrameResources[i].imageView,                   // Swapchain图像视图
+            mTranslucencyFrameResources[i].swapchainImageView,          // Swapchain图像视图
             mTranslucencyFrameResources[i].depthStencilImageView.get(), // 深度模板图像视图
         };
         vk::FramebufferCreateInfo framebufferCreateInfo;
@@ -474,11 +476,11 @@ void RenderPassManager::CreateUIFrameBuffer()
         auto swapchainImageView = swapchainImageViews[i];
         auto swapchainImage = swapchainImages[i];
         uiFrameResource.swapchainImage = swapchainImage;
-        uiFrameResource.imageView = swapchainImageView;
+        uiFrameResource.swapchainImageView = swapchainImageView;
         // 保存资源
         mUIFrameResources.push_back(std::move(uiFrameResource));
         // 创建帧缓冲
-        std::array<vk::ImageView, 1> attachments = {mUIFrameResources.back().imageView};
+        std::array<vk::ImageView, 1> attachments = {mUIFrameResources.back().swapchainImageView};
         vk::FramebufferCreateInfo framebufferCreateInfo;
         framebufferCreateInfo.setRenderPass(mRenderPasses[RenderPassType::UI].get())
             .setAttachments(attachments)

@@ -139,9 +139,9 @@ class Context final
     {
         return mTransferQueue;
     }
-    void SubmitToGraphicQueue(std::vector<vk::SubmitInfo> submits, vk::UniqueFence &fence);
+    void SubmitToGraphicQueue(std::vector<vk::SubmitInfo> submits, vk::Fence fence);
     void SubmitToPresnetQueue(vk::PresentInfoKHR presentInfo);
-    void SubmitToTransferQueue(std::vector<vk::SubmitInfo> submits, vk::UniqueFence &fence);
+    void SubmitToTransferQueue(std::vector<vk::SubmitInfo> submits, vk::Fence fence);
 };
 
 } // namespace MEngine

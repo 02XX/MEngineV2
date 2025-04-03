@@ -183,7 +183,7 @@ void RenderSystem::RenderTranslucencyPass()
     vk::RenderPassBeginInfo renderPassBeginInfo;
     std::array<vk::ClearValue, 2> clearValues{
         vk::ClearValue(std::array<float, 4>{1.0f, 1.0f, 0.0f, 1.0f}), // 附件0: swapchain
-        vk::ClearDepthStencilValue(1.0f, 0)                         // 附件1: depth
+        vk::ClearDepthStencilValue(1.0f, 0)                           // 附件1: depth
     };
     clearValues[0].color = vk::ClearColorValue(std::array<float, 4>{0.0f, 1.0f, 0.0f, 1.0f}); // 附件0: Swapchain
     renderPassBeginInfo.setRenderPass(renderPass)
@@ -259,7 +259,7 @@ void RenderSystem::Present()
         .setSignalSemaphores(mRenderFinishedSemaphores[mFrameIndex].get())
         .setWaitSemaphores(mImageAvailableSemaphores[mFrameIndex].get())
         .setWaitDstStageMask({waitStage});
-    context.SubmitToGraphicQueue({submitInfo}, mInFlightFences[mFrameIndex]);
+    context.SubmitToGraphicQueue({submitInfo}, mInFlightFences[mFrameIndex].get());
 
     vk::PresentInfoKHR presentInfo;
     auto swapchain = context.GetSwapchain();
