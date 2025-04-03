@@ -3,9 +3,9 @@
 #include "MEngine.hpp"
 #include "VMA.hpp"
 #include <cstdint>
+#include <mutex>
 #include <vector>
 #include <vulkan/vulkan.hpp>
-#include <vulkan/vulkan_handles.hpp>
 
 namespace MEngine
 {
@@ -41,12 +41,16 @@ class Context final
     vk::Queue mTransferQueue;
     VmaAllocator mVmaAllocator;
     vk::UniqueSwapchainKHR mSwapchain;
-    std::vector<vk::UniqueImageView> mSwapchainImageViews;
     std::vector<vk::Image> mSwapchainImages;
+    std::vector<vk::UniqueImageView> mSwapchainImageViews;
     std::vector<const char *> mVKInstanceEnabledExtensions;
     std::vector<const char *> mVKInstanceEnabledLayers;
     std::vector<const char *> mVKDeviceEnabledExtensions;
     std::vector<const char *> mVKDeviceEnabledLayers;
+
+    std::mutex mGraphicQueueMutex;
+    std::mutex mPresentQueueMutex;
+    std::mutex mTransferQueueMutex;
 
   private:
     Context() = default;

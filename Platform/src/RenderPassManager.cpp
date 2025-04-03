@@ -1,5 +1,4 @@
 #include "RenderPassManager.hpp"
-#include "magic_enum/magic_enum.hpp"
 
 namespace MEngine
 {
@@ -140,22 +139,10 @@ void RenderPassManager::CreateGBufferRenderPass()
     subpasses[1]
         .setPipelineBindPoint(vk::PipelineBindPoint::eGraphics) // 图形管线绑定点
         .setColorAttachments(swapchainRef)                      // 颜色附件引用（Swapchain）
-        .setPDepthStencilAttachment(nullptr)                    // 深度模板附件引用（无）
-        .setInputAttachments(lightingInputRefs)                 // 输入附件引用
-        .setPreserveAttachments(nullptr)                        // 保留附件（无）
-        .setResolveAttachments(nullptr);                        // 解析附件（无）
+        .setInputAttachments(lightingInputRefs);                // 输入附件引用
 
     // 3. 定义子通道依赖关系
-    std::array<vk::SubpassDependency, 3> dependencies;
-    // 外部->subpass0
-    dependencies[0]
-        .setSrcSubpass(vk::SubpassExternal)
-        .setDstSubpass(0)
-        .setSrcStageMask(vk::PipelineStageFlagBits::eTopOfPipe)
-        .setDstStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
-        .setSrcAccessMask(vk::AccessFlagBits::eNone)
-        .setDstAccessMask(vk::AccessFlagBits::eColorAttachmentWrite)
-        .setDependencyFlags(vk::DependencyFlagBits::eByRegion);
+    std::array<vk::SubpassDependency, 1> dependencies;
     // subpass0->subpass1
     dependencies[1]
         .setSrcSubpass(0)
@@ -213,7 +200,7 @@ void RenderPassManager::CreateTranslucencyRenderPass()
         .setFormat(vk::Format::eD32SfloatS8Uint) // 32位深度+8位模板存储
         .setSamples(vk::SampleCountFlagBits::e1)
         .setLoadOp(vk::AttachmentLoadOp::eClear)
-        .setStoreOp(vk::AttachmentStoreOp::eStore)
+        .setStoreOp(vk::AttachmentStoreOp::eDontCare)
         .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
         .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
         .setInitialLayout(vk::ImageLayout::eUndefined)
@@ -226,30 +213,13 @@ void RenderPassManager::CreateTranslucencyRenderPass()
     };
     vk::AttachmentReference depthRef(1, vk::ImageLayout::eDepthStencilAttachmentOptimal);
     subpasses[0]
-        .setColorAttachments(colorRefs)                         // 颜色附件引用
-        .setPipelineBindPoint(vk::PipelineBindPoint::eGraphics) // 图形管线绑定点
-        .setPDepthStencilAttachment(&depthRef)                  // 深度模板附件引用（无）
-        .setInputAttachments(nullptr)                           // 输入附件引用（无）
-        .setPreserveAttachments(nullptr)                        // 保留附件（无）
-        .setResolveAttachments(nullptr);                        // 解析附件（无）
-    // 3. 定义子通道依赖关系
-    std::array<vk::SubpassDependency, 1> dependencies;
-    // 外部->subpass0
-    dependencies[0]
-        .setSrcSubpass(vk::SubpassExternal)
-        .setDstSubpass(0)
-        .setSrcStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
-        .setDstStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput |
-                         vk::PipelineStageFlagBits::eEarlyFragmentTests)
-        .setSrcAccessMask(vk::AccessFlagBits::eNone)
-        .setDstAccessMask(vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eDepthStencilAttachmentWrite)
-        .setDependencyFlags(vk::DependencyFlagBits::eByRegion);
+        .setColorAttachments(colorRefs)
+        .setPipelineBindPoint(vk::PipelineBindPoint::eGraphics)
+        .setPDepthStencilAttachment(&depthRef);
+
     // 4. 创建渲染通道
     vk::RenderPassCreateInfo renderPassCreateInfo;
-    renderPassCreateInfo
-        .setAttachments(attachments)    // 附件描述
-        .setSubpasses(subpasses)        // 子通道描述
-        .setDependencies(dependencies); // 依赖关系描述
+    renderPassCreateInfo.setAttachments(attachments).setSubpasses(subpasses).setDependencies({});
     auto renderPass = Context::Instance().GetDevice().createRenderPassUnique(renderPassCreateInfo);
     if (!renderPass)
     {
@@ -290,32 +260,11 @@ void RenderPassManager::CreateUIRenderPass()
         .setInputAttachments(nullptr)                           // 输入附件引用（无）
         .setPreserveAttachments(nullptr)                        // 保留附件（无）
         .setResolveAttachments(nullptr);                        // 解析附件（无）
-    // 3. 定义子通道依赖关系
-    std::array<vk::SubpassDependency, 2> dependencies;
-    // 外部->subpass0
-    dependencies[0]
-        .setSrcSubpass(vk::SubpassExternal)
-        .setDstSubpass(0)
-        .setSrcStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
-        .setDstStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
-        .setSrcAccessMask(vk::AccessFlagBits::eNone)
-        .setDstAccessMask(vk::AccessFlagBits::eColorAttachmentWrite)
-        .setDependencyFlags(vk::DependencyFlagBits::eByRegion);
-    // subpass0->外部
-    dependencies[1]
-        .setSrcSubpass(0)
-        .setDstSubpass(vk::SubpassExternal)
-        .setSrcStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
-        .setDstStageMask(vk::PipelineStageFlagBits::eBottomOfPipe)
-        .setSrcAccessMask(vk::AccessFlagBits::eColorAttachmentWrite)
-        .setDstAccessMask(vk::AccessFlagBits::eNone)
-        .setDependencyFlags(vk::DependencyFlagBits::eByRegion);
     // 4. 创建渲染通道
     vk::RenderPassCreateInfo renderPassCreateInfo;
     renderPassCreateInfo
-        .setAttachments(attachments)    // 附件描述
-        .setSubpasses(subpasses)        // 子通道描述
-        .setDependencies(dependencies); // 依赖关系描述
+        .setAttachments(attachments) // 附件描述
+        .setSubpasses(subpasses);    // 子通道描述
     auto renderPass = Context::Instance().GetDevice().createRenderPassUnique(renderPassCreateInfo);
     if (!renderPass)
     {

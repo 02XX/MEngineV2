@@ -1,6 +1,4 @@
 #include "Image.hpp"
-#include "VMA.hpp"
-#include <vulkan/vulkan_core.h>
 
 namespace MEngine
 {

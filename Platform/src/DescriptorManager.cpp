@@ -1,5 +1,4 @@
 #include "DescriptorManager.hpp"
-#include "Logger.hpp"
 
 namespace MEngine
 {

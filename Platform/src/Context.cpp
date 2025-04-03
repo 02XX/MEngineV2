@@ -1,5 +1,5 @@
 #include "Context.hpp"
-#include <vulkan/vulkan_enums.hpp>
+
 
 namespace MEngine
 {
@@ -334,10 +334,12 @@ size).
 */
 void Context::SubmitToGraphicQueue(std::vector<vk::SubmitInfo> submits, vk::Fence fence)
 {
+    std::lock_guard<std::mutex> lock(mGraphicQueueMutex);
     mGraphicQueue.submit(submits, fence);
 }
 void Context::SubmitToPresnetQueue(vk::PresentInfoKHR presentInfo)
 {
+    std::lock_guard<std::mutex> lock(mPresentQueueMutex);
     auto result = mPresentQueue.presentKHR(presentInfo);
     if (result != vk::Result::eSuccess)
     {
@@ -347,6 +349,7 @@ void Context::SubmitToPresnetQueue(vk::PresentInfoKHR presentInfo)
 }
 void Context::SubmitToTransferQueue(std::vector<vk::SubmitInfo> submits, vk::Fence fence)
 {
+    std::lock_guard<std::mutex> lock(mTransferQueueMutex);
     mTransferQueue.submit(submits, fence);
 }
 void Context::CreateVmaAllocator()
@@ -377,7 +380,12 @@ void Context::CreateSwapchain()
         .setImageColorSpace(mSurfaceInfo.format.colorSpace)
         .setImageExtent(mSurfaceInfo.extent)
         .setImageFormat(mSurfaceInfo.format.format)
-        .setImageUsage(vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransferDst)
+        .setImageUsage(
+            vk::ImageUsageFlagBits::eColorAttachment |
+            vk::ImageUsageFlagBits::eTransferDst |
+            vk::ImageUsageFlagBits::eTransferSrc |
+            vk::ImageUsageFlagBits::eStorage
+        )
         .setPresentMode(mSurfaceInfo.presentMode)
         .setPreTransform(vk::SurfaceTransformFlagBitsKHR::eIdentity)
         .setMinImageCount(mSurfaceInfo.imageCount)

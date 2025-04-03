@@ -26,6 +26,9 @@ Application::Application()
     auto extensions = SDL_Vulkan_GetInstanceExtensions(&extensionCount);
     std::vector<const char *> instanceRequiredExtensions(extensions, extensions + extensionCount);
     std::vector<const char *> deviceRequiredExtension;
+    // instanceRequiredExtensions.push_back("VK_EXT_debug_utils");
+    std::vector<const char *> instanceRequiredLayers{"VK_LAYER_KHRONOS_validation",
+                                                     "VK_LAYER_KHRONOS_synchronization2"};
     deviceRequiredExtension.push_back("VK_KHR_swapchain");
 #ifdef PLATFORM_MACOS
     instanceRequiredExtensions.push_back("VK_KHR_portability_enumeration");
@@ -43,7 +46,7 @@ Application::Application()
             }
             return vk::SurfaceKHR(surface);
         },
-        instanceRequiredExtensions, {"VK_LAYER_KHRONOS_validation"}, deviceRequiredExtension, {""});
+        instanceRequiredExtensions, instanceRequiredLayers, deviceRequiredExtension, {""});
 
     // manager
     mRegistry = std::make_shared<entt::registry>();

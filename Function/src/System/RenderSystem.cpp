@@ -24,9 +24,12 @@ void RenderSystem::Init()
     // fence/semaphore
     for (size_t i = 0; i < mFrameCount; ++i)
     {
-        mImageAvailableSemaphores.push_back(mSyncPrimitiveManager->CreateUniqueSemaphore());
-        mRenderFinishedSemaphores.push_back(mSyncPrimitiveManager->CreateUniqueSemaphore());
-        mInFlightFences.push_back(mSyncPrimitiveManager->CreateFence(vk::FenceCreateFlagBits::eSignaled));
+        auto imageAvailableSemaphore = mSyncPrimitiveManager->CreateUniqueSemaphore();
+        auto renderFinishedSemaphores = mSyncPrimitiveManager->CreateUniqueSemaphore();
+        auto inFlightFence = mSyncPrimitiveManager->CreateFence(vk::FenceCreateFlagBits::eSignaled);
+        mImageAvailableSemaphores.push_back(std::move(imageAvailableSemaphore));
+        mRenderFinishedSemaphores.push_back(std::move(renderFinishedSemaphores));
+        mInFlightFences.push_back(std::move(inFlightFence));
     }
     InitUI();
     mIsInit = true;
@@ -124,7 +127,7 @@ void RenderSystem::Prepare()
         throw std::runtime_error("Failed to wait fence");
     }
 
-    context.GetDevice().resetFences(mInFlightFences[mFrameIndex].get());
+    context.GetDevice().resetFences({mInFlightFences[mFrameIndex].get()});
 
     mGraphicCommandBuffers[mFrameIndex]->reset();
 
@@ -223,7 +226,7 @@ void RenderSystem::RenderSkyPass()
 }
 void RenderSystem::RenderUIPass()
 {
-    vk::ClearValue clearValue(std::array<float, 4>{0.1, 0.1, 0.1, 1.0});
+    vk::ClearValue clearValue(std::array<float, 4>{1.0f, 1.0f, 0.0f, 1.0f});
     vk::RenderPassBeginInfo renderPassBeginInfo;
     auto frameBuffer = mRenderPassManager->GetFrameBuffer(RenderPassType::UI, mImageIndex);
     auto renderPass = mRenderPassManager->GetRenderPass(RenderPassType::UI);

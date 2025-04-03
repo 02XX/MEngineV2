@@ -1,7 +1,5 @@
 #include "PipelineManager.hpp"
-#include "Logger.hpp"
-#include "PipelineLayoutManager.hpp"
-#include <vulkan/vulkan.hpp>
+
 
 namespace MEngine
 {
