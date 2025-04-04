@@ -28,7 +28,6 @@ Logger::Logger()
 }
 Logger::~Logger()
 {
-    mLogger->flush();
 }
 Logger &Logger::Instance()
 {
