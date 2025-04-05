@@ -2,7 +2,9 @@
 
 namespace MEngine
 {
-PipelineLayoutManager::PipelineLayoutManager()
+
+PipelineLayoutManager::PipelineLayoutManager(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context)
+    : mLogger(logger), mContext(context)
 {
     // 创建延迟渲染管线布局
     // CreateDefferPipelineLayout();
@@ -61,24 +63,23 @@ void PipelineLayoutManager::CreateDefferPipelineLayout()
     // 2. 创建描述符集布局
     vk::DescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo;
     descriptorSetLayoutCreateInfo.setBindings({descriptorSetLayoutBindings}); // set: 0
-    auto descriptorSetLayout =
-        Context::Instance().GetDevice().createDescriptorSetLayoutUnique(descriptorSetLayoutCreateInfo);
+    auto descriptorSetLayout = mContext->GetDevice().createDescriptorSetLayoutUnique(descriptorSetLayoutCreateInfo);
     if (!descriptorSetLayout)
     {
-        LogE("Failed to create descriptor set layout for DefferPipelineLayout");
+        mLogger->Error("Failed to create descriptor set layout for DefferPipelineLayout");
     }
     mDescriptorSetLayouts[PipelineLayoutType::DefferLayout] = std::move(descriptorSetLayout);
     // 3. 创建管线布局
     vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo;
     pipelineLayoutCreateInfo.setSetLayouts(mDescriptorSetLayouts[PipelineLayoutType::DefferLayout].get())
         .setPushConstantRanges(nullptr);
-    auto pipelineLayout = Context::Instance().GetDevice().createPipelineLayoutUnique(pipelineLayoutCreateInfo);
+    auto pipelineLayout = mContext->GetDevice().createPipelineLayoutUnique(pipelineLayoutCreateInfo);
     if (!pipelineLayout)
     {
-        LogE("Failed to create pipeline layout for DefferPipelineLayout");
+        mLogger->Error("Failed to create pipeline layout for DefferPipelineLayout");
     }
     mPipelineLayouts[PipelineLayoutType::DefferLayout] = std::move(pipelineLayout);
-    LogD("Deffer pipeline layout created successfully");
+    mLogger->Debug("Deffer pipeline layout created successfully");
 }
 void PipelineLayoutManager::CreateShadowDepthPipelineLayout()
 {
@@ -96,24 +97,23 @@ void PipelineLayoutManager::CreateTranslucencyPipelineLayout()
     // 2. 创建描述符集布局
     vk::DescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo;
     descriptorSetLayoutCreateInfo.setBindings({descriptorSetLayoutBindings}); // set: 0
-    auto descriptorSetLayout =
-        Context::Instance().GetDevice().createDescriptorSetLayoutUnique(descriptorSetLayoutCreateInfo);
+    auto descriptorSetLayout = mContext->GetDevice().createDescriptorSetLayoutUnique(descriptorSetLayoutCreateInfo);
     if (!descriptorSetLayout)
     {
-        LogE("Failed to create descriptor set layout for TranslucencyPipelineLayout");
+        mLogger->Error("Failed to create descriptor set layout for TranslucencyPipelineLayout");
     }
     mDescriptorSetLayouts[PipelineLayoutType::TranslucencyLayout] = std::move(descriptorSetLayout);
     // 3. 创建管线布局
     vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo;
     pipelineLayoutCreateInfo.setSetLayouts(mDescriptorSetLayouts[PipelineLayoutType::TranslucencyLayout].get())
         .setPushConstantRanges(nullptr);
-    auto pipelineLayout = Context::Instance().GetDevice().createPipelineLayoutUnique(pipelineLayoutCreateInfo);
+    auto pipelineLayout = mContext->GetDevice().createPipelineLayoutUnique(pipelineLayoutCreateInfo);
     if (!pipelineLayout)
     {
-        LogE("Failed to create pipeline layout for TranslucencyPipelineLayout");
+        mLogger->Error("Failed to create pipeline layout for TranslucencyPipelineLayout");
     }
     mPipelineLayouts[PipelineLayoutType::TranslucencyLayout] = std::move(pipelineLayout);
-    LogD("Translucency pipeline layout created successfully");
+    mLogger->Debug("Translucency pipeline layout created successfully");
 }
 void PipelineLayoutManager::CreatePostProcessPipelineLayout()
 {
@@ -133,7 +133,7 @@ vk::PipelineLayout PipelineLayoutManager::GetPipelineLayout(PipelineLayoutType t
     }
     else
     {
-        LogE("Pipeline layout not found for type {}", static_cast<int>(type));
+        mLogger->Error("Pipeline layout not found for type {}", static_cast<int>(type));
         return nullptr;
     }
 }
@@ -146,7 +146,7 @@ vk::DescriptorSetLayout PipelineLayoutManager::GetDescriptorSetLayout(PipelineLa
     }
     else
     {
-        LogE("Descriptor set layout not found for type {}", static_cast<int>(type));
+        mLogger->Error("Descriptor set layout not found for type {}", static_cast<int>(type));
         return nullptr;
     }
 }

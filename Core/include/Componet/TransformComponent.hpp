@@ -2,7 +2,6 @@
 #include "Buffer.hpp"
 #include "CommandBuffeManager.hpp"
 #include "Context.hpp"
-#include "Logger.hpp"
 #include "MEngine.hpp"
 
 #include "glm/glm.hpp"

@@ -1,17 +1,35 @@
 #pragma once
-#include "Logger.hpp"
+#include "Interface/ILogger.hpp"
+#include "Interface/IWindow.hpp"
 #include "MEngine.hpp"
+#include "NoCopyable.hpp"
 #include "VMA.hpp"
 #include <cstdint>
+#include <memory>
 #include <mutex>
 #include <vector>
 #include <vulkan/vulkan.hpp>
 
 namespace MEngine
 {
-class Context final
+struct ContextConfig
+{
+
+    std::vector<const char *> instanceRequiredExtensions;
+    std::vector<const char *> instanceRequiredLayers;
+    std::vector<const char *> deviceRequiredExtensions;
+    std::vector<const char *> deviceRequiredLayers;
+};
+class Context final : public NoCopyable
 {
   private:
+    // DI
+    std::shared_ptr<ILogger> mLogger;
+    std::shared_ptr<IWindow> mWindow;
+
+  private:
+    ContextConfig mConfig;
+
     uint32_t mInstanceVersion = 0;
     struct QueueFamilyIndicates
     {
@@ -22,6 +40,15 @@ class Context final
         std::optional<uint32_t> transferFamily;
         std::optional<uint32_t> transferFamilyCount;
     };
+    QueueFamilyIndicates mQueueFamilyIndicates;
+    vk::UniqueInstance mVKInstance;
+    vk::PhysicalDevice mPhysicalDevice;
+    vk::UniqueDevice mDevice;
+    vk::Queue mGraphicQueue;
+    vk::Queue mPresentQueue;
+    vk::Queue mTransferQueue;
+    VmaAllocator mVmaAllocator;
+    // surface
     struct SurfaceInfo
     {
         vk::SurfaceFormatKHR format;
@@ -29,58 +56,37 @@ class Context final
         vk::PresentModeKHR presentMode;
         uint32_t imageCount;
         uint32_t imageArrayLayer;
-    };
-    QueueFamilyIndicates mQueueFamilyIndicates;
-    SurfaceInfo mSurfaceInfo;
-    vk::UniqueInstance mVKInstance;
+    } mSurfaceInfo;
     vk::UniqueSurfaceKHR mSurface;
-    vk::PhysicalDevice mPhysicalDevice;
-    vk::UniqueDevice mDevice;
-    vk::Queue mGraphicQueue;
-    vk::Queue mPresentQueue;
-    vk::Queue mTransferQueue;
-    VmaAllocator mVmaAllocator;
+    // swapchain
     vk::UniqueSwapchainKHR mSwapchain;
     std::vector<vk::Image> mSwapchainImages;
     std::vector<vk::UniqueImageView> mSwapchainImageViews;
-    std::vector<const char *> mVKInstanceEnabledExtensions;
-    std::vector<const char *> mVKInstanceEnabledLayers;
-    std::vector<const char *> mVKDeviceEnabledExtensions;
-    std::vector<const char *> mVKDeviceEnabledLayers;
 
     std::mutex mGraphicQueueMutex;
     std::mutex mPresentQueueMutex;
     std::mutex mTransferQueueMutex;
 
   private:
-    Context() = default;
-    Context(const Context &) = delete;
-    Context(Context &&) = delete;
-    Context &operator=(const Context &) = delete;
-    Context &operator=(Context &&) = delete;
     void CreateInstance();
     void QueryQueueFamilyIndicates();
     void GetQueues();
     void PickPhysicalDevice();
     void CreateDevice();
-    void QuerySurfaceInfo();
-    uint32_t QueryMemory(uint32_t memoryTypeBits, vk::MemoryPropertyFlags property);
-    void CreateSurface(std::function<vk::SurfaceKHR(vk::Instance)> createSurface);
     int RatePhysicalDevices(vk::PhysicalDevice &physicalDevice);
     void CreateVmaAllocator();
+
+    void CreateSurface();
+    void QuerySurfaceInfo();
+
     void CreateSwapchain();
     void CreateSwapchainImages();
     void CreateSwapchainImageViews();
 
   public:
-    static Context &Instance();
+    Context(std::shared_ptr<ILogger> logger, std::shared_ptr<IWindow> window, ContextConfig config);
     ~Context();
-    void Init(std::function<vk::SurfaceKHR(vk::Instance)> createSurface,
-              const std::vector<const char *> instanceRequiredExtensions = {},
-              const std::vector<const char *> instanceRequiredLayers = {"VK_LAYER_KHRONOS_validation"},
-              const std::vector<const char *> deviceRequiredExtensions = {"VK_KHR_swapchain"},
-              const std::vector<const char *> deviceRequiredLayers = {});
-    void Quit();
+    void SetPresentQueueFamilyIndex(vk::SurfaceKHR surface);
     inline uint32_t GetInstanceVersion() const
     {
         return mInstanceVersion;
@@ -101,35 +107,9 @@ class Context final
     {
         return mQueueFamilyIndicates;
     }
-    inline const SurfaceInfo &GetSurfaceInfo() const
-    {
-        return mSurfaceInfo;
-    }
-    inline const vk::SurfaceKHR &GetSurface() const
-    {
-        return mSurface.get();
-    }
     inline const vk::Instance &GetInstance() const
     {
         return mVKInstance.get();
-    }
-    inline const vk::SwapchainKHR &GetSwapchain() const
-    {
-        return mSwapchain.get();
-    }
-    inline const std::vector<vk::ImageView> &GetSwapchainImageViews() const
-    {
-        static std::vector<vk::ImageView> swapchainImageViewsRaw;
-        swapchainImageViewsRaw.clear();
-        for (const auto &uniqueImageView : mSwapchainImageViews)
-        {
-            swapchainImageViewsRaw.push_back(uniqueImageView.get());
-        }
-        return swapchainImageViewsRaw;
-    }
-    inline const std::vector<vk::Image> &GetSwapchainImages() const
-    {
-        return mSwapchainImages;
     }
     inline const vk::Queue &GetGraphicQueue() const
     {
@@ -142,6 +122,32 @@ class Context final
     inline const vk::Queue &GetTransferQueue() const
     {
         return mTransferQueue;
+    }
+    inline const vk::SurfaceKHR &GetSurface() const
+    {
+        return mSurface.get();
+    }
+    inline const vk::SwapchainKHR &GetSwapchain() const
+    {
+        return mSwapchain.get();
+    }
+    inline const std::vector<vk::Image> &GetSwapchainImages() const
+    {
+        return mSwapchainImages;
+    }
+    inline std::vector<vk::ImageView> GetSwapchainImageViews() const
+    {
+        std::vector<vk::ImageView> imageViews;
+        imageViews.reserve(mSwapchainImageViews.size());
+        for (const auto &uniqueImageView : mSwapchainImageViews)
+        {
+            imageViews.push_back(uniqueImageView.get());
+        }
+        return imageViews;
+    }
+    inline const SurfaceInfo &GetSurfaceInfo() const
+    {
+        return mSurfaceInfo;
     }
     void SubmitToGraphicQueue(std::vector<vk::SubmitInfo> submits, vk::Fence fence);
     void SubmitToPresnetQueue(vk::PresentInfoKHR presentInfo);

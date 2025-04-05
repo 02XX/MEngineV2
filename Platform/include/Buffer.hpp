@@ -8,16 +8,22 @@ namespace MEngine
 {
 class Buffer final
 {
+  private:
+    // DI
+    std::shared_ptr<Context> mContext;
+
   public:
-    Buffer(vk::DeviceSize size, vk::BufferUsageFlags bufferUsage, VmaMemoryUsage memoryUsage,
-           VmaAllocationCreateFlags flags = 0);
+    Buffer(std::shared_ptr<Context> context, vk::DeviceSize size, vk::BufferUsageFlags bufferUsage,
+           VmaMemoryUsage memoryUsage, VmaAllocationCreateFlags flags = 0);
     Buffer(const Buffer &) = delete;
     Buffer &operator=(const Buffer &) = delete;
     Buffer(Buffer &&other) noexcept;
     Buffer &operator=(Buffer &&other) noexcept;
     ~Buffer();
-    const vk::Buffer &GetBuffer() const;
-    const VmaAllocationInfo &GetAllocationInfo() const;
+
+  public:
+    vk::Buffer GetBuffer() const;
+    VmaAllocationInfo GetAllocationInfo() const;
 
   private:
     VmaAllocation mAllocation;
@@ -26,7 +32,5 @@ class Buffer final
 
     void Release();
 };
-
 using UniqueBuffer = std::unique_ptr<Buffer>;
-using SharedBuffer = std::shared_ptr<Buffer>;
 } // namespace MEngine

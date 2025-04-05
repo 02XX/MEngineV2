@@ -19,7 +19,6 @@ void Task::Execute()
     }
     catch (const std::exception &e)
     {
-        LogE("Task failed: {}", e.what());
         mDone = true;
         {
             std::lock_guard<std::mutex> lock(mMutex);
@@ -66,7 +65,6 @@ TaskScheduler &TaskScheduler::Instance()
 }
 void TaskScheduler::Initialize(uint32_t threadCount, uint32_t taskCount)
 {
-    LogD("TaskScheduler initialized with {} threads and {} tasks", threadCount, taskCount);
     mTaskCount = taskCount;
     mThreadCount = threadCount;
     mStop = false;
@@ -93,7 +91,6 @@ void TaskScheduler::Initialize(uint32_t threadCount, uint32_t taskCount)
             std::stringstream ss;
             ss << std::this_thread::get_id();
             std::string threadID = ss.str();
-            LogT("TaskScheduler's worker {} thread exit", threadID);
         });
     }
 }

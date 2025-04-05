@@ -1,19 +1,18 @@
 #include "ImageManager.hpp"
 
-
 namespace MEngine
 {
-ImageManager::ImageManager()
+ImageManager::ImageManager(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context,
+                           std::shared_ptr<CommandBufferManager> commandBufferManager,
+                           std::shared_ptr<SyncPrimitiveManager> syncPrimitiveManager,
+                           std::shared_ptr<BufferManager> bufferManager)
+    : mContext(context), mLogger(logger), mCommandBufferManager(commandBufferManager),
+      mSyncPrimitiveManager(syncPrimitiveManager), mBufferManager(bufferManager)
 {
-    mCommandBufferManager =
-        std::make_unique<CommandBufferManager>(Context::Instance().GetQueueFamilyIndicates().transferFamily.value());
-    mSyncPrimitiveManager = std::make_unique<SyncPrimitiveManager>();
-    mBufferManager = std::make_unique<BufferManager>();
 }
 UniqueImage ImageManager::CreateUniqueTexture2D(vk::Extent2D extent, vk::Format format, uint32_t mipLevels,
                                                 const void *data)
 {
-    auto &context = Context::Instance();
     vk::ImageCreateInfo imageCreateInfo{};
     imageCreateInfo.setImageType(vk::ImageType::e2D)
         .setFormat(format)
@@ -26,7 +25,7 @@ UniqueImage ImageManager::CreateUniqueTexture2D(vk::Extent2D extent, vk::Format 
                   vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eColorAttachment |
                   vk::ImageUsageFlagBits::eInputAttachment)
         .setInitialLayout(vk::ImageLayout::eUndefined);
-    auto image = std::make_unique<Image>(imageCreateInfo, VMA_MEMORY_USAGE_GPU_ONLY);
+    auto image = std::make_unique<Image>(mContext, imageCreateInfo, VMA_MEMORY_USAGE_GPU_ONLY);
     if (data)
     {
         const vk::DeviceSize imageSize = extent.width * extent.height * GetFormatPixelSize(format);
@@ -39,15 +38,8 @@ UniqueImage ImageManager::CreateUniqueTexture2D(vk::Extent2D extent, vk::Format 
                          vk::ImageLayout::eShaderReadOnlyOptimal,
                          {vk::ImageAspectFlagBits::eColor, 0, mipLevels, 0, 1});
     }
-    LogD("Created Texture2D with {}x{}, format: {}", extent.width, extent.height, vk::to_string(format));
+    mLogger->Debug("Created Texture2D with {}x{}, format: {}", extent.width, extent.height, vk::to_string(format));
     return image;
-}
-
-SharedImage ImageManager::CreateSharedTexture2D(vk::Extent2D extent, vk::Format format, uint32_t mipLevels,
-                                                const void *data)
-{
-    auto uniqueTexture = CreateUniqueTexture2D(extent, format, mipLevels, data);
-    return std::move(uniqueTexture);
 }
 
 UniqueImage ImageManager::CreateUniqueRenderTarget(vk::Extent2D extent, vk::Format format, vk::ImageUsageFlags usage,
@@ -63,16 +55,10 @@ UniqueImage ImageManager::CreateUniqueRenderTarget(vk::Extent2D extent, vk::Form
         .setTiling(vk::ImageTiling::eOptimal)
         .setUsage(usage)
         .setInitialLayout(vk::ImageLayout::eUndefined);
-    auto image = std::make_unique<Image>(imageCreateInfo, VMA_MEMORY_USAGE_GPU_ONLY);
+    auto image = std::make_unique<Image>(mContext, imageCreateInfo, VMA_MEMORY_USAGE_GPU_ONLY);
     TransitionLayout(image->GetImage(), vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal,
                      {vk::ImageAspectFlagBits::eColor, 0, mipLevels, 0, 1});
     return image;
-}
-SharedImage ImageManager::CreateSharedRenderTarget(vk::Extent2D extent, vk::Format format, vk::ImageUsageFlags usage,
-                                                   uint32_t mipLevels, vk::SampleCountFlagBits samples)
-{
-    auto uniqueRenderTarget = CreateUniqueRenderTarget(extent, format, usage, mipLevels, samples);
-    return std::move(uniqueRenderTarget);
 }
 
 UniqueImage ImageManager::CreateUniqueDepthStencil(vk::Extent2D extent, vk::Format format, uint32_t mipLevels,
@@ -88,16 +74,10 @@ UniqueImage ImageManager::CreateUniqueDepthStencil(vk::Extent2D extent, vk::Form
         .setTiling(vk::ImageTiling::eOptimal)
         .setUsage(vk::ImageUsageFlagBits::eDepthStencilAttachment)
         .setInitialLayout(vk::ImageLayout::eUndefined);
-    auto image = std::make_unique<Image>(imageCreateInfo, VMA_MEMORY_USAGE_GPU_ONLY);
+    auto image = std::make_unique<Image>(mContext, imageCreateInfo, VMA_MEMORY_USAGE_GPU_ONLY);
     TransitionLayout(image->GetImage(), vk::ImageLayout::eUndefined, vk::ImageLayout::eDepthStencilAttachmentOptimal,
                      {vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil, 0, mipLevels, 0, 1});
     return image;
-}
-SharedImage ImageManager::CreateSharedDepthStencil(vk::Extent2D extent, vk::Format format, uint32_t mipLevels,
-                                                   vk::SampleCountFlagBits samples)
-{
-    auto uniqueDepthStencil = CreateUniqueDepthStencil(extent, format, mipLevels, samples);
-    return std::move(uniqueDepthStencil);
 }
 
 UniqueImage ImageManager::CreateUniqueStorageImage(vk::Extent2D extent, vk::Format format, uint32_t mipLevels,
@@ -117,22 +97,15 @@ UniqueImage ImageManager::CreateUniqueStorageImage(vk::Extent2D extent, vk::Form
     VmaAllocationCreateInfo allocInfo{};
     allocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
 
-    auto image = std::make_unique<Image>(imageCreateInfo, VMA_MEMORY_USAGE_GPU_ONLY);
+    auto image = std::make_unique<Image>(mContext, imageCreateInfo, VMA_MEMORY_USAGE_GPU_ONLY);
     TransitionLayout(image->GetImage(), vk::ImageLayout::eUndefined, vk::ImageLayout::eGeneral,
                      {vk::ImageAspectFlagBits::eColor, 0, mipLevels, 0, 1});
     return image;
-}
-SharedImage ImageManager::CreateSharedStorageImage(vk::Extent2D extent, vk::Format format, uint32_t mipLevels,
-                                                   vk::SampleCountFlagBits samples)
-{
-    auto uniqueStorageImage = CreateUniqueStorageImage(extent, format, mipLevels, samples);
-    return std::move(uniqueStorageImage);
 }
 
 void ImageManager::CopyBufferToImage(vk::Buffer srcBuffer, vk::Image dstImage, vk::Extent2D extent,
                                      vk::ImageSubresourceLayers imageSubresourceLayers)
 {
-    auto &context = Context::Instance();
     auto commandBuffer = mCommandBufferManager->CreatePrimaryCommandBuffer();
 
     // vk::ImageSubresourceLayers imageSubresourceLayers;
@@ -157,20 +130,19 @@ void ImageManager::CopyBufferToImage(vk::Buffer srcBuffer, vk::Image dstImage, v
     auto fence = mSyncPrimitiveManager->CreateFence();
     vk::SubmitInfo submitInfo;
     submitInfo.setCommandBuffers(commandBuffer.get());
-    context.SubmitToTransferQueue({submitInfo}, fence.get());
-    auto result = context.GetDevice().waitForFences(fence.get(), vk::True, 1'000'000'000);
+    mContext->SubmitToTransferQueue({submitInfo}, fence.get());
+    auto result = mContext->GetDevice().waitForFences(fence.get(), vk::True, 1'000'000'000);
     if (result != vk::Result::eSuccess)
     {
-        LogE("Copy image operation failed");
+        mLogger->Error("Copy image operation failed");
         throw std::runtime_error("Copy image operation failed");
     }
-    LogD("Copy image operation success");
+    mLogger->Debug("Copy image operation success");
 }
 
 void ImageManager::TransitionLayout(vk::Image image, vk::ImageLayout oldLayout, vk::ImageLayout newLayout,
                                     vk::ImageSubresourceRange subresourceRange)
 {
-    auto &context = Context::Instance();
     auto commandBuffer = mCommandBufferManager->CreatePrimaryCommandBuffer();
 
     vk::ImageMemoryBarrier barrier{};
@@ -199,14 +171,14 @@ void ImageManager::TransitionLayout(vk::Image image, vk::ImageLayout oldLayout, 
     auto fence = mSyncPrimitiveManager->CreateFence();
     vk::SubmitInfo submitInfo;
     submitInfo.setCommandBuffers(commandBuffer.get());
-    context.SubmitToTransferQueue({submitInfo}, fence.get());
-    auto result = context.GetDevice().waitForFences(fence.get(), vk::True, 1'000'000'000);
+    mContext->SubmitToTransferQueue({submitInfo}, fence.get());
+    auto result = mContext->GetDevice().waitForFences(fence.get(), vk::True, 1'000'000'000);
     if (result != vk::Result::eSuccess)
     {
-        LogE("Transition layout operation failed");
+        mLogger->Error("Transition layout operation failed");
         throw std::runtime_error("Transition layout operation failed");
     }
-    LogD("Transition layout operation success");
+    mLogger->Debug("Transition layout operation success");
 }
 
 uint32_t ImageManager::GetFormatPixelSize(vk::Format format) const
@@ -247,7 +219,7 @@ std::pair<vk::AccessFlags, vk::AccessFlags> ImageManager::GetAccessMasksForLayou
     }
     else
     {
-        LogE("Unsupported layout transition");
+        mLogger->Error("Unsupported layout transition");
         throw std::runtime_error("Unsupported layout transition");
     }
 }
@@ -274,21 +246,20 @@ std::pair<vk::PipelineStageFlags, vk::PipelineStageFlags> ImageManager::GetPipel
     }
     else
     {
-        LogE("Unsupported layout transition");
+        mLogger->Error("Unsupported layout transition");
         throw std::runtime_error("Unsupported layout transition");
     }
 }
 vk::UniqueImageView ImageManager::CreateImageView(vk::Image image, vk::Format format, vk::ComponentMapping components,
                                                   vk::ImageSubresourceRange subresourceRange)
 {
-    auto &context = Context::Instance();
     vk::ImageViewCreateInfo imageViewCreateInfo;
     imageViewCreateInfo.setImage(image)
         .setViewType(vk::ImageViewType::e2D)
         .setFormat(format)
         .setComponents(components)
         .setSubresourceRange(subresourceRange);
-    auto imageView = context.GetDevice().createImageViewUnique(imageViewCreateInfo);
+    auto imageView = mContext->GetDevice().createImageViewUnique(imageViewCreateInfo);
     return imageView;
 }
 } // namespace MEngine

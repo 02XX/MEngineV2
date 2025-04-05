@@ -2,15 +2,20 @@
 #include "Context.hpp"
 #include "MEngine.hpp"
 #include "VMA.hpp"
+#include <memory>
 #include <vulkan/vulkan.hpp>
-
 
 namespace MEngine
 {
 class Image final
 {
+  private:
+    // DI
+    std::shared_ptr<Context> mContext;
+
   public:
-    Image(const vk::ImageCreateInfo &imageInfo, VmaMemoryUsage memoryUsage, VmaAllocationCreateFlags flags = 0);
+    Image(std::shared_ptr<Context> context, const vk::ImageCreateInfo &imageInfo, VmaMemoryUsage memoryUsage,
+          VmaAllocationCreateFlags flags = 0);
 
     Image(const Image &) = delete;
     Image &operator=(const Image &) = delete;
@@ -20,8 +25,9 @@ class Image final
 
     ~Image();
 
-    const vk::Image &GetImage() const;
-    const VmaAllocationInfo &GetAllocationInfo() const;
+  public:
+    vk::Image GetImage() const;
+    VmaAllocationInfo GetAllocationInfo() const;
 
   private:
     void Release();
@@ -32,5 +38,4 @@ class Image final
 };
 
 using UniqueImage = std::unique_ptr<Image>;
-using SharedImage = std::shared_ptr<Image>;
 } // namespace MEngine

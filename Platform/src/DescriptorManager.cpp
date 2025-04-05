@@ -3,13 +3,14 @@
 namespace MEngine
 {
 
-DescriptorManager::DescriptorManager(uint32_t maxDescriptorSize, PoolSizesProportion defaultPoolSizesProportion)
-    : mMaxDescriptorSize(maxDescriptorSize), mDefaultPoolSizesProportion(defaultPoolSizesProportion)
+DescriptorManager::DescriptorManager(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context,
+                                     uint32_t maxDescriptorSize, PoolSizesProportion defaultPoolSizesProportion)
+    : mMaxDescriptorSize(maxDescriptorSize), mDefaultPoolSizesProportion(defaultPoolSizesProportion), mContext(context),
+      mLogger(logger)
 {
 }
 vk::UniqueDescriptorPool &DescriptorManager::AcquireAllocatablePool()
 {
-    auto &context = Context::Instance();
     if (!mAllocatablePools.empty())
     {
         return mAllocatablePools.back();
@@ -25,7 +26,7 @@ vk::UniqueDescriptorPool &DescriptorManager::AcquireAllocatablePool()
     descriptorPoolCreateInfo
         .setPoolSizes(descriptorPoolSize) // 设置池中各类描述符的数量
         .setMaxSets(mMaxDescriptorSize);  // 设置池最多可分配的 Descriptor Set 数量
-    auto descriptorPool = context.GetDevice().createDescriptorPoolUnique(descriptorPoolCreateInfo);
+    auto descriptorPool = mContext->GetDevice().createDescriptorPoolUnique(descriptorPoolCreateInfo);
     mAllocatablePools.push_back(std::move(descriptorPool));
     return mAllocatablePools.back();
 }
@@ -33,14 +34,13 @@ std::vector<UniqueDescriptorSet> DescriptorManager::AllocateUniqueDescriptorSet(
     std::vector<vk::DescriptorSetLayout> descriptorSetLayouts)
 {
     auto &allocatablePool = AcquireAllocatablePool();
-    auto &context = Context::Instance();
     vk::DescriptorSetAllocateInfo descriptorSetAllocateInfo;
     descriptorSetAllocateInfo.setDescriptorPool(allocatablePool.get())
         .setDescriptorSetCount(descriptorSetLayouts.size())
         .setSetLayouts(descriptorSetLayouts);
     try
     {
-        auto result = context.GetDevice().allocateDescriptorSetsUnique(descriptorSetAllocateInfo);
+        auto result = mContext->GetDevice().allocateDescriptorSetsUnique(descriptorSetAllocateInfo);
         return std::move(result);
     }
     catch (vk::OutOfPoolMemoryError &)
@@ -67,10 +67,9 @@ std::vector<UniqueDescriptorSet> DescriptorManager::AllocateUniqueDescriptorSet(
 
 void DescriptorManager::ResetDescriptorPool()
 {
-    auto &context = Context::Instance();
     for (auto &exhaustedPool : mExhaustedPools)
     {
-        context.GetDevice().resetDescriptorPool(exhaustedPool.get());
+        mContext->GetDevice().resetDescriptorPool(exhaustedPool.get());
         mAllocatablePools.push_back(std::move(exhaustedPool));
     }
     mExhaustedPools.clear();
@@ -79,7 +78,6 @@ void DescriptorManager::ResetDescriptorPool()
 void DescriptorManager::UpdateUniformDescriptorSet(const std::vector<Buffer> uniformBuffers, uint32_t binding,
                                                    vk::DescriptorSet dstSet)
 {
-    auto &context = Context::Instance();
     std::vector<vk::DescriptorBufferInfo> descriptorBufferInfos;
     descriptorBufferInfos.reserve(uniformBuffers.size());
     for (auto &uniformBuffer : uniformBuffers)
@@ -98,22 +96,21 @@ void DescriptorManager::UpdateUniformDescriptorSet(const std::vector<Buffer> uni
         .setDstArrayElement(0)
         .setDstBinding(binding)
         .setDstSet(dstSet);
-    context.GetDevice().updateDescriptorSets({writer}, {});
-    LogD("Uniform descriptor set updated");
+    mContext->GetDevice().updateDescriptorSets({writer}, {});
+    mLogger->Debug("Uniform descriptor set updated");
 }
 
 void DescriptorManager::UpdateCombinedSamplerImageDescriptorSet(std::vector<ImageDescriptor> imageDescriptors,
                                                                 uint32_t binding, vk::DescriptorSet dstSet)
 {
-    LogI("Updating descriptor set: handle={}", static_cast<void *>(dstSet));
-    auto &context = Context::Instance();
+    mLogger->Debug("Updating descriptor set: handle={}", static_cast<void *>(dstSet));
     vk::WriteDescriptorSet writer;
     std::vector<vk::DescriptorImageInfo> descriptorImageInfos;
     descriptorImageInfos.reserve(imageDescriptors.size());
     for (auto &imageDescriptor : imageDescriptors)
     {
-        LogI("ImageView Handle: {}", static_cast<void *>(imageDescriptor.imageView));
-        LogI("Sampler Handle: {}", static_cast<void *>(imageDescriptor.sampler));
+        mLogger->Debug("ImageView Handle: {}", static_cast<void *>(imageDescriptor.imageView));
+        mLogger->Debug("Sampler Handle: {}", static_cast<void *>(imageDescriptor.sampler));
         vk::DescriptorImageInfo descriptorImageInfo;
         descriptorImageInfo.setSampler(imageDescriptor.sampler)
             .setImageView(imageDescriptor.imageView)
@@ -126,8 +123,8 @@ void DescriptorManager::UpdateCombinedSamplerImageDescriptorSet(std::vector<Imag
         .setDstArrayElement(0)
         .setDstBinding(binding)
         .setDstSet(dstSet);
-    context.GetDevice().updateDescriptorSets({writer}, {});
-    LogD("Combined sampler image descriptor set updated");
+    mContext->GetDevice().updateDescriptorSets({writer}, {});
+    mLogger->Debug("Combined sampler image descriptor set updated");
 }
 
 } // namespace MEngine

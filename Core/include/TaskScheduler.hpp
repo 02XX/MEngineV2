@@ -1,5 +1,4 @@
 #pragma once
-#include "Logger.hpp"
 #include "MEngine.hpp"
 #include <condition_variable>
 #include <cstdint>

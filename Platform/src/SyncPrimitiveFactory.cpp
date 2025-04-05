@@ -2,32 +2,35 @@
 
 namespace MEngine
 {
+SyncPrimitiveManager::SyncPrimitiveManager(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context)
+    : mLogger(logger), mContext(context)
+{
+    // Create fences and semaphores if needed
+}
 vk::UniqueFence SyncPrimitiveManager::CreateFence(vk::FenceCreateFlags flags) const
 {
-    auto &context = Context::Instance();
     vk::FenceCreateInfo fenceCreateInfo{};
     fenceCreateInfo.setFlags(flags);
-    auto fence = context.GetDevice().createFenceUnique(fenceCreateInfo);
+    auto fence = mContext->GetDevice().createFenceUnique(fenceCreateInfo);
     if (!fence)
     {
-        LogE("Failed to create fence");
+        mLogger->Error("Failed to create fence");
         throw std::runtime_error("Failed to create fence");
     }
-    LogD("Fence created with flags: ", vk::to_string(flags));
+    mLogger->Debug("Fence created with flags: ", vk::to_string(flags));
     return fence;
 }
 
 vk::UniqueSemaphore SyncPrimitiveManager::CreateUniqueSemaphore() const
 {
-    auto &context = Context::Instance();
     vk::SemaphoreCreateInfo semaphoreCreateInfo{};
-    auto semaphore = context.GetDevice().createSemaphoreUnique(semaphoreCreateInfo);
+    auto semaphore = mContext->GetDevice().createSemaphoreUnique(semaphoreCreateInfo);
     if (!semaphore)
     {
-        LogE("Failed to create semaphore");
+        mLogger->Error("Failed to create semaphore");
         throw std::runtime_error("Failed to create semaphore");
     }
-    LogD("Semaphore created");
+    mLogger->Debug("Semaphore created");
     return semaphore;
 }
 } // namespace MEngine

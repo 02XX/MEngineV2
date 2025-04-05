@@ -45,10 +45,11 @@ add_subdirectory(3rdParty/VulkanMemoryAllocator)
 add_subdirectory(3rdParty/entt)
 add_subdirectory(3rdParty/glm)
 add_subdirectory(3rdParty/magic_enum)
-
+add_subdirectory(3rdParty/fmt)
+add_subdirectory(3rdParty/di)
 
 
 # test
 enable_testing()
-add_subdirectory(Test)
+# add_subdirectory(Test)
 

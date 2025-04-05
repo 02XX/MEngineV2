@@ -2,10 +2,11 @@
 
 namespace MEngine
 {
-PipelineManager::PipelineManager(std::shared_ptr<ShaderManager> shaderManager,
+PipelineManager::PipelineManager(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context,
+                                 std::shared_ptr<ShaderManager> shaderManager,
                                  std::shared_ptr<PipelineLayoutManager> pipelineLayoutManager,
                                  std::shared_ptr<RenderPassManager> renderPassManager)
-    : mShaderManager(shaderManager), mPipelineLayoutManager(pipelineLayoutManager),
+    : mLogger(logger), mContext(context), mShaderManager(shaderManager), mPipelineLayoutManager(pipelineLayoutManager),
       mRenderPassManager(renderPassManager)
 {
     // 创建延迟渲染管线
@@ -25,7 +26,6 @@ PipelineManager::PipelineManager(std::shared_ptr<ShaderManager> shaderManager,
 }
 void PipelineManager::CommonSetting()
 {
-    auto &context = Context::Instance();
     // ========== 1. 顶点输入状态 ==========
     mVertexBindingDescription = Vertex::GetVertexInputBindingDescription();
     auto vertexInputAttributeDescriptions = Vertex::GetVertexInputAttributeDescription();
@@ -41,11 +41,11 @@ void PipelineManager::CommonSetting()
     mViewport = vk::Viewport()
                     .setX(0.0f)
                     .setY(0.0f)
-                    .setWidth(static_cast<float>(context.GetSurfaceInfo().extent.width))
-                    .setHeight(static_cast<float>(context.GetSurfaceInfo().extent.height))
+                    .setWidth(static_cast<float>(mContext->GetSurfaceInfo().extent.width))
+                    .setHeight(static_cast<float>(mContext->GetSurfaceInfo().extent.height))
                     .setMinDepth(0.0f)
                     .setMaxDepth(1.0f);
-    mScissor = vk::Rect2D().setOffset({0, 0}).setExtent(context.GetSurfaceInfo().extent);
+    mScissor = vk::Rect2D().setOffset({0, 0}).setExtent(mContext->GetSurfaceInfo().extent);
     mViewportInfo.setViewportCount(1).setPViewports(&mViewport).setScissorCount(1).setPScissors(&mScissor);
     // ========== 5. 光栅化状态 ==========
     mRasterizationInfo.setDepthClampEnable(vk::False)
@@ -124,7 +124,6 @@ void PipelineManager::CreateGBufferPipeline()
 {
     mConfig = vk::GraphicsPipelineCreateInfo{};
     CommonSetting();
-    auto &context = Context::Instance();
     // ========== 3. 着色器阶段 ==========
     mShaderManager->LoadShaderModule("GBufferVertexShader", "shaders/gbuffer.vert.spv");
     mShaderManager->LoadShaderModule("GBufferFragmentShader", "shaders/gbuffer.frag.spv");
@@ -169,19 +168,19 @@ void PipelineManager::CreateGBufferPipeline()
         .setLayout(mPipelineLayoutManager->GetPipelineLayout(PipelineLayoutType::DefferLayout))
         .setRenderPass(mRenderPassManager->GetRenderPass(RenderPassType::Deffer))
         .setSubpass(0);
-    auto pipline = context.GetDevice().createGraphicsPipelineUnique(nullptr, mConfig);
+    auto pipline = mContext->GetDevice().createGraphicsPipelineUnique(nullptr, mConfig);
     if (pipline.result != vk::Result::eSuccess)
     {
-        LogE("Failed to create GBuffer pipeline");
+        mLogger->Error("Failed to create GBuffer pipeline");
     }
     mPipelines[PipelineType::DefferGBuffer] = std::move(pipline.value);
-    LogD("Create GBuffer pipeline success");
+    mLogger->Debug("Create GBuffer pipeline success");
 }
 void PipelineManager::CreateShadowDepthPipeline()
 {
     mConfig = vk::GraphicsPipelineCreateInfo{};
     CommonSetting();
-    auto &context = Context::Instance();
+
     // ========== 3. 着色器阶段 ==========
     mShaderManager->LoadShaderModule("ShadowDepthVertexShader", "shaders/shadowdepth.vert.spv");
     mShaderManager->LoadShaderModule("ShadowDepthFragmentShader", "shaders/shadowdepth.frag.spv");
@@ -200,19 +199,18 @@ void PipelineManager::CreateShadowDepthPipeline()
         .setLayout(mPipelineLayoutManager->GetPipelineLayout(PipelineLayoutType::ShadowDepthLayout))
         .setRenderPass(mRenderPassManager->GetRenderPass(RenderPassType::ShadowDepth))
         .setSubpass(0);
-    auto pipeline = context.GetDevice().createGraphicsPipelineUnique(nullptr, mConfig);
+    auto pipeline = mContext->GetDevice().createGraphicsPipelineUnique(nullptr, mConfig);
     if (pipeline.result != vk::Result::eSuccess)
     {
-        LogE("Failed to create ShadowDepth pipeline");
+        mLogger->Error("Failed to create ShadowDepth pipeline");
     }
     mPipelines[PipelineType::ShadowDepth] = std::move(pipeline.value);
-    LogD("Create ShadowDepth pipeline success");
+    mLogger->Debug("Create ShadowDepth pipeline success");
 }
 void PipelineManager::CreateLightingPipeline()
 {
     mConfig = vk::GraphicsPipelineCreateInfo{};
     CommonSetting();
-    auto &context = Context::Instance();
     // ========== 3. 着色器阶段 ==========
     mShaderManager->LoadShaderModule("LightingVertexShader", "shaders/lighting.vert.spv");
     mShaderManager->LoadShaderModule("LightingFragmentShader", "shaders/lighting.frag.spv");
@@ -230,19 +228,18 @@ void PipelineManager::CreateLightingPipeline()
         .setLayout(mPipelineLayoutManager->GetPipelineLayout(PipelineLayoutType::DefferLayout))
         .setRenderPass(mRenderPassManager->GetRenderPass(RenderPassType::Deffer))
         .setSubpass(1);
-    auto pipeline = context.GetDevice().createGraphicsPipelineUnique(nullptr, mConfig);
+    auto pipeline = mContext->GetDevice().createGraphicsPipelineUnique(nullptr, mConfig);
     if (pipeline.result != vk::Result::eSuccess)
     {
-        LogE("Failed to create Lighting pipeline");
+        mLogger->Error("Failed to create Lighting pipeline");
     }
     mPipelines[PipelineType::DefferLighting] = std::move(pipeline.value);
-    LogD("Create Lighting pipeline success");
+    mLogger->Debug("Create Lighting pipeline success");
 }
 void PipelineManager::CreateTranslucencyPipeline()
 {
     mConfig = vk::GraphicsPipelineCreateInfo{};
     CommonSetting();
-    auto &context = Context::Instance();
     // ========== 3. 着色器阶段 ==========
     mShaderManager->LoadShaderModule("TranslucencyVertexShader", "shaders/translucency.vert.spv");
     mShaderManager->LoadShaderModule("TranslucencyFragmentShader", "shaders/translucency.frag.spv");
@@ -260,19 +257,19 @@ void PipelineManager::CreateTranslucencyPipeline()
         .setLayout(mPipelineLayoutManager->GetPipelineLayout(PipelineLayoutType::TranslucencyLayout))
         .setRenderPass(mRenderPassManager->GetRenderPass(RenderPassType::Translucency))
         .setSubpass(0);
-    auto pipeline = context.GetDevice().createGraphicsPipelineUnique(nullptr, mConfig);
+    auto pipeline = mContext->GetDevice().createGraphicsPipelineUnique(nullptr, mConfig);
     if (pipeline.result != vk::Result::eSuccess)
     {
-        LogE("Failed to create Translucency pipeline");
+        mLogger->Error("Failed to create Translucency pipeline");
     }
     mPipelines[PipelineType::Translucency] = std::move(pipeline.value);
-    LogD("Create Translucency pipeline success");
+    mLogger->Debug("Create Translucency pipeline success");
 }
 void PipelineManager::CreatePostProcessPipeline()
 {
     mConfig = vk::GraphicsPipelineCreateInfo{};
     CommonSetting();
-    auto &context = Context::Instance();
+
     // ========== 3. 着色器阶段 ==========
     mShaderManager->LoadShaderModule("PostProcessVertexShader", "shaders/postprocess.vert.spv");
     mShaderManager->LoadShaderModule("PostProcessFragmentShader", "shaders/postprocess.frag.spv");
@@ -290,19 +287,19 @@ void PipelineManager::CreatePostProcessPipeline()
         .setLayout(mPipelineLayoutManager->GetPipelineLayout(PipelineLayoutType::PostProcessLayout))
         .setRenderPass(mRenderPassManager->GetRenderPass(RenderPassType::PostProcess))
         .setSubpass(0);
-    auto pipeline = context.GetDevice().createGraphicsPipelineUnique(nullptr, mConfig);
+    auto pipeline = mContext->GetDevice().createGraphicsPipelineUnique(nullptr, mConfig);
     if (pipeline.result != vk::Result::eSuccess)
     {
-        LogE("Failed to create PostProcess pipeline");
+        mLogger->Error("Failed to create PostProcess pipeline");
     }
     mPipelines[PipelineType::PostProcess] = std::move(pipeline.value);
-    LogD("Create PostProcess pipeline success");
+    mLogger->Debug("Create PostProcess pipeline success");
 }
 void PipelineManager::CreateSkyPipeline()
 {
     mConfig = vk::GraphicsPipelineCreateInfo{};
     CommonSetting();
-    auto &context = Context::Instance();
+
     // ========== 3. 着色器阶段 ==========
     mShaderManager->LoadShaderModule("SkyVertexShader", "shaders/sky.vert.spv");
     mShaderManager->LoadShaderModule("SkyFragmentShader", "shaders/sky.frag.spv");
@@ -320,19 +317,19 @@ void PipelineManager::CreateSkyPipeline()
         .setLayout(mPipelineLayoutManager->GetPipelineLayout(PipelineLayoutType::SkyLayout))
         .setRenderPass(mRenderPassManager->GetRenderPass(RenderPassType::Sky))
         .setSubpass(0);
-    auto pipeline = context.GetDevice().createGraphicsPipelineUnique(nullptr, mConfig);
+    auto pipeline = mContext->GetDevice().createGraphicsPipelineUnique(nullptr, mConfig);
     if (pipeline.result != vk::Result::eSuccess)
     {
-        LogE("Failed to create Sky pipeline");
+        mLogger->Error("Failed to create Sky pipeline");
     }
     mPipelines[PipelineType::Sky] = std::move(pipeline.value);
-    LogD("Create Sky pipeline success");
+    mLogger->Debug("Create Sky pipeline success");
 }
 void PipelineManager::CreateUIPipeline()
 {
     mConfig = vk::GraphicsPipelineCreateInfo{};
     CommonSetting();
-    auto &context = Context::Instance();
+
     // ========== 3. 着色器阶段 ==========
     mShaderManager->LoadShaderModule("UIVertexShader", "shaders/ui.vert.spv");
     mShaderManager->LoadShaderModule("UIFragmentShader", "shaders/ui.frag.spv");
@@ -350,13 +347,13 @@ void PipelineManager::CreateUIPipeline()
         .setLayout(mPipelineLayoutManager->GetPipelineLayout(PipelineLayoutType::UILayout))
         .setRenderPass(mRenderPassManager->GetRenderPass(RenderPassType::UI))
         .setSubpass(0);
-    auto pipeline = context.GetDevice().createGraphicsPipelineUnique(nullptr, mConfig);
+    auto pipeline = mContext->GetDevice().createGraphicsPipelineUnique(nullptr, mConfig);
     if (pipeline.result != vk::Result::eSuccess)
     {
-        LogE("Failed to create UI pipeline");
+        mLogger->Error("Failed to create UI pipeline");
     }
     mPipelines[PipelineType::UI] = std::move(pipeline.value);
-    LogD("Create UI pipeline success");
+    mLogger->Debug("Create UI pipeline success");
 }
 vk::Pipeline PipelineManager::GetPipeline(PipelineType type) const
 {
@@ -367,7 +364,7 @@ vk::Pipeline PipelineManager::GetPipeline(PipelineType type) const
     }
     else
     {
-        LogE("Pipeline not found: {}", static_cast<int>(type));
+        mLogger->Error("Pipeline not found: {}", static_cast<int>(type));
         return nullptr;
     }
 }

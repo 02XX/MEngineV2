@@ -13,11 +13,11 @@ class Mesh
     std::vector<uint32_t> mIndices;
     UniqueBuffer mVertexBuffer; // Vulkan 顶点缓冲区（由资源管理器填充）
     UniqueBuffer mIndexBuffer;  // Vulkan 索引缓冲区
-
-    BufferManager mBufferManager;
+    std::shared_ptr<BufferManager> mBufferManager;
 
   public:
-    Mesh(const std::vector<Vertex> &vertices, const std::vector<uint32_t> &indices);
+    Mesh(std::shared_ptr<BufferManager> bufferManager, const std::vector<Vertex> &vertices,
+         const std::vector<uint32_t> &indices);
     vk::Buffer GetVertexBuffer() const;
     vk::Buffer GetIndexBuffer() const;
     uint32_t GetIndexCount() const;

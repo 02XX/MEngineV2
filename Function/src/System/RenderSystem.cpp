@@ -1,8 +1,10 @@
 #include "System/RenderSystem.hpp"
+#include "imgui_impl_sdl3.h"
 namespace MEngine
 {
 
-RenderSystem::RenderSystem(SDL_Window *window, std::shared_ptr<entt::registry> registry,
+RenderSystem::RenderSystem(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context,
+                           std::shared_ptr<IWindow> window, std::shared_ptr<entt::registry> registry,
                            std::shared_ptr<CommandBufferManager> commandBufferManager,
                            std::shared_ptr<SyncPrimitiveManager> syncPrimitiveManager,
                            std::shared_ptr<RenderPassManager> renderPassManager,
@@ -10,13 +12,12 @@ RenderSystem::RenderSystem(SDL_Window *window, std::shared_ptr<entt::registry> r
                            std::shared_ptr<PipelineManager> pipelineManager)
     : mRegistry(registry), mCommandBufferManager(commandBufferManager), mSyncPrimitiveManager(syncPrimitiveManager),
       mRenderPassManager(renderPassManager), mPipelineLayoutManager(pipelineLayoutManager),
-      mPipelineManager(pipelineManager), mWindow(window)
+      mPipelineManager(pipelineManager), mWindow(window), mLogger(logger), mContext(context)
 {
 }
 void RenderSystem::Init()
 {
-    auto &context = Context::Instance();
-    mFrameCount = context.GetSwapchainImageViews().size();
+    mFrameCount = mContext->GetSwapchainImageViews().size();
     mFrameIndex = 0;
     // command buffer
     mGraphicCommandBuffers = mCommandBufferManager->CreatePrimaryCommandBuffers(mFrameCount);
@@ -33,20 +34,20 @@ void RenderSystem::Init()
     }
     InitUI();
     mIsInit = true;
-    LogI("RenderSystem Initialized");
+    mLogger->Info("RenderSystem Initialized");
 }
 void RenderSystem::InitUI()
 {
-    auto &context = Context::Instance();
+
     // UI
     // DescriptorPool
     vk::DescriptorPoolCreateInfo poolInfo;
     vk::DescriptorPoolSize poolSize(vk::DescriptorType::eCombinedImageSampler, 1000);
     poolInfo.setMaxSets(1000).setPoolSizes(poolSize).setFlags(vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet);
-    mUIDescriptorPool = context.GetDevice().createDescriptorPoolUnique(poolInfo);
+    mUIDescriptorPool = mContext->GetDevice().createDescriptorPoolUnique(poolInfo);
     if (!mUIDescriptorPool)
     {
-        LogE("Failed to create UI descriptor pool");
+        mLogger->Error("Failed to create UI descriptor pool");
     }
     //  Initialize ImGui context
     IMGUI_CHECKVERSION();
@@ -55,24 +56,24 @@ void RenderSystem::InitUI()
     mIO->ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
     ImGui::StyleColorsDark();
     // Initialize ImGui Vulkan Backend
-    ImGui_ImplSDL3_InitForVulkan(mWindow);
+    ImGui_ImplSDL3_InitForVulkan(static_cast<SDL_Window *>(mWindow->GetNativeHandle()));
     ImGui_ImplVulkan_InitInfo initInfo{};
-    initInfo.ApiVersion = context.GetInstanceVersion();
-    initInfo.Instance = context.GetInstance();
-    initInfo.PhysicalDevice = context.GetPhysicalDevice();
-    initInfo.Device = context.GetDevice();
-    initInfo.QueueFamily = context.GetQueueFamilyIndicates().graphicsFamily.value();
-    initInfo.Queue = context.GetGraphicQueue();
+    initInfo.ApiVersion = mContext->GetInstanceVersion();
+    initInfo.Instance = mContext->GetInstance();
+    initInfo.PhysicalDevice = mContext->GetPhysicalDevice();
+    initInfo.Device = mContext->GetDevice();
+    initInfo.QueueFamily = mContext->GetQueueFamilyIndicates().graphicsFamily.value();
+    initInfo.Queue = mContext->GetGraphicQueue();
     initInfo.DescriptorPool = mUIDescriptorPool.get();
     initInfo.RenderPass = mRenderPassManager->GetRenderPass(RenderPassType::UI);
-    initInfo.MinImageCount = context.GetSurfaceInfo().imageCount;
-    initInfo.ImageCount = context.GetSurfaceInfo().imageCount;
+    initInfo.MinImageCount = mContext->GetSurfaceInfo().imageCount;
+    initInfo.ImageCount = mContext->GetSurfaceInfo().imageCount;
     initInfo.MSAASamples = static_cast<VkSampleCountFlagBits>(vk::SampleCountFlagBits::e1);
     // optional
     initInfo.Subpass = 0;
     // initInfo.DescriptorPoolSize = 1000;
     ImGui_ImplVulkan_Init(&initInfo);
-    LogD("ImGui Vulkan Backend Initialized");
+    mLogger->Debug("ImGui Vulkan Backend Initialized");
 }
 RenderSystem::~RenderSystem()
 {
@@ -81,15 +82,15 @@ RenderSystem::~RenderSystem()
 }
 void RenderSystem::Shutdown()
 {
-    auto &context = Context::Instance();
-    context.GetDevice().waitIdle();
+
+    mContext->GetDevice().waitIdle();
 
     ImGui_ImplVulkan_Shutdown();
     ImGui_ImplSDL3_Shutdown();
     ImGui::DestroyContext();
 
     mIsShutdown = true;
-    LogI("RenderSystem Shutdown");
+    mLogger->Info("RenderSystem Shutdown");
 }
 // Create Done
 
@@ -119,24 +120,24 @@ void RenderSystem::Tick(float deltaTime)
 
 void RenderSystem::Prepare()
 {
-    auto &context = Context::Instance();
-    auto result = context.GetDevice().waitForFences({mInFlightFences[mFrameIndex].get()}, VK_TRUE,
-                                                    1000000000); // 1s
+
+    auto result = mContext->GetDevice().waitForFences({mInFlightFences[mFrameIndex].get()}, VK_TRUE,
+                                                      1000000000); // 1s
     if (result != vk::Result::eSuccess)
     {
         throw std::runtime_error("Failed to wait fence");
     }
 
-    context.GetDevice().resetFences({mInFlightFences[mFrameIndex].get()});
+    mContext->GetDevice().resetFences({mInFlightFences[mFrameIndex].get()});
 
     mGraphicCommandBuffers[mFrameIndex]->reset();
 
-    auto resultValue = context.GetDevice().acquireNextImageKHR(context.GetSwapchain(), 1000000000,
-                                                               mImageAvailableSemaphores[mFrameIndex].get(), nullptr);
+    auto resultValue = mContext->GetDevice().acquireNextImageKHR(mContext->GetSwapchain(), 1000000000,
+                                                                 mImageAvailableSemaphores[mFrameIndex].get(), nullptr);
     if (resultValue.result == vk::Result::eErrorOutOfDateKHR)
     {
-        auto &context = Context::Instance();
-        context.GetDevice().waitIdle();
+
+        mContext->GetDevice().waitIdle();
         // TODO:Recreate
         // ReCreate();
     }
@@ -154,7 +155,7 @@ void RenderSystem::RenderShadowDepthPass()
 }
 void RenderSystem::RenderDefferPass()
 {
-    auto &context = Context::Instance();
+
     vk::RenderPassBeginInfo renderPassBeginInfo;
     std::array<vk::ClearValue, 7> clearValues;
     clearValues[0].color = vk::ClearColorValue(std::array<float, 4>{0.0f, 0.0f, 0.0f, 1.0f}); // 附件0: 位置
@@ -166,7 +167,7 @@ void RenderSystem::RenderDefferPass()
     clearValues[6].color = vk::ClearColorValue(std::array<float, 4>{0.0f, 0.0f, 0.0f, 1.0f}); // 附件6: Swapchain
     renderPassBeginInfo.setRenderPass(mRenderPassManager->GetRenderPass(RenderPassType::Deffer))
         .setFramebuffer(mRenderPassManager->GetFrameBuffer(RenderPassType::Deffer, mImageIndex))
-        .setRenderArea(vk::Rect2D({0, 0}, context.GetSurfaceInfo().extent))
+        .setRenderArea(vk::Rect2D({0, 0}, mContext->GetSurfaceInfo().extent))
         .setClearValues(clearValues);
     mGraphicCommandBuffers[mFrameIndex]->beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);
 
@@ -175,8 +176,8 @@ void RenderSystem::RenderDefferPass()
 }
 void RenderSystem::RenderTranslucencyPass()
 {
-    auto &context = Context::Instance();
-    auto extent = context.GetSurfaceInfo().extent;
+
+    auto extent = mContext->GetSurfaceInfo().extent;
     // Translucency entities
     auto entities = mBatchMaterialComponents[PipelineType::Translucency];
     auto pipelineLayout = mPipelineLayoutManager->GetPipelineLayout(PipelineLayoutType::TranslucencyLayout);
@@ -232,7 +233,7 @@ void RenderSystem::RenderUIPass()
     auto renderPass = mRenderPassManager->GetRenderPass(RenderPassType::UI);
     renderPassBeginInfo.setRenderPass(renderPass)
         .setFramebuffer(frameBuffer)
-        .setRenderArea(vk::Rect2D({0, 0}, Context::Instance().GetSurfaceInfo().extent))
+        .setRenderArea(vk::Rect2D({0, 0}, mContext->GetSurfaceInfo().extent))
         .setClearValues(clearValue);
     mGraphicCommandBuffers[mFrameIndex]->beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);
     ImGui_ImplVulkan_NewFrame();
@@ -253,7 +254,7 @@ void RenderSystem::RenderUIPass()
 }
 void RenderSystem::Present()
 {
-    auto &context = Context::Instance();
+
     mGraphicCommandBuffers[mFrameIndex]->end();
 
     vk::SubmitInfo submitInfo;
@@ -262,20 +263,20 @@ void RenderSystem::Present()
         .setSignalSemaphores(mRenderFinishedSemaphores[mFrameIndex].get())
         .setWaitSemaphores(mImageAvailableSemaphores[mFrameIndex].get())
         .setWaitDstStageMask({waitStage});
-    context.SubmitToGraphicQueue({submitInfo}, mInFlightFences[mFrameIndex].get());
+    mContext->SubmitToGraphicQueue({submitInfo}, mInFlightFences[mFrameIndex].get());
 
     vk::PresentInfoKHR presentInfo;
-    auto swapchain = context.GetSwapchain();
+    auto swapchain = mContext->GetSwapchain();
     presentInfo.setSwapchains(swapchain)
         .setImageIndices({mImageIndex})
         .setWaitSemaphores({mRenderFinishedSemaphores[mFrameIndex].get()});
     try
     {
-        context.SubmitToPresnetQueue(presentInfo);
+        mContext->SubmitToPresnetQueue(presentInfo);
     }
     catch (vk::OutOfDateKHRError &)
     {
-        context.GetDevice().waitIdle();
+        mContext->GetDevice().waitIdle();
         // ReCreate();
     }
     mFrameIndex = (mFrameIndex + 1) % mFrameCount;

@@ -2,6 +2,10 @@
 
 namespace MEngine
 {
+SamplerManager::SamplerManager(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context)
+    : mLogger(logger), mContext(context)
+{
+}
 vk::UniqueSampler SamplerManager::CreateUniqueSampler(vk::Filter magFilter, vk::Filter minFilter,
                                                       vk::SamplerMipmapMode mipmapMode,
                                                       vk::SamplerAddressMode addressMode, float mipLodBias,
@@ -10,7 +14,6 @@ vk::UniqueSampler SamplerManager::CreateUniqueSampler(vk::Filter magFilter, vk::
                                                       float maxLod, vk::BorderColor borderColor,
                                                       vk::Bool32 unnormalizedCoordinates)
 {
-    auto &context = Context::Instance();
     vk::SamplerCreateInfo samplerCreateInfo;
     samplerCreateInfo
         .setMagFilter(magFilter)   // ​放大滤波：当纹理被放大时（纹素
@@ -39,8 +42,8 @@ vk::UniqueSampler SamplerManager::CreateUniqueSampler(vk::Filter magFilter, vk::
         .setUnnormalizedCoordinates(
             unnormalizedCoordinates); // 是否使用非归一化坐标：设为 VK_TRUE 时，纹理坐标范围为 [0, texWidth]、[0,
                                       // texHeight]、[0, texDepth]，而非 [0, 1]
-    auto sampler = context.GetDevice().createSamplerUnique(samplerCreateInfo);
-    LogD("Sampler created");
+    auto sampler = mContext->GetDevice().createSamplerUnique(samplerCreateInfo);
+    mLogger->Debug("Sampler created");
     return sampler;
 }
 

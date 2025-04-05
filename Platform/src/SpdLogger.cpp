@@ -1,0 +1,50 @@
+#include "SpdLogger.hpp"
+
+namespace MEngine
+{
+void SpdLogger::LogTrace(const std::string &message, const std::source_location &loc)
+{
+    mLogger->log(spdlog::source_loc{loc.file_name(), static_cast<int>(loc.line()), loc.function_name()},
+                 spdlog::level::trace, message);
+}
+void SpdLogger::LogDebug(const std::string &message, const std::source_location &loc)
+{
+    mLogger->log(spdlog::source_loc{loc.file_name(), static_cast<int>(loc.line()), loc.function_name()},
+                 spdlog::level::debug, message);
+}
+void SpdLogger::LogInfo(const std::string &message, const std::source_location &loc)
+{
+    mLogger->log(spdlog::source_loc{loc.file_name(), static_cast<int>(loc.line()), loc.function_name()},
+                 spdlog::level::info, message);
+}
+void SpdLogger::LogError(const std::string &message, const std::source_location &loc)
+{
+    mLogger->log(spdlog::source_loc{loc.file_name(), static_cast<int>(loc.line()), loc.function_name()},
+                 spdlog::level::err, message);
+}
+void SpdLogger::LogFatal(const std::string &message, const std::source_location &loc)
+{
+    mLogger->log(spdlog::source_loc{loc.file_name(), static_cast<int>(loc.line()), loc.function_name()},
+                 spdlog::level::critical, message);
+}
+SpdLogger::SpdLogger()
+{
+    try
+    {
+        // console sink
+        mConsoleSink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
+        // file sink
+        std::filesystem::path logPath = std::filesystem::current_path() / "MEngine.log";
+        mFileSink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(logPath.string(), 5 * 1024 * 1024, 3);
+        mLogger = std::make_shared<spdlog::logger>("MEngineLogger", spdlog::sinks_init_list{mConsoleSink, mFileSink});
+        mLogger->set_level(spdlog::level::trace);
+        mLogger->set_pattern("%^[%Y-%m-%d %H:%M:%S.%e] [%20s:%-4#] %l - %v%$");
+        spdlog::register_logger(mLogger);
+        spdlog::set_default_logger(mLogger);
+    }
+    catch (const spdlog::spdlog_ex &e)
+    {
+        std::cerr << "Logger initialization failed: " << e.what() << std::endl;
+    }
+}
+} // namespace MEngine

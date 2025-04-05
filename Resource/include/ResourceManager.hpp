@@ -2,7 +2,6 @@
 #include "Buffer.hpp"
 
 #include "Image.hpp"
-#include "Logger.hpp"
 #include "MEngine.hpp"
 #include "PipelineLayoutManager.hpp"
 #include "PipelineManager.hpp"

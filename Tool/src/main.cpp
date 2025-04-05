@@ -1,5 +1,9 @@
 #include "Application.hpp"
-#include "Logger.hpp"
+#include "Context.hpp"
+#include "boost/di.hpp"
+#include <memory>
+#include <vector>
+namespace di = boost::di;
 using namespace MEngine;
 int main()
 {

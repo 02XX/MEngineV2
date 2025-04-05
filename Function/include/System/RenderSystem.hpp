@@ -2,8 +2,11 @@
 #include "CommandBuffeManager.hpp"
 #include "Componet/MaterialComponent.hpp"
 #include "Componet/MeshComponent.hpp"
+#include "Context.hpp"
 #include "Image.hpp"
 #include "ImageManager.hpp"
+#include "Interface/ILogger.hpp"
+#include "Interface/IWindow.hpp"
 #include "MEngine.hpp"
 #include "PipelineLayoutManager.hpp"
 #include "PipelineManager.hpp"
@@ -28,14 +31,20 @@ namespace MEngine
 class RenderSystem final : public System
 {
   private:
+    // DI
+    std::shared_ptr<ILogger> mLogger;
+    std::shared_ptr<Context> mContext;
     std::shared_ptr<entt::registry> mRegistry;
-    std::map<PipelineType, std::vector<entt::entity>> mBatchMaterialComponents;
-
     std::shared_ptr<CommandBufferManager> mCommandBufferManager;
     std::shared_ptr<SyncPrimitiveManager> mSyncPrimitiveManager;
     std::shared_ptr<RenderPassManager> mRenderPassManager;
     std::shared_ptr<PipelineLayoutManager> mPipelineLayoutManager;
     std::shared_ptr<PipelineManager> mPipelineManager;
+    std::shared_ptr<IWindow> mWindow;
+
+  private:
+    std::map<PipelineType, std::vector<entt::entity>> mBatchMaterialComponents;
+
     int64_t mFrameIndex;
     int64_t mFrameCount;
     std::vector<vk::UniqueSemaphore> mImageAvailableSemaphores;
@@ -46,10 +55,8 @@ class RenderSystem final : public System
     std::vector<std::vector<vk::UniqueCommandBuffer>> mSecondaryCommandBuffers;
     std::vector<vk::UniqueCommandBuffer> mGraphicCommandBuffers;
 
-    // UI
     vk::UniqueDescriptorPool mUIDescriptorPool;
     ImGuiIO *mIO;
-    SDL_Window *mWindow;
 
   private:
     void InitUI();
@@ -63,8 +70,8 @@ class RenderSystem final : public System
     void Present();
 
   public:
-    RenderSystem(SDL_Window *window, std::shared_ptr<entt::registry> registry,
-                 std::shared_ptr<CommandBufferManager> commandBufferManager,
+    RenderSystem(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context, std::shared_ptr<IWindow> window,
+                 std::shared_ptr<entt::registry> registry, std::shared_ptr<CommandBufferManager> commandBufferManager,
                  std::shared_ptr<SyncPrimitiveManager> syncPrimitiveManager,
                  std::shared_ptr<RenderPassManager> renderPassManager,
                  std::shared_ptr<PipelineLayoutManager> pipelineLayoutManager,

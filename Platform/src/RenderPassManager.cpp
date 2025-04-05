@@ -2,7 +2,9 @@
 
 namespace MEngine
 {
-RenderPassManager::RenderPassManager(std::shared_ptr<ImageManager> imageManager) : mImageManager(imageManager)
+RenderPassManager::RenderPassManager(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context,
+                                     std::shared_ptr<ImageManager> imageManager)
+    : mLogger(logger), mContext(context), mImageManager(imageManager)
 {
     // 创建延迟渲染的GBuffer渲染通道
     // CreateGBufferRenderPass();
@@ -100,7 +102,7 @@ void RenderPassManager::CreateGBufferRenderPass()
         .setFinalLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
     // 1.7 Swapchain附件
     attachments[6]
-        .setFormat(Context::Instance().GetSurfaceInfo().format.format) // Swapchain格式
+        .setFormat(mContext->GetSurfaceInfo().format.format) // Swapchain格式
         .setSamples(vk::SampleCountFlagBits::e1)
         .setLoadOp(vk::AttachmentLoadOp::eDontCare) // 不需要清空
         .setStoreOp(vk::AttachmentStoreOp::eStore)  // 存储以便后续使用
@@ -167,13 +169,13 @@ void RenderPassManager::CreateGBufferRenderPass()
         .setAttachments(attachments)    // 附件描述
         .setSubpasses(subpasses)        // 子通道描述
         .setDependencies(dependencies); // 依赖关系描述
-    auto renderPass = Context::Instance().GetDevice().createRenderPassUnique(renderPassCreateInfo);
+    auto renderPass = mContext->GetDevice().createRenderPassUnique(renderPassCreateInfo);
     if (!renderPass)
     {
-        LogE("Failed to create GBuffer render pass");
+        mLogger->Error("Failed to create GBuffer render pass");
     }
     mRenderPasses[RenderPassType::Deffer] = std::move(renderPass);
-    LogD("Deffer render pass created successfully");
+    mLogger->Debug("Deffer render pass created successfully");
 }
 void RenderPassManager::CreateShadowDepthRenderPass()
 {
@@ -183,11 +185,11 @@ void RenderPassManager::CreateLightingRenderPass()
 }
 void RenderPassManager::CreateTranslucencyRenderPass()
 {
-    auto &context = Context::Instance();
+
     // 1. 创建颜色附件
     std::array<vk::AttachmentDescription, 2> attachments;
     attachments[0]
-        .setFormat(context.GetSurfaceInfo().format.format) // Swapchain格式
+        .setFormat(mContext->GetSurfaceInfo().format.format) // Swapchain格式
         .setSamples(vk::SampleCountFlagBits::e1)
         .setLoadOp(vk::AttachmentLoadOp::eClear)
         .setStoreOp(vk::AttachmentStoreOp::eStore)
@@ -220,13 +222,13 @@ void RenderPassManager::CreateTranslucencyRenderPass()
     // 4. 创建渲染通道
     vk::RenderPassCreateInfo renderPassCreateInfo;
     renderPassCreateInfo.setAttachments(attachments).setSubpasses(subpasses).setDependencies({});
-    auto renderPass = Context::Instance().GetDevice().createRenderPassUnique(renderPassCreateInfo);
+    auto renderPass = mContext->GetDevice().createRenderPassUnique(renderPassCreateInfo);
     if (!renderPass)
     {
-        LogE("Failed to create translucency render pass");
+        mLogger->Error("Failed to create translucency render pass");
     }
     mRenderPasses[RenderPassType::Translucency] = std::move(renderPass);
-    LogD("Translucency render pass created successfully");
+    mLogger->Debug("Translucency render pass created successfully");
 }
 void RenderPassManager::CreatePostProcessRenderPass()
 {
@@ -236,11 +238,11 @@ void RenderPassManager::CreateSkyRenderPass()
 }
 void RenderPassManager::CreateUIRenderPass()
 {
-    auto &context = Context::Instance();
+
     // 1. 创建附件
     std::array<vk::AttachmentDescription, 1> attachments;
     attachments[0]
-        .setFormat(context.GetSurfaceInfo().format.format) // Swapchain格式
+        .setFormat(mContext->GetSurfaceInfo().format.format) // Swapchain格式
         .setSamples(vk::SampleCountFlagBits::e1)
         .setLoadOp(vk::AttachmentLoadOp::eClear)
         .setStoreOp(vk::AttachmentStoreOp::eStore)
@@ -265,22 +267,22 @@ void RenderPassManager::CreateUIRenderPass()
     renderPassCreateInfo
         .setAttachments(attachments) // 附件描述
         .setSubpasses(subpasses);    // 子通道描述
-    auto renderPass = Context::Instance().GetDevice().createRenderPassUnique(renderPassCreateInfo);
+    auto renderPass = mContext->GetDevice().createRenderPassUnique(renderPassCreateInfo);
     if (!renderPass)
     {
-        LogE("Failed to create UI render pass");
+        mLogger->Error("Failed to create UI render pass");
     }
     mRenderPasses[RenderPassType::UI] = std::move(renderPass);
-    LogD("UI render pass created successfully");
+    mLogger->Debug("UI render pass created successfully");
 }
 
 void RenderPassManager::CreateDefferFrameBuffer()
 {
-    auto &context = Context::Instance();
-    auto swapchainImages = context.GetSwapchainImages();
-    auto swapchainImageViews = context.GetSwapchainImageViews();
+
+    auto swapchainImages = mContext->GetSwapchainImages();
+    auto swapchainImageViews = mContext->GetSwapchainImageViews();
     mDefferFrameResources.resize(swapchainImageViews.size());
-    auto extent = context.GetSurfaceInfo().extent;
+    auto extent = mContext->GetSurfaceInfo().extent;
     for (size_t i = 0; i < swapchainImageViews.size(); ++i)
     {
         auto defferFrameResource = DefferFrameResource{};
@@ -320,7 +322,7 @@ void RenderPassManager::CreateDefferFrameBuffer()
         defferFrameResource.aoImage = std::move(aoImage);
         defferFrameResource.aoImageView = std::move(aoImageView);
         // 6. 创建深度模板图像和视图
-        auto extent = context.GetSurfaceInfo().extent;
+        auto extent = mContext->GetSurfaceInfo().extent;
         auto depthImage = mImageManager->CreateUniqueDepthStencil(extent);
         auto depthImageView = mImageManager->CreateImageView(
             depthImage->GetImage(), vk::Format::eD32SfloatS8Uint, vk::ComponentMapping{},
@@ -348,15 +350,15 @@ void RenderPassManager::CreateDefferFrameBuffer()
             .setWidth(extent.width)
             .setHeight(extent.height)
             .setLayers(1);
-        auto framebuffer = context.GetDevice().createFramebufferUnique(framebufferCreateInfo);
+        auto framebuffer = mContext->GetDevice().createFramebufferUnique(framebufferCreateInfo);
         if (!framebuffer)
         {
-            LogE("Failed to create framebuffer for Deffer render pass");
+            mLogger->Error("Failed to create framebuffer for Deffer render pass");
         }
         mFrameBuffers[RenderPassType::Deffer].push_back(std::move(framebuffer));
-        LogD("Framebuffer {} for Deffer render pass created successfully", i);
+        mLogger->Debug("Framebuffer {} for Deffer render pass created successfully", i);
     }
-    LogD("{} Deffer frame buffers created successfully", mFrameBuffers[RenderPassType::Deffer].size());
+    mLogger->Debug("{} Deffer frame buffers created successfully", mFrameBuffers[RenderPassType::Deffer].size());
 }
 void RenderPassManager::CreateShadowDepthFrameBuffer()
 {
@@ -366,10 +368,10 @@ void RenderPassManager::CreateLightingFrameBuffer()
 }
 void RenderPassManager::CreateTranslucencyFrameBuffer()
 {
-    auto &context = Context::Instance();
-    auto swapchainImages = context.GetSwapchainImages();
-    auto swapchainImageViews = context.GetSwapchainImageViews();
-    auto extent = context.GetSurfaceInfo().extent;
+
+    auto swapchainImages = mContext->GetSwapchainImages();
+    auto swapchainImageViews = mContext->GetSwapchainImageViews();
+    auto extent = mContext->GetSurfaceInfo().extent;
     auto renderPass = mRenderPasses[RenderPassType::Translucency].get();
 
     mTranslucencyFrameResources.resize(swapchainImageViews.size());
@@ -396,15 +398,16 @@ void RenderPassManager::CreateTranslucencyFrameBuffer()
             .setWidth(extent.width)
             .setHeight(extent.height)
             .setLayers(1);
-        auto framebuffer = context.GetDevice().createFramebufferUnique(framebufferCreateInfo);
+        auto framebuffer = mContext->GetDevice().createFramebufferUnique(framebufferCreateInfo);
         if (!framebuffer)
         {
-            LogE("Failed to create framebuffer for Translucency render pass");
+            mLogger->Error("Failed to create framebuffer for Translucency render pass");
         }
         mFrameBuffers[RenderPassType::Translucency].push_back(std::move(framebuffer));
-        LogD("Framebuffer {} for Translucency render pass created successfully", i);
+        mLogger->Debug("Framebuffer {} for Translucency render pass created successfully", i);
     }
-    LogD("{} Translucency frame buffers created successfully", mFrameBuffers[RenderPassType::Translucency].size());
+    mLogger->Debug("{} Translucency frame buffers created successfully",
+                   mFrameBuffers[RenderPassType::Translucency].size());
 }
 void RenderPassManager::CreatePostProcessFrameBuffer()
 {
@@ -414,10 +417,10 @@ void RenderPassManager::CreateSkyFrameBuffer()
 }
 void RenderPassManager::CreateUIFrameBuffer()
 {
-    auto &context = Context::Instance();
-    auto swapchainImages = context.GetSwapchainImages();
-    auto swapchainImageViews = context.GetSwapchainImageViews();
-    auto extent = context.GetSurfaceInfo().extent;
+
+    auto swapchainImages = mContext->GetSwapchainImages();
+    auto swapchainImageViews = mContext->GetSwapchainImageViews();
+    auto extent = mContext->GetSurfaceInfo().extent;
     for (size_t i = 0; i < swapchainImageViews.size(); ++i)
     {
         auto uiFrameResource = UIFrameResource{};
@@ -436,16 +439,16 @@ void RenderPassManager::CreateUIFrameBuffer()
             .setWidth(extent.width)
             .setHeight(extent.height)
             .setLayers(1);
-        auto framebuffer = context.GetDevice().createFramebufferUnique(framebufferCreateInfo);
+        auto framebuffer = mContext->GetDevice().createFramebufferUnique(framebufferCreateInfo);
         if (!framebuffer)
         {
-            LogE("Failed to create framebuffer for UI render pass");
+            mLogger->Error("Failed to create framebuffer for UI render pass");
         }
         mFrameBuffers[RenderPassType::UI].push_back(std::move(framebuffer));
-        LogD("Framebuffer {} for UI render pass created successfully", i);
+        mLogger->Debug("Framebuffer {} for UI render pass created successfully", i);
     }
 
-    LogD("{} UI frame buffers created successfully", mFrameBuffers[RenderPassType::UI].size());
+    mLogger->Debug("{} UI frame buffers created successfully", mFrameBuffers[RenderPassType::UI].size());
 }
 vk::RenderPass RenderPassManager::GetRenderPass(RenderPassType type) const
 {
@@ -456,7 +459,7 @@ vk::RenderPass RenderPassManager::GetRenderPass(RenderPassType type) const
     }
     else
     {
-        LogE("Render pass not found for type {}", magic_enum::enum_name(type));
+        mLogger->Error("Render pass not found for type {}", magic_enum::enum_name(type));
         return nullptr;
     }
 }
@@ -469,7 +472,7 @@ vk::Framebuffer RenderPassManager::GetFrameBuffer(RenderPassType type, uint32_t 
     }
     else
     {
-        LogE("Framebuffer not found for type {} and index {}", magic_enum::enum_name(type), index);
+        mLogger->Error("Framebuffer not found for type {} and index {}", magic_enum::enum_name(type), index);
         return nullptr;
     }
 }

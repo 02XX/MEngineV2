@@ -1,6 +1,6 @@
 #pragma once
 #include "Context.hpp"
-#include "Logger.hpp"
+#include "Interface/ILogger.hpp"
 #include "MEngine.hpp"
 #include "NoCopyable.hpp"
 #include <memory>
@@ -25,6 +25,11 @@ enum class PipelineLayoutType
 class PipelineLayoutManager final : public NoCopyable
 {
   private:
+    // DI
+    std::shared_ptr<ILogger> mLogger;
+    std::shared_ptr<Context> mContext;
+
+  private:
     std::unordered_map<PipelineLayoutType, vk::UniquePipelineLayout> mPipelineLayouts;
     std::unordered_map<PipelineLayoutType, vk::UniqueDescriptorSetLayout> mDescriptorSetLayouts;
     void CreateDefferPipelineLayout();
@@ -35,7 +40,7 @@ class PipelineLayoutManager final : public NoCopyable
     void CreateUIPipelineLayout();
 
   public:
-    PipelineLayoutManager();
+    PipelineLayoutManager(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context);
     vk::PipelineLayout GetPipelineLayout(PipelineLayoutType type) const;
     vk::DescriptorSetLayout GetDescriptorSetLayout(PipelineLayoutType type) const;
 };

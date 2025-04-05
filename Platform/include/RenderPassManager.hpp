@@ -3,9 +3,10 @@
 #include "Context.hpp"
 #include "Image.hpp"
 #include "ImageManager.hpp"
-#include "Logger.hpp"
+#include "Interface/ILogger.hpp"
 #include "MEngine.hpp"
 #include "NoCopyable.hpp"
+
 #include "magic_enum/magic_enum.hpp"
 #include <cstdint>
 #include <memory>
@@ -67,6 +68,9 @@ struct TranslucencyFrameResource
 class RenderPassManager final : public NoCopyable
 {
   private:
+    // DI
+    std::shared_ptr<ILogger> mLogger;
+    std::shared_ptr<Context> mContext;
     std::shared_ptr<ImageManager> mImageManager;
 
   private:
@@ -94,7 +98,8 @@ class RenderPassManager final : public NoCopyable
     void CreateUIFrameBuffer();
 
   public:
-    RenderPassManager(std::shared_ptr<ImageManager> imageManager);
+    RenderPassManager(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context,
+                      std::shared_ptr<ImageManager> imageManager);
     vk::RenderPass GetRenderPass(RenderPassType type) const;
     vk::Framebuffer GetFrameBuffer(RenderPassType type, uint32_t index) const;
     const DefferFrameResource &GetDefferFrameResource(uint32_t index) const

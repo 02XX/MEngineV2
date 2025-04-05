@@ -9,6 +9,6 @@ target_link_libraries(MEngine
 PUBLIC
 Platform
 Function
-SDL3::SDL3
+Boost.DI
 )
 target_compile_definitions(MEngine PRIVATE MENGINE_EXPORT)

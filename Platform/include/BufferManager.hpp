@@ -13,11 +13,16 @@ namespace MEngine
 class BufferManager final : public NoCopyable
 {
   private:
-    std::unique_ptr<CommandBufferManager> mCommandBufferManager;
-    std::unique_ptr<SyncPrimitiveManager> mSyncPrimitiveManager;
+    // DI
+    std::shared_ptr<Context> mContext;
+    std::shared_ptr<ILogger> mLogger;
+    std::shared_ptr<CommandBufferManager> mCommandBufferManager;
+    std::shared_ptr<SyncPrimitiveManager> mSyncPrimitiveManager;
 
   public:
-    BufferManager();
+    BufferManager(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context,
+                  std::shared_ptr<CommandBufferManager> commandBufferManager,
+                  std::shared_ptr<SyncPrimitiveManager> syncPrimitiveManager);
     /**
      * @brief Create a Vertex Buffer object, GPU Only
      *
@@ -26,7 +31,6 @@ class BufferManager final : public NoCopyable
      * @return UniqueBuffer
      */
     UniqueBuffer CreateUniqueVertexBuffer(vk::DeviceSize size, const void *data = nullptr);
-    SharedBuffer CreateSharedVertexBuffer(vk::DeviceSize size, const void *data = nullptr);
 
     /**
      * @brief Create a Index Buffer object, GPU Only
@@ -36,7 +40,6 @@ class BufferManager final : public NoCopyable
      * @return UniqueBuffer
      */
     UniqueBuffer CreateUniqueIndexBuffer(vk::DeviceSize size, const void *data = nullptr);
-    SharedBuffer CreateSharedIndexBuffer(vk::DeviceSize size, const void *data = nullptr);
 
     /**
      * @brief Create a Uniform Buffer object, CPU And GPU
@@ -45,7 +48,6 @@ class BufferManager final : public NoCopyable
      * @return UniqueBuffer
      */
     UniqueBuffer CreateUniqueUniformBuffer(vk::DeviceSize size);
-    SharedBuffer CreateSharedUniformBuffer(vk::DeviceSize size);
 
     /**
      * @brief Create a Staging Buffer object, CPU Only
@@ -55,7 +57,6 @@ class BufferManager final : public NoCopyable
      * @return UniqueBuffer
      */
     UniqueBuffer CreateUniqueStagingBuffer(vk::DeviceSize size, const void *data = nullptr);
-    SharedBuffer CreateSharedStagingBuffer(vk::DeviceSize size, const void *data = nullptr);
     /**
      * @brief Copy Buffer from srcBuffer to dstBuffer
      *

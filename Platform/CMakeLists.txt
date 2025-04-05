@@ -14,9 +14,12 @@ target_include_directories(Platform PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_link_libraries(
     Platform
     PUBLIC
+    SDL3::SDL3
     spdlog::spdlog_header_only
     GPUOpen::VulkanMemoryAllocator
     glm::glm-header-only
     magic_enum::magic_enum
+    fmt::fmt-header-only
+    Boost.DI
 )
 # target_compile_definitions(Platform PRIVATE MENGINE_EXPORT)

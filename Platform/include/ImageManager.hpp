@@ -13,12 +13,18 @@ namespace MEngine
 class ImageManager final : public NoCopyable
 {
   private:
-    std::unique_ptr<CommandBufferManager> mCommandBufferManager;
-    std::unique_ptr<SyncPrimitiveManager> mSyncPrimitiveManager;
-    std::unique_ptr<BufferManager> mBufferManager;
+    // DI
+    std::shared_ptr<Context> mContext;
+    std::shared_ptr<ILogger> mLogger;
+    std::shared_ptr<CommandBufferManager> mCommandBufferManager;
+    std::shared_ptr<SyncPrimitiveManager> mSyncPrimitiveManager;
+    std::shared_ptr<BufferManager> mBufferManager;
 
   public:
-    ImageManager();
+    ImageManager(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context,
+                 std::shared_ptr<CommandBufferManager> commandBufferManager,
+                 std::shared_ptr<SyncPrimitiveManager> syncPrimitiveManager,
+                 std::shared_ptr<BufferManager> bufferManager = nullptr);
 
     /**
      * @brief Create a 2D texture (GPU Only)
@@ -29,8 +35,6 @@ class ImageManager final : public NoCopyable
      * @param data Initial data (optional)
      */
     UniqueImage CreateUniqueTexture2D(vk::Extent2D extent, vk::Format format = vk::Format::eR8G8B8A8Srgb,
-                                      uint32_t mipLevels = 1, const void *data = nullptr);
-    SharedImage CreateSharedTexture2D(vk::Extent2D extent, vk::Format format = vk::Format::eR8G8B8A8Srgb,
                                       uint32_t mipLevels = 1, const void *data = nullptr);
 
     /**
@@ -43,10 +47,6 @@ class ImageManager final : public NoCopyable
                                          vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eColorAttachment,
                                          uint32_t mipLevels = 1,
                                          vk::SampleCountFlagBits samples = vk::SampleCountFlagBits::e1);
-    SharedImage CreateSharedRenderTarget(vk::Extent2D extent, vk::Format format = vk::Format::eR8G8B8A8Srgb,
-                                         vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eColorAttachment,
-                                         uint32_t mipLevels = 1,
-                                         vk::SampleCountFlagBits samples = vk::SampleCountFlagBits::e1);
 
     /**
      * @brief Create a depth/stencil buffer (GPU Only)
@@ -54,9 +54,6 @@ class ImageManager final : public NoCopyable
      * @param format Depth format
      */
     UniqueImage CreateUniqueDepthStencil(vk::Extent2D extent, vk::Format format = vk::Format::eD32SfloatS8Uint,
-                                         uint32_t mipLevels = 1,
-                                         vk::SampleCountFlagBits samples = vk::SampleCountFlagBits::e1);
-    SharedImage CreateSharedDepthStencil(vk::Extent2D extent, vk::Format format = vk::Format::eD32SfloatS8Uint,
                                          uint32_t mipLevels = 1,
                                          vk::SampleCountFlagBits samples = vk::SampleCountFlagBits::e1);
 
@@ -69,10 +66,6 @@ class ImageManager final : public NoCopyable
     UniqueImage CreateUniqueStorageImage(vk::Extent2D extent, vk::Format format = vk::Format::eR8G8B8A8Srgb,
                                          uint32_t mipLevels = 1,
                                          vk::SampleCountFlagBits samples = vk::SampleCountFlagBits::e1);
-    SharedImage CreateSharedStorageImage(vk::Extent2D extent, vk::Format format = vk::Format::eR8G8B8A8Srgb,
-                                         uint32_t mipLevels = 1,
-                                         vk::SampleCountFlagBits samples = vk::SampleCountFlagBits::e1);
-
     /**
      * @brief Copy buffer to image
      * @param srcBuffer Source buffer

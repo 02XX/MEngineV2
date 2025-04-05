@@ -1,4 +1,4 @@
-#include "Logger.hpp"
+
 #include "MEngine.hpp"
 #include "Mesh.hpp"
 #include "NoCopyable.hpp"
@@ -18,6 +18,10 @@ enum class PrimitiveType
 class BasicGeometryManager : public NoCopyable
 {
   private:
+    // DI
+    std::shared_ptr<BufferManager> mBufferManager;
+
+  private:
     std::unordered_map<PrimitiveType, std::weak_ptr<Mesh>> mCache;
     std::shared_ptr<Mesh> CreateCube();
     std::shared_ptr<Mesh> CreateCylinder();
@@ -25,7 +29,7 @@ class BasicGeometryManager : public NoCopyable
     std::shared_ptr<Mesh> CreateQuad();
 
   public:
-    BasicGeometryManager() = default;
+    BasicGeometryManager(std::shared_ptr<BufferManager> bufferManager);
     std::shared_ptr<Mesh> GetPrimitive(PrimitiveType type);
 };
 

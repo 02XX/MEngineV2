@@ -1,32 +1,38 @@
 #pragma once
 
 #include "Application.hpp"
+#include "BasicGeometry/BasicGeometryEntityManager.hpp"
+#include "BufferManager.hpp"
 #include "Context.hpp"
 #include "DescriptorManager.hpp"
-#include "IScene.hpp"
-#include "Logger.hpp"
-#include "MEngine.hpp"
+#include "ImageManager.hpp"
+#include "Interface/ILogger.hpp"
+#include "Interface/IWindow.hpp"
+#include "NoCopyable.hpp"
 #include "PipelineLayoutManager.hpp"
 #include "PipelineManager.hpp"
 #include "RenderPassManager.hpp"
+#include "SDL3/SDL.h"
 #include "SDL3/SDL_events.h"
-#include "SDL3/SDL_init.h"
-#include "SDL3/SDL_video.h"
 #include "SDL3/SDL_vulkan.h"
+#include "SDLWindow.hpp"
 #include "SamplerManager.hpp"
-#include "Scene/DefaultScene.hpp"
 #include "ShaderManager.hpp"
-#include <memory>
+#include "SpdLogger.hpp"
 
+#include "SyncPrimitiveManager.hpp"
+#include "System/RenderSystem.hpp"
+#include "entt/entt.hpp"
 namespace MEngine
 {
-class Application final
+class Application final : public NoCopyable
 {
   private:
     bool mIsRunning;
-    SDL_Window *mWindow;
-    std::shared_ptr<IScene> mCurrScene;
-    // manager
+    // DI
+    std::shared_ptr<ILogger> mLogger;
+    std::shared_ptr<IWindow> mWindow;
+    std::shared_ptr<Context> mContext;
     std::shared_ptr<entt::registry> mRegistry;
     std::shared_ptr<RenderSystem> mRenderSystem;
     std::shared_ptr<PipelineManager> mPipelineManager;

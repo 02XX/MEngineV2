@@ -1,6 +1,9 @@
 #include "BasicGeometry/BasicGeometryManager.hpp"
 namespace MEngine
 {
+BasicGeometryManager::BasicGeometryManager(std::shared_ptr<BufferManager> bufferManager) : mBufferManager(bufferManager)
+{
+}
 std::shared_ptr<Mesh> BasicGeometryManager::GetPrimitive(PrimitiveType type)
 {
     if (mCache.find(type) != mCache.end())
@@ -26,7 +29,6 @@ std::shared_ptr<Mesh> BasicGeometryManager::GetPrimitive(PrimitiveType type)
         mesh = CreateQuad();
         break;
     default:
-        LogE("Primitive type not supported");
         break;
     }
     mCache[type] = mesh;
@@ -85,7 +87,7 @@ std::shared_ptr<Mesh> BasicGeometryManager::CreateCube()
                                            16, 17, 18, 16, 18, 19,
                                            // 底面 (Y-) 逆时针：20→21→22→23
                                            20, 21, 22, 20, 22, 23};
-    return std::make_shared<Mesh>(vertices, indices);
+    return std::make_shared<Mesh>(mBufferManager, vertices, indices);
 }
 std::shared_ptr<Mesh> BasicGeometryManager::CreateCylinder()
 {
@@ -135,7 +137,7 @@ std::shared_ptr<Mesh> BasicGeometryManager::CreateCylinder()
         indices.insert(indices.end(), {top, bottom, nextTop});
         indices.insert(indices.end(), {nextTop, bottom, nextBottom});
     }
-    return std::make_shared<Mesh>(vertices, indices);
+    return std::make_shared<Mesh>(mBufferManager, vertices, indices);
 }
 std::shared_ptr<Mesh> BasicGeometryManager::CreateSphere()
 {
@@ -178,7 +180,7 @@ std::shared_ptr<Mesh> BasicGeometryManager::CreateSphere()
             indices.insert(indices.end(), {current + 1, next + 1, next});
         }
     }
-    return std::make_shared<Mesh>(vertices, indices);
+    return std::make_shared<Mesh>(mBufferManager, vertices, indices);
 }
 std::shared_ptr<Mesh> BasicGeometryManager::CreateQuad()
 {
@@ -191,6 +193,6 @@ std::shared_ptr<Mesh> BasicGeometryManager::CreateQuad()
 
     const std::vector<uint32_t> indices = {0, 2, 1, 0, 3, 2};
 
-    return std::make_shared<Mesh>(vertices, indices);
+    return std::make_shared<Mesh>(mBufferManager, vertices, indices);
 }
 } // namespace MEngine

@@ -1,12 +1,11 @@
 #pragma once
 #include "Context.hpp"
-#include "Logger.hpp"
+#include "Interface/ILogger.hpp"
 #include "MEngine.hpp"
 #include "NoCopyable.hpp"
 #include "PipelineLayoutManager.hpp"
 #include "RenderPassManager.hpp"
 #include "ShaderManager.hpp"
-
 #include "Vertex.hpp"
 #include <memory>
 #include <vulkan/vulkan.hpp>
@@ -26,10 +25,15 @@ enum class PipelineType
 class PipelineManager final : public NoCopyable
 {
   private:
-    std::unordered_map<PipelineType, vk::UniquePipeline> mPipelines;
+    // DI
+    std::shared_ptr<ILogger> mLogger;
+    std::shared_ptr<Context> mContext;
     std::shared_ptr<ShaderManager> mShaderManager;
     std::shared_ptr<PipelineLayoutManager> mPipelineLayoutManager;
     std::shared_ptr<RenderPassManager> mRenderPassManager;
+
+  private:
+    std::unordered_map<PipelineType, vk::UniquePipeline> mPipelines;
 
   private:
     void CommonSetting();
@@ -59,7 +63,8 @@ class PipelineManager final : public NoCopyable
     vk::GraphicsPipelineCreateInfo mConfig;
 
   public:
-    PipelineManager(std::shared_ptr<ShaderManager> shaderManager,
+    PipelineManager(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context,
+                    std::shared_ptr<ShaderManager> shaderManager,
                     std::shared_ptr<PipelineLayoutManager> pipelineLayoutManager,
                     std::shared_ptr<RenderPassManager> renderPassManager);
     vk::Pipeline GetPipeline(PipelineType type) const;

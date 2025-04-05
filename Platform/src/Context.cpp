@@ -1,48 +1,36 @@
 #include "Context.hpp"
-
+#include "Interface/IWindow.hpp"
+#include <memory>
+#include <vulkan/vulkan_handles.hpp>
 
 namespace MEngine
 {
-Context &Context::Instance()
-{
-    static Context instance;
-    return instance;
-}
 Context::~Context()
 {
     mDevice->waitIdle();
-    Quit();
-    LogD("Context Destroyed");
-}
-void Context::Quit()
-{
     vmaDestroyAllocator(mVmaAllocator);
+    mLogger->Debug("Context Destroyed");
 }
-void Context::Init(std::function<vk::SurfaceKHR(vk::Instance)> createSurface,
-                   const std::vector<const char *> instanceRequiredExtensions,
-                   const std::vector<const char *> instanceRequiredLayers,
-                   const std::vector<const char *> deviceRequiredExtensions,
-                   const std::vector<const char *> deviceRequiredLayers)
+Context::Context(std::shared_ptr<ILogger> logger, std::shared_ptr<IWindow> window, ContextConfig config)
+    : mLogger(logger), mConfig(config), mWindow(window)
 {
-    mVKInstanceEnabledExtensions = instanceRequiredExtensions;
-    mVKDeviceEnabledExtensions = deviceRequiredExtensions;
-    mVKDeviceEnabledLayers = deviceRequiredLayers;
-    mVKInstanceEnabledLayers = instanceRequiredLayers;
-
     CreateInstance();
     PickPhysicalDevice();
 
-    CreateSurface(createSurface);
+    CreateSurface();
     QuerySurfaceInfo();
 
     QueryQueueFamilyIndicates();
     CreateDevice();
 
     GetQueues();
+    CreateVmaAllocator();
+
     CreateSwapchain();
     CreateSwapchainImages();
     CreateSwapchainImageViews();
-    CreateVmaAllocator();
+
+    mLogger->Debug("Context Created");
 }
 
 void Context::CreateInstance()
@@ -68,38 +56,80 @@ void Context::CreateInstance()
         .setApiVersion(mInstanceVersion);
     instanceCreateInfo.setFlags({})
         .setPApplicationInfo(&appInfo)
-        .setPEnabledLayerNames(mVKInstanceEnabledLayers)
-        .setPEnabledExtensionNames(mVKInstanceEnabledExtensions);
-    LogT("Instance Version: {}.{}.{}.{}", variant, major, minor, patch);
+        .setPEnabledLayerNames(mConfig.instanceRequiredLayers)
+        .setPEnabledExtensionNames(mConfig.instanceRequiredExtensions);
+    mLogger->Trace("Instance Version: {}.{}.{}.{}", variant, major, minor, patch);
 #ifdef PLATFORM_MACOS
     instanceCreateInfo.setFlags(vk::InstanceCreateFlagBits::eEnumeratePortabilityKHR);
 #endif
     mVKInstance = vk::createInstanceUnique(instanceCreateInfo);
     if (!mVKInstance)
     {
-        LogE("Failed to create instance");
+        mLogger->Debug("Failed to create instance");
         throw std::runtime_error("Failed to create instance");
     }
     // log
-    for (auto &layer : mVKInstanceEnabledLayers)
+    for (auto &layer : mConfig.instanceRequiredLayers)
     {
-        LogT("Instance enabled layer: {}", layer);
+        mLogger->Trace("Instance enabled layer: {}", layer);
     }
-    for (auto &extension : mVKInstanceEnabledExtensions)
+    for (auto &extension : mConfig.instanceRequiredExtensions)
     {
-        LogT("Instance enabled extension: {}", extension);
+        mLogger->Trace("Instance enabled extension: {}", extension);
     }
-    LogD("Instance Created");
+    mLogger->Debug("Instance Created");
 }
-void Context::CreateSurface(std::function<vk::SurfaceKHR(vk::Instance)> createSurface)
+int Context::RatePhysicalDevices(vk::PhysicalDevice &mPhysicalDevice)
 {
-    mSurface = vk::UniqueSurfaceKHR(createSurface(mVKInstance.get()), mVKInstance.get());
+    auto properties = mPhysicalDevice.getProperties();
+    auto features = mPhysicalDevice.getFeatures();
+    int score = 0;
+    // independent of the physical device
+    if (properties.deviceType == vk::PhysicalDeviceType::eDiscreteGpu)
+    {
+        score += 1000;
+    }
+    score += properties.limits.maxImageDimension2D;
+    return score;
+}
+
+void Context::PickPhysicalDevice()
+{
+    auto mPhysicalDevices = mVKInstance->enumeratePhysicalDevices();
+    if (mPhysicalDevices.empty())
+    {
+        mLogger->Debug("No physical devices found");
+        throw std::runtime_error("No physical devices found");
+    }
+    std::multimap<int, vk::PhysicalDevice> candidates;
+    for (auto &device : mPhysicalDevices)
+    {
+        int score = RatePhysicalDevices(device);
+        candidates.insert(std::make_pair(score, device));
+    }
+    if (candidates.rbegin()->first > 0)
+    {
+        this->mPhysicalDevice = candidates.rbegin()->second;
+        mLogger->Debug("Physical Device Selected: {}", mPhysicalDevice.getProperties().deviceName.data());
+    }
+    else
+    {
+        mLogger->Debug("No suitable physical device found");
+        throw std::runtime_error("No suitable physical device found");
+    }
+}
+void Context::CreateSurface()
+{
+    auto surface = mWindow->GetSurface(mVKInstance.get());
+    mSurface = vk::UniqueSurfaceKHR(surface, mVKInstance.get());
     if (!mSurface)
     {
-        LogE("Surface creation failed: No mSurface provided");
+        mLogger->Debug("Surface creation failed: No mSurface provided");
+        throw std::runtime_error("Failed to create surface");
     }
-    LogD("Surface Created");
+    mLogger->Debug("Surface Created");
 }
+
 void Context::QuerySurfaceInfo()
 {
     auto formats = mPhysicalDevice.getSurfaceFormatsKHR(mSurface.get());
@@ -151,68 +181,100 @@ void Context::QuerySurfaceInfo()
     mSurfaceInfo.imageCount = std::clamp(2u, capabilities.minImageCount, capabilities.maxImageCount);
     mSurfaceInfo.imageArrayLayer = std::clamp(1u, 1u, capabilities.maxImageArrayLayers);
     // log
-    LogT("Current Surface Info:");
-    LogT("Support Image Count: {}~{}", capabilities.minImageCount, capabilities.maxImageCount);
-    LogT("Support Array Layer: 1~{}", capabilities.maxImageArrayLayers);
-    LogT("Support Transforms", vk::to_string(capabilities.supportedTransforms));
-    LogT("Support Usage Flags", vk::to_string(capabilities.supportedUsageFlags));
-    LogT("Support CompositeAlpha {}", vk::to_string(capabilities.supportedCompositeAlpha));
-    LogT("Support Extent: {}x{}~{}x{}", capabilities.minImageExtent.width, capabilities.minImageExtent.height,
-         capabilities.maxImageExtent.width, capabilities.maxImageExtent.height);
+    mLogger->Trace("Current Surface Info:");
+    mLogger->Trace("Support Image Count: {}~{}", capabilities.minImageCount, capabilities.maxImageCount);
+    mLogger->Trace("Support Array Layer: 1~{}", capabilities.maxImageArrayLayers);
+    mLogger->Trace("Support Transforms", vk::to_string(capabilities.supportedTransforms));
+    mLogger->Trace("Support Usage Flags", vk::to_string(capabilities.supportedUsageFlags));
+    mLogger->Trace("Support CompositeAlpha {}", vk::to_string(capabilities.supportedCompositeAlpha));
+    mLogger->Trace("Support Extent: {}x{}~{}x{}", capabilities.minImageExtent.width, capabilities.minImageExtent.height,
+                   capabilities.maxImageExtent.width, capabilities.maxImageExtent.height);
     for (auto &supportFormat : formats)
     {
-        LogT("Support Format: {}", vk::to_string(supportFormat.format));
+        mLogger->Trace("Support Format: {}", vk::to_string(supportFormat.format));
     }
     for (auto &supportPresentMode : presentModes)
     {
-        LogT("Support Present Mode: {}", vk::to_string(supportPresentMode));
+        mLogger->Trace("Support Present Mode: {}", vk::to_string(supportPresentMode));
     }
-    LogD("Current Format: {}", vk::to_string(mSurfaceInfo.format.format));
-    LogD("Current Color Space: {}", vk::to_string(mSurfaceInfo.format.colorSpace));
-    LogD("Current Present Mode: {}", vk::to_string(mSurfaceInfo.presentMode));
-    LogD("Current Extent: {}x{}", capabilities.currentExtent.width, capabilities.currentExtent.height);
-    LogD("Current Image Count: {}", mSurfaceInfo.imageCount);
-    LogD("Current Image Array Layer: {}", mSurfaceInfo.imageArrayLayer);
+    mLogger->Debug("Current Format: {}", vk::to_string(mSurfaceInfo.format.format));
+    mLogger->Debug("Current Color Space: {}", vk::to_string(mSurfaceInfo.format.colorSpace));
+    mLogger->Debug("Current Present Mode: {}", vk::to_string(mSurfaceInfo.presentMode));
+    mLogger->Debug("Current Extent: {}x{}", capabilities.currentExtent.width, capabilities.currentExtent.height);
+    mLogger->Debug("Current Image Count: {}", mSurfaceInfo.imageCount);
+    mLogger->Debug("Current Image Array Layer: {}", mSurfaceInfo.imageArrayLayer);
 }
 
-int Context::RatePhysicalDevices(vk::PhysicalDevice &mPhysicalDevice)
+void Context::CreateSwapchain()
 {
-    auto properties = mPhysicalDevice.getProperties();
-    auto features = mPhysicalDevice.getFeatures();
-    int score = 0;
-    // independent of the physical device
-    if (properties.deviceType == vk::PhysicalDeviceType::eDiscreteGpu)
+    vk::SwapchainCreateInfoKHR swapchainCreateInfo;
+    auto queueFamilyIndicates = mQueueFamilyIndicates;
+    swapchainCreateInfo.setSurface(mSurface.get())
+        .setClipped(true)
+        .setCompositeAlpha(vk::CompositeAlphaFlagBitsKHR::eOpaque)
+        .setImageArrayLayers(mSurfaceInfo.imageArrayLayer)
+        .setMinImageCount(mSurfaceInfo.imageCount)
+        .setImageColorSpace(mSurfaceInfo.format.colorSpace)
+        .setImageExtent(mSurfaceInfo.extent)
+        .setImageFormat(mSurfaceInfo.format.format)
+        .setImageUsage(vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransferDst |
+                       vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eStorage)
+        .setPresentMode(mSurfaceInfo.presentMode)
+        .setPreTransform(vk::SurfaceTransformFlagBitsKHR::eIdentity)
+        .setMinImageCount(mSurfaceInfo.imageCount)
+        .setOldSwapchain(nullptr);
+    if (queueFamilyIndicates.graphicsFamily == queueFamilyIndicates.presentFamily)
     {
-        score += 1000;
-    }
-    score += properties.limits.maxImageDimension2D;
-    return score;
-}
-
-void Context::PickPhysicalDevice()
-{
-    auto mPhysicalDevices = mVKInstance->enumeratePhysicalDevices();
-    if (mPhysicalDevices.empty())
-    {
-        LogE("No physical devices found");
-        throw std::runtime_error("No physical devices found");
-    }
-    std::multimap<int, vk::PhysicalDevice> candidates;
-    for (auto &device : mPhysicalDevices)
-    {
-        int score = RatePhysicalDevices(device);
-        candidates.insert(std::make_pair(score, device));
-    }
-    if (candidates.rbegin()->first > 0)
-    {
-        this->mPhysicalDevice = candidates.rbegin()->second;
-        LogD("Physical Device Selected: {}", mPhysicalDevice.getProperties().deviceName.data());
+        swapchainCreateInfo.setImageSharingMode(vk::SharingMode::eExclusive)
+            .setQueueFamilyIndices({queueFamilyIndicates.graphicsFamily.value()});
     }
     else
     {
-        LogE("No suitable physical device found");
-        throw std::runtime_error("No suitable physical device found");
+        std::array<uint32_t, 2> queueFamilyIndicesArray = {queueFamilyIndicates.graphicsFamily.value(),
+                                                           queueFamilyIndicates.presentFamily.value()};
+        swapchainCreateInfo.setImageSharingMode(vk::SharingMode::eConcurrent)
+            .setQueueFamilyIndices(queueFamilyIndicesArray);
     }
+    mSwapchain = mDevice->createSwapchainKHRUnique(swapchainCreateInfo);
+    if (!mSwapchain)
+    {
+        mLogger->Debug("Failed to create swapchain");
+        throw std::runtime_error("Failed to create swapchain");
+    }
+    mLogger->Debug("Swapchain Created");
+}
+
+void Context::CreateSwapchainImages()
+{
+    auto swapchainImages = mDevice->getSwapchainImagesKHR(mSwapchain.get());
+    for (auto &image : swapchainImages)
+    {
+        mSwapchainImages.push_back(image);
+    }
+    mLogger->Debug("Swapchain Images Created");
+    mLogger->Trace("Swapchain Image Count: {}", mSwapchainImages.size());
+}
+
+void Context::CreateSwapchainImageViews()
+{
+    for (auto image : mSwapchainImages)
+    {
+        vk::ImageViewCreateInfo imageViewCreateInfo;
+        imageViewCreateInfo.setImage(image)
+            .setViewType(vk::ImageViewType::e2D)
+            .setFormat(mSurfaceInfo.format.format)
+            .setComponents(vk::ComponentMapping{})
+            .setSubresourceRange(vk::ImageSubresourceRange{vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1});
+        auto imageView = mDevice->createImageViewUnique(imageViewCreateInfo);
+        if (!imageView)
+        {
+            mLogger->Debug("Failed to create image view for swapchain image");
+            throw std::runtime_error("Failed to create image view for swapchain image");
+        }
+        mSwapchainImageViews.push_back(std::move(imageView));
+    }
+    mLogger->Debug("Swapchain Image Views Created");
+    mLogger->Trace("Swapchain Image Count: {}", mSwapchainImageViews.size());
 }
 void Context::CreateDevice()
 {
@@ -235,26 +297,41 @@ void Context::CreateDevice()
 
     vk::DeviceCreateInfo deviceCreateInfo;
     deviceCreateInfo.setQueueCreateInfos(queueCreateInfos)
-        .setPEnabledExtensionNames(mVKDeviceEnabledExtensions)
-        .setPEnabledLayerNames(mVKDeviceEnabledLayers)
+        .setPEnabledExtensionNames(mConfig.deviceRequiredExtensions)
+        .setPEnabledLayerNames(mConfig.deviceRequiredLayers)
         .setPEnabledFeatures(nullptr);
 
     mDevice = mPhysicalDevice.createDeviceUnique(deviceCreateInfo);
     if (!mDevice)
     {
-        LogE("Failed to create device");
+        mLogger->Debug("Failed to create device");
         throw std::runtime_error("Failed to create device");
     }
     // log
-    for (auto &layer : mVKDeviceEnabledLayers)
+    for (auto &layer : mConfig.deviceRequiredLayers)
     {
-        LogT("Device enabled layer: {}", layer);
+        mLogger->Trace("Device enabled layer: {}", layer);
     }
-    for (auto &extension : mVKDeviceEnabledExtensions)
+    for (auto &extension : mConfig.deviceRequiredExtensions)
     {
-        LogT("Device enabled extension: {}", extension);
+        mLogger->Trace("Device enabled extension: {}", extension);
     }
-    LogD("Device Created");
+    mLogger->Debug("Device Created");
+}
+void Context::SetPresentQueueFamilyIndex(vk::SurfaceKHR surface)
+{
+    auto queueFamilyProperties = mPhysicalDevice.getQueueFamilyProperties();
+    for (size_t i = 0; i < queueFamilyProperties.size(); i++)
+    {
+        auto &queueFamily = queueFamilyProperties[i];
+        auto queueCount = queueFamily.queueCount;
+        if (mPhysicalDevice.getSurfaceSupportKHR(i, surface))
+        {
+            mQueueFamilyIndicates.presentFamily = static_cast<uint32_t>(i);
+            mLogger->Trace("Queue Family Index: {} Supports Presentation. Supports Queue Index:0~{}", i,
+                           queueCount - 1);
+        }
+    }
 }
 void Context::QueryQueueFamilyIndicates()
 {
@@ -267,21 +344,21 @@ void Context::QueryQueueFamilyIndicates()
         {
             mQueueFamilyIndicates.graphicsFamily = static_cast<uint32_t>(i);
             mQueueFamilyIndicates.graphicsFamilyCount = queueCount;
-            LogT("Queue Family Index: {} Supports Graphics. Supports Queue Index:0~{}", i, queueCount - 1);
+            mLogger->Trace("Queue Family Index: {} Supports Graphics. Supports Queue Index:0~{}", i, queueCount - 1);
         }
         if (mPhysicalDevice.getSurfaceSupportKHR(i, mSurface.get()))
         {
             mQueueFamilyIndicates.presentFamily = static_cast<uint32_t>(i);
-            LogT("Queue Family Index: {} Supports Presentation. Supports Queue Index:0~{}", i, queueCount - 1);
+            mLogger->Trace("Queue Family Index: {} Supports Presentation. Supports Queue Index:0~{}", i,
+                           queueCount - 1);
         }
         if (queueFamily.queueFlags & vk::QueueFlagBits::eTransfer)
         {
             mQueueFamilyIndicates.transferFamily = static_cast<uint32_t>(i);
             mQueueFamilyIndicates.transferFamilyCount = queueCount;
-            LogT("Queue Family Index: {} Supports Transfer. Supports Queue Index:0~{}", i, queueCount - 1);
+            mLogger->Trace("Queue Family Index: {} Supports Transfer. Supports Queue Index:0~{}", i, queueCount - 1);
         }
-        if (mQueueFamilyIndicates.graphicsFamily.has_value() && mQueueFamilyIndicates.presentFamily.has_value() &&
-            mQueueFamilyIndicates.transferFamily.has_value())
+        if (mQueueFamilyIndicates.graphicsFamily.has_value() && mQueueFamilyIndicates.transferFamily.has_value())
         {
             break;
         }
@@ -295,28 +372,8 @@ void Context::GetQueues()
     mGraphicQueue = mDevice->getQueue(mQueueFamilyIndicates.graphicsFamily.value(), graphicQueueIndex);
     mPresentQueue = mDevice->getQueue(mQueueFamilyIndicates.presentFamily.value(), presentQueueIndex);
     mTransferQueue = mDevice->getQueue(mQueueFamilyIndicates.transferFamily.value(), transferQueueIndex);
-    LogD("Queues Getted");
+    mLogger->Debug("Queues Getted");
 }
-
-// uint32_t Context::QueryMemory(uint32_t memoryTypeBits, vk::MemoryPropertyFlags property)
-// {
-//     auto memoryProperties = mPhysicalDevice.getMemoryProperties();
-//     uint32_t index = -1;
-//     for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; i++)
-//     {
-//         if ((i << 2) & memoryTypeBits && (property & memoryProperties.memoryTypes[i].propertyFlags))
-//         {
-//             index = i;
-//             break;
-//         }
-//     }
-//     if (index == -1)
-//     {
-//         LogE("No memory available type: {}, property: {}", memoryTypeBits, vk::to_string(property));
-//         throw std::runtime_error("No memory available type");
-//     }
-//     return index;
-// }
 
 /*
 https://www.reddit.com/r/vulkan/comments/umgs26/synchronize_queue_submission/?rdt=37374
@@ -343,7 +400,7 @@ void Context::SubmitToPresnetQueue(vk::PresentInfoKHR presentInfo)
     auto result = mPresentQueue.presentKHR(presentInfo);
     if (result != vk::Result::eSuccess)
     {
-        LogE("Failed to present to the queue");
+        mLogger->Debug("Failed to present to the queue");
         throw std::runtime_error("Failed to present to the queue");
     }
 }
@@ -367,78 +424,6 @@ void Context::CreateVmaAllocator()
     allocatorCreateInfo.vulkanApiVersion = vk::enumerateInstanceVersion();
     // allocatorCreateInfo.pVulkanFunctions = &vulkanFunctions;
     vmaCreateAllocator(&allocatorCreateInfo, &mVmaAllocator);
-    LogD("VMA Allocator Created");
-}
-void Context::CreateSwapchain()
-{
-    vk::SwapchainCreateInfoKHR swapchainCreateInfo;
-    swapchainCreateInfo.setSurface(mSurface.get())
-        .setClipped(true)
-        .setCompositeAlpha(vk::CompositeAlphaFlagBitsKHR::eOpaque)
-        .setImageArrayLayers(mSurfaceInfo.imageArrayLayer)
-        .setMinImageCount(mSurfaceInfo.imageCount)
-        .setImageColorSpace(mSurfaceInfo.format.colorSpace)
-        .setImageExtent(mSurfaceInfo.extent)
-        .setImageFormat(mSurfaceInfo.format.format)
-        .setImageUsage(
-            vk::ImageUsageFlagBits::eColorAttachment |
-            vk::ImageUsageFlagBits::eTransferDst |
-            vk::ImageUsageFlagBits::eTransferSrc |
-            vk::ImageUsageFlagBits::eStorage
-        )
-        .setPresentMode(mSurfaceInfo.presentMode)
-        .setPreTransform(vk::SurfaceTransformFlagBitsKHR::eIdentity)
-        .setMinImageCount(mSurfaceInfo.imageCount)
-        .setOldSwapchain(nullptr);
-    if (mQueueFamilyIndicates.graphicsFamily == mQueueFamilyIndicates.presentFamily)
-    {
-        swapchainCreateInfo.setImageSharingMode(vk::SharingMode::eExclusive)
-            .setQueueFamilyIndices({mQueueFamilyIndicates.graphicsFamily.value()});
-    }
-    else
-    {
-        std::array<uint32_t, 2> queueFamilyIndicesArray = {mQueueFamilyIndicates.graphicsFamily.value(),
-                                                           mQueueFamilyIndicates.presentFamily.value()};
-        swapchainCreateInfo.setImageSharingMode(vk::SharingMode::eConcurrent)
-            .setQueueFamilyIndices(queueFamilyIndicesArray);
-    }
-    mSwapchain = mDevice->createSwapchainKHRUnique(swapchainCreateInfo);
-    if (!mSwapchain)
-    {
-        LogE("Failed to create swapchain");
-        throw std::runtime_error("Failed to create swapchain");
-    }
-    LogD("Swapchain Created");
-}
-void Context::CreateSwapchainImages()
-{
-    auto swapchainImages = mDevice->getSwapchainImagesKHR(mSwapchain.get());
-    for (auto &image : swapchainImages)
-    {
-        mSwapchainImages.push_back(image);
-    }
-    LogD("Swapchain Images Created");
-    LogT("Swapchain Image Count: {}", mSwapchainImages.size());
-}
-void Context::CreateSwapchainImageViews()
-{
-    for (auto image : mSwapchainImages)
-    {
-        vk::ImageViewCreateInfo imageViewCreateInfo;
-        imageViewCreateInfo.setImage(image)
-            .setViewType(vk::ImageViewType::e2D)
-            .setFormat(mSurfaceInfo.format.format)
-            .setComponents(vk::ComponentMapping{})
-            .setSubresourceRange(vk::ImageSubresourceRange{vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1});
-        auto imageView = mDevice->createImageViewUnique(imageViewCreateInfo);
-        if (!imageView)
-        {
-            LogE("Failed to create image view for swapchain image");
-            throw std::runtime_error("Failed to create image view for swapchain image");
-        }
-        mSwapchainImageViews.push_back(std::move(imageView));
-    }
-    LogD("Swapchain Image Views Created");
-    LogT("Swapchain Image Count: {}", mSwapchainImageViews.size());
+    mLogger->Debug("VMA Allocator Created");
 }
 } // namespace MEngine

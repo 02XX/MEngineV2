@@ -10,8 +10,13 @@ namespace MEngine
 using UniqueSampler = vk::UniqueSampler;
 class SamplerManager final : public NoCopyable
 {
+  private:
+    // DI
+    std::shared_ptr<ILogger> mLogger;
+    std::shared_ptr<Context> mContext;
+
   public:
-    SamplerManager() = default;
+    SamplerManager(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context);
     UniqueSampler CreateUniqueSampler(vk::Filter magFilter = vk::Filter::eLinear,
                                       vk::Filter minFilter = vk::Filter::eLinear,
                                       vk::SamplerMipmapMode mipmapMode = vk::SamplerMipmapMode::eLinear,

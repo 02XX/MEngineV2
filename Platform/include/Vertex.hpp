@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Logger.hpp"
 #include "MEngine.hpp"
 #include "glm/glm.hpp"
 #include <vulkan/vulkan.hpp>

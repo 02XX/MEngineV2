@@ -1,4 +1,5 @@
 #pragma once
+#include "Buffer.hpp"
 #include "MEngine.hpp"
 #include "Mesh.hpp"
 namespace MEngine

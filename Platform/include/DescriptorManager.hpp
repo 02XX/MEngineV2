@@ -1,10 +1,11 @@
 #pragma once
 #include "Buffer.hpp"
 #include "Context.hpp"
-#include "Logger.hpp"
+#include "Interface/ILogger.hpp"
 #include "MEngine.hpp"
 #include "NoCopyable.hpp"
 
+#include <memory>
 #include <vector>
 #include <vulkan/vulkan.hpp>
 
@@ -32,6 +33,11 @@ using UniqueDescriptorSet = vk::UniqueDescriptorSet;
 class DescriptorManager final : public NoCopyable
 {
   private:
+    // DI
+    std::shared_ptr<Context> mContext;
+    std::shared_ptr<ILogger> mLogger;
+
+  private:
     PoolSizesProportion mDefaultPoolSizesProportion;
     uint32_t mMaxDescriptorSize;
     std::vector<vk::UniqueDescriptorPool> mExhaustedPools;
@@ -40,7 +46,8 @@ class DescriptorManager final : public NoCopyable
     vk::UniqueDescriptorPool &AcquireAllocatablePool();
 
   public:
-    DescriptorManager(uint32_t maxDescriptorSize = 1000, PoolSizesProportion defaultPoolSizesProportion = {});
+    DescriptorManager(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context,
+                      uint32_t maxDescriptorSize = 1000, PoolSizesProportion defaultPoolSizesProportion = {});
 
     std::vector<UniqueDescriptorSet> AllocateUniqueDescriptorSet(
         std::vector<vk::DescriptorSetLayout> descriptorSetLayouts);
