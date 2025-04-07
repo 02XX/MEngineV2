@@ -185,7 +185,6 @@ void RenderPassManager::CreateLightingRenderPass()
 }
 void RenderPassManager::CreateTranslucencyRenderPass()
 {
-
     // 1. 创建颜色附件
     std::array<vk::AttachmentDescription, 2> attachments{
         vk::AttachmentDescription()
@@ -242,11 +241,11 @@ void RenderPassManager::CreateUIRenderPass()
         vk::AttachmentDescription()
             .setFormat(mContext->GetSurfaceInfo().format.format) // Swapchain格式
             .setSamples(vk::SampleCountFlagBits::e1)
-            .setLoadOp(vk::AttachmentLoadOp::eClear)
+            .setLoadOp(vk::AttachmentLoadOp::eLoad)
             .setStoreOp(vk::AttachmentStoreOp::eStore)
             .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
             .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
-            .setInitialLayout(vk::ImageLayout::eUndefined)
+            .setInitialLayout(vk::ImageLayout::eColorAttachmentOptimal)
             .setFinalLayout(vk::ImageLayout::ePresentSrcKHR)};
 
     // 2. 创建子通道

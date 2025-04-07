@@ -72,7 +72,7 @@ void RenderSystem::Tick(float deltaTime)
     Prepare();               // Prepare
     // RenderDefferPass();       // Deffer pass
     // RenderShadowDepthPass();  // Shadow pass
-    // RenderTranslucencyPass(); // Translucency pass
+    RenderTranslucencyPass(); // Translucency pass
     // RenderPostProcessPass();  // Post process pass
     // RenderSkyPass();          // Sky pass
     RenderUIPass(deltaTime); // UI pass
@@ -188,10 +188,23 @@ void RenderSystem::RenderSkyPass()
 }
 void RenderSystem::RenderUIPass(float deltaTime)
 {
+
     vk::ClearValue clearValue(std::array<float, 4>{0.1f, 0.1f, 0.1f, 1.0f});
     vk::RenderPassBeginInfo renderPassBeginInfo;
     auto frameBuffer = mRenderPassManager->GetFrameBuffer(RenderPassType::UI, mImageIndex);
     auto renderPass = mRenderPassManager->GetRenderPass(RenderPassType::UI);
+    auto uiFrameResource = mRenderPassManager->GetUIFrameResource(mImageIndex);
+    // 转换图像布局
+    vk::ImageMemoryBarrier imageMemoryBarrier;
+    imageMemoryBarrier.setImage(uiFrameResource.swapchainImage)
+        .setOldLayout(vk::ImageLayout::ePresentSrcKHR)
+        .setNewLayout(vk::ImageLayout::eColorAttachmentOptimal)
+        .setSrcQueueFamilyIndex(mContext->GetQueueFamilyIndicates().graphicsFamily.value())
+        .setDstQueueFamilyIndex(mContext->GetQueueFamilyIndicates().graphicsFamily.value())
+        .setSubresourceRange(vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1));
+    mGraphicCommandBuffers[mFrameIndex]->pipelineBarrier(vk::PipelineStageFlagBits::eColorAttachmentOutput,
+                                                         vk::PipelineStageFlagBits::eColorAttachmentOutput, {}, {}, {},
+                                                         imageMemoryBarrier);
     renderPassBeginInfo.setRenderPass(renderPass)
         .setFramebuffer(frameBuffer)
         .setRenderArea(vk::Rect2D({0, 0}, mContext->GetSurfaceInfo().extent))
