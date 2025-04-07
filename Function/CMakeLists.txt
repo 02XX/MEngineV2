@@ -30,3 +30,4 @@ target_link_libraries(
 )
 # target_compile_definitions(Function PRIVATE MENGINE_EXPORT)
 target_compile_definitions(Function PUBLIC IMGUI_ENABLE_DEMO_WINDOWS)
+target_compile_definitions(Function PUBLIC IMGUI_ENABLE_DOCKING)

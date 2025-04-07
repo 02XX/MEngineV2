@@ -235,7 +235,6 @@ void RenderPassManager::CreateSkyRenderPass()
 }
 void RenderPassManager::CreateUIRenderPass()
 {
-
     // 1. 创建附件
     std::array<vk::AttachmentDescription, 1> attachments{
         vk::AttachmentDescription()
@@ -273,11 +272,13 @@ void RenderPassManager::CreateUIRenderPass()
 
 void RenderPassManager::CreateDefferFrameBuffer()
 {
+    mFrameBuffers[RenderPassType::Deffer].clear();
+    mDefferFrameResources.clear();
 
     auto swapchainImages = mContext->GetSwapchainImages();
     auto swapchainImageViews = mContext->GetSwapchainImageViews();
     mDefferFrameResources.resize(swapchainImageViews.size());
-    auto extent = mContext->GetSurfaceInfo().extent;
+    auto extent = vk::Extent2D{mWidth, mHeight};
     for (size_t i = 0; i < swapchainImageViews.size(); ++i)
     {
         auto defferFrameResource = DefferFrameResource{};
@@ -363,10 +364,12 @@ void RenderPassManager::CreateLightingFrameBuffer()
 }
 void RenderPassManager::CreateTranslucencyFrameBuffer()
 {
+    mFrameBuffers[RenderPassType::Translucency].clear();
+    mTranslucencyFrameResources.clear();
 
     auto swapchainImages = mContext->GetSwapchainImages();
     auto swapchainImageViews = mContext->GetSwapchainImageViews();
-    auto extent = mContext->GetSurfaceInfo().extent;
+    auto extent = vk::Extent2D{mWidth, mHeight};
     auto renderPass = mRenderPasses[RenderPassType::Translucency].get();
 
     mTranslucencyFrameResources.resize(swapchainImageViews.size());
@@ -412,7 +415,6 @@ void RenderPassManager::CreateSkyFrameBuffer()
 }
 void RenderPassManager::CreateUIFrameBuffer()
 {
-
     auto swapchainImages = mContext->GetSwapchainImages();
     auto swapchainImageViews = mContext->GetSwapchainImageViews();
     auto extent = mContext->GetSurfaceInfo().extent;
