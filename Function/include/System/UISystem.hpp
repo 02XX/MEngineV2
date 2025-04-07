@@ -33,14 +33,10 @@ class UISystem : public ISystem
     uint32_t mCurrentFrame = 0;
     bool mFirstRun = true;
 
-    uint32_t mSceneWidth = 1280;
-    uint32_t mSceneHeight = 720;
-    std::vector<UniqueImage> mSceneImages;
+    uint32_t mSceneWidth;
+    uint32_t mSceneHeight;
     vk::UniqueDescriptorSetLayout mSceneDescriptorSetLayout;
     std::vector<vk::UniqueDescriptorSet> mSceneDescriptorSets;
-    std::vector<vk::UniqueImageView> mImageSceneViews;
-    std::vector<vk::UniqueFramebuffer> mSceneFramebuffers;
-    vk::UniqueRenderPass mSceneRenderPasses;
     vk::UniqueSampler mSceneSampler;
 
   private:
@@ -50,33 +46,26 @@ class UISystem : public ISystem
     void SceneViewWindow();
     void AssetWindow();
 
-    void CreateSceneRenderPass();
-    void CreateSceneFrameBuffer();
-    void CreateSceneImage();
-    void CreateSceneImageView();
     void CreateDescriptorPool();
     void CreateSceneDescriptorSetLayout();
     void CreateSceneDescriptorSet();
     void CreateSampler();
-    void UpdateSceneDescriptorSet();
 
     void RenderScene();
 
   public:
     UISystem(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context, std::shared_ptr<IWindow> window,
-             std::shared_ptr<RenderPassManager> renderPassManager, std::shared_ptr<ImageManager> mImageManager);
+             std::shared_ptr<RenderPassManager> renderPassManager,
+             std::shared_ptr<ImageManager> mImageManager = nullptr);
     void SetCommandBuffer(vk::CommandBuffer commandBuffer)
     {
         mCommandBuffer = commandBuffer;
-    }
-    void SetCurrentFrame(uint32_t currentFrame)
-    {
-        mCurrentFrame = currentFrame;
     }
     void ProcessEvent(const SDL_Event *event);
     void Init() override;
     void Tick(float deltaTime) override;
     void Shutdown() override;
+    void UpdateSceneDescriptorSet(vk::ImageView imageView, uint32_t imageIndex);
 };
 
 } // namespace MEngine

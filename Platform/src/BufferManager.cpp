@@ -8,6 +8,15 @@ BufferManager::BufferManager(std::shared_ptr<ILogger> logger, std::shared_ptr<Co
     : mContext(context), mLogger(logger), mCommandBufferManager(commandBufferManager),
       mSyncPrimitiveManager(syncPrimitiveManager)
 {
+
+    if (!mCommandBufferManager)
+    {
+        mCommandBufferManager = std::make_shared<CommandBufferManager>(mLogger, mContext);
+    }
+    if (!mSyncPrimitiveManager)
+    {
+        mSyncPrimitiveManager = std::make_unique<SyncPrimitiveManager>(mLogger, mContext);
+    }
 }
 
 UniqueBuffer BufferManager::CreateUniqueVertexBuffer(vk::DeviceSize size, const void *data)
@@ -66,7 +75,7 @@ UniqueBuffer BufferManager::CreateUniqueStagingBuffer(vk::DeviceSize size, const
 
 void BufferManager::CopyBuffer(vk::Buffer srcBuffer, vk::Buffer dstBuffer, vk::DeviceSize size)
 {
-    auto commandBuffer = mCommandBufferManager->CreatePrimaryCommandBuffer();
+    auto commandBuffer = mCommandBufferManager->CreatePrimaryCommandBuffer(CommandBufferType::Transfer);
     auto fence = mSyncPrimitiveManager->CreateFence();
     vk::CommandBufferBeginInfo beginInfo{};
     beginInfo.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);

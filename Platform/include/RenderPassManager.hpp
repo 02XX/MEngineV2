@@ -46,9 +46,12 @@ struct DefferFrameResource
     // 6. depth stencil
     UniqueImage depthStencilImage;
     vk::UniqueImageView depthStencilImageView;
-    // 7. swapchain image
-    vk::Image swapchainImage;
-    vk::ImageView swapchainImageView;
+    // // 7. swapchain image
+    // vk::Image swapchainImage;
+    // vk::ImageView swapchainImageView;
+    // 7. colour attachment
+    UniqueImage renderImage;
+    vk::UniqueImageView renderImageView;
 };
 struct UIFrameResource
 {
@@ -58,9 +61,9 @@ struct UIFrameResource
 };
 struct TranslucencyFrameResource
 {
-    // 1. swapchain image
-    vk::Image swapchainImage;
-    vk::ImageView swapchainImageView;
+    // 1. colour attachment
+    UniqueImage renderImage;
+    vk::UniqueImageView renderImageView;
     // 2. depth stencil
     UniqueImage depthStencilImage;
     vk::UniqueImageView depthStencilImageView;
@@ -80,8 +83,8 @@ class RenderPassManager final : public NoCopyable
     std::vector<UIFrameResource> mUIFrameResources;
     std::vector<TranslucencyFrameResource> mTranslucencyFrameResources;
 
-    uint32_t mWidth = 1280;
-    uint32_t mHeight = 720;
+    uint32_t mWidth = 1127;
+    uint32_t mHeight = 695;
 
   private:
     void CreateGBufferRenderPass();
@@ -117,10 +120,10 @@ class RenderPassManager final : public NoCopyable
     {
         return mTranslucencyFrameResources[index];
     }
-    void SetExtent(uint32_t width, uint32_t height)
+    void RecreateFrameBuffer(uint32_t width, uint32_t height);
+    vk::Extent2D GetExtent() const
     {
-        mWidth = width;
-        mHeight = height;
+        return vk::Extent2D(mWidth, mHeight);
     }
 };
 

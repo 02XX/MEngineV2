@@ -23,8 +23,7 @@ Application::Application()
                                          ContextConfig{instanceRequiredExtensions, instanceRequiredLayers,
                                                        deviceRequiredExtension, deviceRequiredLayers});
     mRegistry = std::make_shared<entt::registry>();
-    mCommandBufferManager = std::make_shared<CommandBufferManager>(
-        mLogger, mContext, mContext->GetQueueFamilyIndicates().graphicsFamily.value());
+    mCommandBufferManager = std::make_shared<CommandBufferManager>(mLogger, mContext);
     mSyncPrimitiveManager = std::make_shared<SyncPrimitiveManager>(mLogger, mContext);
     mPipelineLayoutManager = std::make_shared<PipelineLayoutManager>(mLogger, mContext);
     mShaderManager = std::make_shared<ShaderManager>(mLogger, mContext);

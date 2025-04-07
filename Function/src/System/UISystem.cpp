@@ -1,7 +1,4 @@
 #include "System/UISystem.hpp"
-#include "imgui.h"
-#include <cstdint>
-#include <vulkan/vulkan_structs.hpp>
 
 namespace MEngine
 {
@@ -10,6 +7,10 @@ UISystem::UISystem(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> con
     : mLogger(logger), mContext(context), mWindow(window), mRenderPassManager(renderPassManager),
       mImageManager(mImageManager)
 {
+    if (!mImageManager)
+    {
+        mImageManager = std::make_unique<ImageManager>(mLogger, mContext);
+    }
 }
 
 void UISystem::Init()
@@ -42,93 +43,16 @@ void UISystem::Init()
     ImGui_ImplVulkan_Init(&initInfo);
     // Upload Fonts
 
-    CreateSceneImage();
-    CreateSceneImageView();
-    CreateSceneRenderPass();
-    CreateSceneFrameBuffer();
     CreateSceneDescriptorSetLayout();
     CreateSceneDescriptorSet();
+    CreateSampler();
     mLogger->Info("Uploading Fonts");
 }
 void UISystem::ProcessEvent(const SDL_Event *event)
 {
     ImGui_ImplSDL3_ProcessEvent(static_cast<const SDL_Event *>(event));
 }
-void UISystem::CreateSceneRenderPass()
-{
-    // 1. 创建附件
-    std::array<vk::AttachmentDescription, 1> attachments{
-        vk::AttachmentDescription()
-            .setFormat(mContext->GetSurfaceInfo().format.format) // Swapchain格式
-            .setSamples(vk::SampleCountFlagBits::e1)
-            .setLoadOp(vk::AttachmentLoadOp::eLoad)
-            .setStoreOp(vk::AttachmentStoreOp::eStore)
-            .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
-            .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
-            .setInitialLayout(vk::ImageLayout::eColorAttachmentOptimal)
-            .setFinalLayout(vk::ImageLayout::eShaderReadOnlyOptimal)};
-    // 2. 创建子通道
-    std::array<vk::SubpassDescription, 1> subpasses;
-    std::array<vk::AttachmentReference, 1> colorRefs = {
-        vk::AttachmentReference(0, vk::ImageLayout::eColorAttachmentOptimal) // Swapchain
-    };
-    subpasses[0]
-        .setColorAttachments(colorRefs)                          // 颜色附件引用
-        .setPipelineBindPoint(vk::PipelineBindPoint::eGraphics); // 图形管线绑定点
-    // 4. 创建渲染通道
-    vk::RenderPassCreateInfo renderPassCreateInfo;
-    renderPassCreateInfo
-        .setAttachments(attachments) // 附件描述
-        .setSubpasses(subpasses);    // 子通道描述
-    auto renderPass = mContext->GetDevice().createRenderPassUnique(renderPassCreateInfo);
-    if (!renderPass)
-    {
-        mLogger->Error("Failed to create UI-offline render pass");
-    }
-    mSceneRenderPasses = std::move(renderPass);
-    mLogger->Debug("UI-offline render pass created successfully");
-}
-void UISystem::CreateSceneFrameBuffer()
-{
-    auto imageCount = mContext->GetSurfaceInfo().imageCount;
-    for (int i = 0; i < imageCount; i++)
-    {
-        vk::ImageView attachments[] = {mImageSceneViews[i].get()};
-        vk::FramebufferCreateInfo framebufferInfo;
-        framebufferInfo.setRenderPass(mSceneRenderPasses.get())
-            .setAttachments(attachments)
-            .setWidth(mSceneWidth)
-            .setHeight(mSceneHeight)
-            .setLayers(1);
-        auto framebuffer = mContext->GetDevice().createFramebufferUnique(framebufferInfo);
-        if (!framebuffer)
-        {
-            mLogger->Error("Failed to create UI-offline framebuffer");
-        }
-        mSceneFramebuffers.push_back(std::move(framebuffer));
-    }
-    mLogger->Debug("UI-offline framebuffer created successfully");
-}
-void UISystem::CreateSceneImage()
-{
-    auto imageCount = mContext->GetSurfaceInfo().imageCount;
-    for (int i = 0; i < imageCount; i++)
-    {
-        auto sceneImage = mImageManager->CreateUniqueTexture2D(vk::Extent2D(mSceneWidth, mSceneHeight),
-                                                               mContext->GetSurfaceInfo().format.format, 1, nullptr);
-        mSceneImages.push_back(std::move(sceneImage));
-    }
-}
-void UISystem::CreateSceneImageView()
-{
-    auto imageCount = mContext->GetSurfaceInfo().imageCount;
-    for (int i = 0; i < imageCount; i++)
-    {
-        auto sceneImageView =
-            mImageManager->CreateImageView(mSceneImages[i]->GetImage(), mContext->GetSurfaceInfo().format.format);
-        mImageSceneViews.push_back(std::move(sceneImageView));
-    }
-}
+
 void UISystem::CreateDescriptorPool()
 {
     // DescriptorPool
@@ -193,23 +117,21 @@ void UISystem::CreateSceneDescriptorSet()
         mSceneDescriptorSets.push_back(std::move(descriptorSets[0]));
     }
 }
-void UISystem::UpdateSceneDescriptorSet()
+void UISystem::UpdateSceneDescriptorSet(vk::ImageView imageView, uint32_t imageIndex)
 {
-    auto imageCount = mContext->GetSurfaceInfo().imageCount;
-    for (int i = 0; i < imageCount; i++)
-    {
-        vk::DescriptorImageInfo imageInfo;
-        imageInfo.setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
-            .setImageView(mImageSceneViews[i].get())
-            .setSampler(mSceneSampler.get());
-        vk::WriteDescriptorSet writeSet;
-        writeSet.setDstSet(mSceneDescriptorSets[i].get())
-            .setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
-            .setImageInfo(imageInfo)
-            .setDstBinding(0)
-            .setDescriptorCount(1);
-        mContext->GetDevice().updateDescriptorSets(writeSet, {});
-    }
+    mCurrentFrame = imageIndex;
+
+    vk::DescriptorImageInfo imageInfo;
+    imageInfo.setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
+        .setImageView(imageView)
+        .setSampler(mSceneSampler.get());
+    vk::WriteDescriptorSet writeSet;
+    writeSet.setDstSet(mSceneDescriptorSets[imageIndex].get())
+        .setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
+        .setImageInfo(imageInfo)
+        .setDstBinding(0)
+        .setDescriptorCount(1);
+    mContext->GetDevice().updateDescriptorSets(writeSet, {});
 }
 void UISystem::DockingSpace()
 {
@@ -241,10 +163,9 @@ void UISystem::DockingSpace()
 
         // 划分区域
         ImGuiID center = dockSpaceID; // 保留中心区域
+        ImGuiID bottom = ImGui::DockBuilderSplitNode(center, ImGuiDir_Down, 0.3f, nullptr, &center);
         ImGuiID left = ImGui::DockBuilderSplitNode(center, ImGuiDir_Left, 0.2f, nullptr, &center);
         ImGuiID right = ImGui::DockBuilderSplitNode(center, ImGuiDir_Right, 0.25f, nullptr, &center);
-        ImGuiID bottom = ImGui::DockBuilderSplitNode(center, ImGuiDir_Down, 0.3f, nullptr, &center);
-        // 设置初始尺寸
         ImGui::DockBuilderSetNodeSize(center, ImVec2(mSceneWidth, mSceneHeight));
         // 分配窗口到停靠节点
         ImGui::DockBuilderDockWindow("SceneView", center);
@@ -274,19 +195,24 @@ void UISystem::SceneViewWindow()
 {
     ImGui::Begin("SceneView", nullptr, ImGuiWindowFlags_None);
     ImVec2 size = ImGui::GetContentRegionAvail();
-    if (size.x != mSceneWidth || size.y != mSceneHeight)
+
+    // 四舍五入转换 + 防零处理
+    uint32_t newWidth = static_cast<uint32_t>(size.x);
+    uint32_t newHeight = static_cast<uint32_t>(size.y);
+    newWidth = newWidth ? newWidth : 1;
+    newHeight = newHeight ? newHeight : 1;
+    // 尺寸变化检测
+    if (newWidth != mSceneWidth || newHeight != mSceneHeight)
     {
-        mSceneWidth = static_cast<uint32_t>(size.x);
-        mSceneHeight = static_cast<uint32_t>(size.y);
-        CreateSceneImage();
-        CreateSceneImageView();
-        CreateSceneFrameBuffer();
+        // mSceneWidth = newWidth;
+        // mSceneHeight = newHeight;
+        // mRenderPassManager->RecreateFrameBuffer(mSceneWidth, mSceneHeight);
     }
-    UpdateSceneDescriptorSet();
-    ImGui::Text("SceneView Size: %.1f x %.1f", size.x, size.y);
+    mLogger->Debug("SceneView Size: {} x {}", mSceneWidth, mSceneHeight);
+    ImGui::Text("SceneView Size: %d x %d", mSceneWidth, mSceneHeight);
     ImTextureID textureId =
         reinterpret_cast<ImTextureID>(static_cast<VkDescriptorSet>(mSceneDescriptorSets[mCurrentFrame].get()));
-    ImGui::Image(textureId, ImVec2(size.x, size.y), ImVec2(0, 1), ImVec2(1, 0));
+    ImGui::Image(textureId, ImVec2(mSceneWidth, mSceneHeight), ImVec2(0, 1), ImVec2(1, 0));
     ImGui::End();
 }
 void UISystem::AssetWindow()

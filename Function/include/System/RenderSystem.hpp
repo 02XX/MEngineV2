@@ -34,6 +34,7 @@ class RenderSystem final : public System
     std::shared_ptr<ILogger> mLogger;
     std::shared_ptr<Context> mContext;
     std::shared_ptr<entt::registry> mRegistry;
+
     std::shared_ptr<CommandBufferManager> mCommandBufferManager;
     std::shared_ptr<SyncPrimitiveManager> mSyncPrimitiveManager;
     std::shared_ptr<RenderPassManager> mRenderPassManager;
@@ -41,6 +42,8 @@ class RenderSystem final : public System
     std::shared_ptr<PipelineManager> mPipelineManager;
     std::shared_ptr<IWindow> mWindow;
     std::shared_ptr<UISystem> mUISystem;
+
+
 
   private:
     std::map<PipelineType, std::vector<entt::entity>> mBatchMaterialComponents;
@@ -67,11 +70,12 @@ class RenderSystem final : public System
 
   public:
     RenderSystem(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context, std::shared_ptr<IWindow> window,
-                 std::shared_ptr<entt::registry> registry, std::shared_ptr<CommandBufferManager> commandBufferManager,
-                 std::shared_ptr<SyncPrimitiveManager> syncPrimitiveManager,
-                 std::shared_ptr<RenderPassManager> renderPassManager,
-                 std::shared_ptr<PipelineLayoutManager> pipelineLayoutManager,
-                 std::shared_ptr<PipelineManager> pipelineManager);
+                 std::shared_ptr<entt::registry> registry,
+                 std::shared_ptr<CommandBufferManager> commandBufferManager = nullptr,
+                 std::shared_ptr<SyncPrimitiveManager> syncPrimitiveManager = nullptr,
+                 std::shared_ptr<RenderPassManager> renderPassManager = nullptr,
+                 std::shared_ptr<PipelineLayoutManager> pipelineLayoutManager = nullptr,
+                 std::shared_ptr<PipelineManager> pipelineManager = nullptr);
     ~RenderSystem() override;
     void CollectRenderEntities();
     void Init() override;

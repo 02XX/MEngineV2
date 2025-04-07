@@ -21,20 +21,7 @@ RenderPassManager::RenderPassManager(std::shared_ptr<ILogger> logger, std::share
     // 创建UI渲染通道
     CreateUIRenderPass();
 
-    // 创建延迟渲染的GBuffer帧缓冲
-    // CreateDefferFrameBuffer();
-    // // 创建阴影深度图帧缓冲
-    // CreateShadowDepthFrameBuffer();
-    // // 创建光照帧缓冲
-    // CreateLightingFrameBuffer();
-    // 创建半透明物体帧缓冲
-    CreateTranslucencyFrameBuffer();
-    // // 创建后处理帧缓冲
-    // CreatePostProcessFrameBuffer();
-    // // 创建天空盒帧缓冲
-    // CreateSkyFrameBuffer();
-    // 创建UI帧缓冲
-    CreateUIFrameBuffer();
+    RecreateFrameBuffer(mWidth, mHeight);
 }
 void RenderPassManager::CreateGBufferRenderPass()
 {
@@ -195,7 +182,7 @@ void RenderPassManager::CreateTranslucencyRenderPass()
             .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
             .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
             .setInitialLayout(vk::ImageLayout::eUndefined)
-            .setFinalLayout(vk::ImageLayout::ePresentSrcKHR),
+            .setFinalLayout(vk::ImageLayout::eShaderReadOnlyOptimal),
         vk::AttachmentDescription()
             .setFormat(vk::Format::eD32SfloatS8Uint) // 32位深度+8位模板存储
             .setSamples(vk::SampleCountFlagBits::e1)
@@ -325,11 +312,15 @@ void RenderPassManager::CreateDefferFrameBuffer()
             vk::ImageSubresourceRange{vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil, 0, 1, 0, 1});
         defferFrameResource.depthStencilImage = std::move(depthImage);
         defferFrameResource.depthStencilImageView = std::move(depthImageView);
-        // 7. 创建Swapchain图像和视图
-        auto swapchainImageView = swapchainImageViews[i];
-        auto swapchainImage = swapchainImages[i];
-        defferFrameResource.swapchainImage = swapchainImage;
-        defferFrameResource.swapchainImageView = swapchainImageView;
+        // 7. 创建render image和视图
+        auto renderImage =
+            mImageManager->CreateUniqueTexture2D(extent, mContext->GetSurfaceInfo().format.format, 1, nullptr);
+        auto rederImageView = mImageManager->CreateImageView(
+            renderImage->GetImage(), mContext->GetSurfaceInfo().format.format, vk::ComponentMapping{},
+            vk::ImageSubresourceRange{vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1});
+        defferFrameResource.renderImage = std::move(renderImage);
+        defferFrameResource.renderImageView = std::move(rederImageView);
+
         // 保存资源
         mDefferFrameResources.push_back(std::move(defferFrameResource));
         // 创建帧缓冲
@@ -339,7 +330,7 @@ void RenderPassManager::CreateDefferFrameBuffer()
                                                     mDefferFrameResources.back().metalRoughImageView.get(),
                                                     mDefferFrameResources.back().aoImageView.get(),
                                                     mDefferFrameResources.back().depthStencilImageView.get(),
-                                                    mDefferFrameResources.back().swapchainImageView};
+                                                    mDefferFrameResources.back().renderImageView.get()};
         vk::FramebufferCreateInfo framebufferCreateInfo;
         framebufferCreateInfo.setRenderPass(mRenderPasses[RenderPassType::Deffer].get())
             .setAttachments(attachments)
@@ -375,9 +366,14 @@ void RenderPassManager::CreateTranslucencyFrameBuffer()
     mTranslucencyFrameResources.resize(swapchainImageViews.size());
     for (size_t i = 0; i < swapchainImageViews.size(); ++i)
     {
-        // 获取Swapchain图像和视图
-        mTranslucencyFrameResources[i].swapchainImage = swapchainImages[i];
-        mTranslucencyFrameResources[i].swapchainImageView = swapchainImageViews[i];
+        // 创建render image和视图
+        auto renderImage =
+            mImageManager->CreateUniqueTexture2D(extent, mContext->GetSurfaceInfo().format.format, 1, nullptr);
+        auto rederImageView = mImageManager->CreateImageView(
+            renderImage->GetImage(), mContext->GetSurfaceInfo().format.format, vk::ComponentMapping{},
+            vk::ImageSubresourceRange{vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1});
+        mTranslucencyFrameResources[i].renderImage = std::move(renderImage);
+        mTranslucencyFrameResources[i].renderImageView = std::move(rederImageView);
         // 创建深度模板图像和视图
         auto depthImage = mImageManager->CreateUniqueDepthStencil(extent);
         auto depthImageView = mImageManager->CreateImageView(
@@ -387,7 +383,7 @@ void RenderPassManager::CreateTranslucencyFrameBuffer()
         mTranslucencyFrameResources[i].depthStencilImageView = std::move(depthImageView);
 
         auto attachments = std::array<vk::ImageView, 2>{
-            mTranslucencyFrameResources[i].swapchainImageView,          // Swapchain图像视图
+            mTranslucencyFrameResources[i].renderImageView.get(),       // Swapchain图像视图
             mTranslucencyFrameResources[i].depthStencilImageView.get(), // 深度模板图像视图
         };
         vk::FramebufferCreateInfo framebufferCreateInfo;
@@ -472,5 +468,24 @@ vk::Framebuffer RenderPassManager::GetFrameBuffer(RenderPassType type, uint32_t 
         mLogger->Error("Framebuffer not found for type {} and index {}", magic_enum::enum_name(type), index);
         return nullptr;
     }
+}
+void RenderPassManager::RecreateFrameBuffer(uint32_t width, uint32_t height)
+{
+    mWidth = width;
+    mHeight = height;
+    // 创建延迟渲染的GBuffer帧缓冲
+    // CreateDefferFrameBuffer();
+    // // 创建阴影深度图帧缓冲
+    // CreateShadowDepthFrameBuffer();
+    // // 创建光照帧缓冲
+    // CreateLightingFrameBuffer();
+    // 创建半透明物体帧缓冲
+    CreateTranslucencyFrameBuffer();
+    // // 创建后处理帧缓冲
+    // CreatePostProcessFrameBuffer();
+    // // 创建天空盒帧缓冲
+    // CreateSkyFrameBuffer();
+    // 创建UI帧缓冲
+    CreateUIFrameBuffer();
 }
 } // namespace MEngine

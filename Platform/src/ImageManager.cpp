@@ -9,6 +9,19 @@ ImageManager::ImageManager(std::shared_ptr<ILogger> logger, std::shared_ptr<Cont
     : mContext(context), mLogger(logger), mCommandBufferManager(commandBufferManager),
       mSyncPrimitiveManager(syncPrimitiveManager), mBufferManager(bufferManager)
 {
+    if (!mCommandBufferManager)
+    {
+        mCommandBufferManager = std::make_shared<CommandBufferManager>(mLogger, mContext);
+    }
+    if (!mSyncPrimitiveManager)
+    {
+        mSyncPrimitiveManager = std::make_shared<SyncPrimitiveManager>(mLogger, mContext);
+    }
+    if (!mBufferManager)
+    {
+        mBufferManager =
+            std::make_shared<BufferManager>(mLogger, mContext, mCommandBufferManager, mSyncPrimitiveManager);
+    }
 }
 UniqueImage ImageManager::CreateUniqueTexture2D(vk::Extent2D extent, vk::Format format, uint32_t mipLevels,
                                                 const void *data)
@@ -106,8 +119,7 @@ UniqueImage ImageManager::CreateUniqueStorageImage(vk::Extent2D extent, vk::Form
 void ImageManager::CopyBufferToImage(vk::Buffer srcBuffer, vk::Image dstImage, vk::Extent2D extent,
                                      vk::ImageSubresourceLayers imageSubresourceLayers)
 {
-    auto commandBuffer = mCommandBufferManager->CreatePrimaryCommandBuffer();
-
+    auto commandBuffer = mCommandBufferManager->CreatePrimaryCommandBuffer(CommandBufferType::Transfer);
     // vk::ImageSubresourceLayers imageSubresourceLayers;
     // imageSubresourceLayers
     //     .setAspectMask(aspectMask)         // 图像方面（颜色/深度等）
@@ -143,7 +155,7 @@ void ImageManager::CopyBufferToImage(vk::Buffer srcBuffer, vk::Image dstImage, v
 void ImageManager::TransitionLayout(vk::Image image, vk::ImageLayout oldLayout, vk::ImageLayout newLayout,
                                     vk::ImageSubresourceRange subresourceRange)
 {
-    auto commandBuffer = mCommandBufferManager->CreatePrimaryCommandBuffer();
+    auto commandBuffer = mCommandBufferManager->CreatePrimaryCommandBuffer(CommandBufferType::Transfer);
 
     vk::ImageMemoryBarrier barrier{};
     barrier.setImage(image)

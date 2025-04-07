@@ -16,14 +16,15 @@ class ImageManager final : public NoCopyable
     // DI
     std::shared_ptr<Context> mContext;
     std::shared_ptr<ILogger> mLogger;
+
     std::shared_ptr<CommandBufferManager> mCommandBufferManager;
     std::shared_ptr<SyncPrimitiveManager> mSyncPrimitiveManager;
     std::shared_ptr<BufferManager> mBufferManager;
 
   public:
     ImageManager(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context,
-                 std::shared_ptr<CommandBufferManager> commandBufferManager,
-                 std::shared_ptr<SyncPrimitiveManager> syncPrimitiveManager,
+                 std::shared_ptr<CommandBufferManager> commandBufferManager = nullptr,
+                 std::shared_ptr<SyncPrimitiveManager> syncPrimitiveManager = nullptr,
                  std::shared_ptr<BufferManager> bufferManager = nullptr);
 
     /**
