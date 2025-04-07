@@ -187,38 +187,36 @@ void RenderPassManager::CreateTranslucencyRenderPass()
 {
 
     // 1. 创建颜色附件
-    std::array<vk::AttachmentDescription, 2> attachments;
-    attachments[0]
-        .setFormat(mContext->GetSurfaceInfo().format.format) // Swapchain格式
-        .setSamples(vk::SampleCountFlagBits::e1)
-        .setLoadOp(vk::AttachmentLoadOp::eClear)
-        .setStoreOp(vk::AttachmentStoreOp::eStore)
-        .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
-        .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
-        .setInitialLayout(vk::ImageLayout::eUndefined)
-        .setFinalLayout(vk::ImageLayout::ePresentSrcKHR);
-    // 2. 创建深度模板附件
-    attachments[1]
-        .setFormat(vk::Format::eD32SfloatS8Uint) // 32位深度+8位模板存储
-        .setSamples(vk::SampleCountFlagBits::e1)
-        .setLoadOp(vk::AttachmentLoadOp::eClear)
-        .setStoreOp(vk::AttachmentStoreOp::eDontCare)
-        .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
-        .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
-        .setInitialLayout(vk::ImageLayout::eUndefined)
-        .setFinalLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
+    std::array<vk::AttachmentDescription, 2> attachments{
+        vk::AttachmentDescription()
+            .setFormat(mContext->GetSurfaceInfo().format.format) // Swapchain格式
+            .setSamples(vk::SampleCountFlagBits::e1)
+            .setLoadOp(vk::AttachmentLoadOp::eClear)
+            .setStoreOp(vk::AttachmentStoreOp::eStore)
+            .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
+            .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
+            .setInitialLayout(vk::ImageLayout::eUndefined)
+            .setFinalLayout(vk::ImageLayout::ePresentSrcKHR),
+        vk::AttachmentDescription()
+            .setFormat(vk::Format::eD32SfloatS8Uint) // 32位深度+8位模板存储
+            .setSamples(vk::SampleCountFlagBits::e1)
+            .setLoadOp(vk::AttachmentLoadOp::eClear)
+            .setStoreOp(vk::AttachmentStoreOp::eDontCare)
+            .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
+            .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
+            .setInitialLayout(vk::ImageLayout::eUndefined)
+            .setFinalLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal) // 深度模板
+    };
 
     // 2. 创建子通道
-    std::array<vk::SubpassDescription, 1> subpasses;
     std::array<vk::AttachmentReference, 1> colorRefs = {
         vk::AttachmentReference(0, vk::ImageLayout::eColorAttachmentOptimal) // Swapchain
     };
     vk::AttachmentReference depthRef(1, vk::ImageLayout::eDepthStencilAttachmentOptimal);
-    subpasses[0]
-        .setColorAttachments(colorRefs)
-        .setPipelineBindPoint(vk::PipelineBindPoint::eGraphics)
-        .setPDepthStencilAttachment(&depthRef);
-
+    std::array<vk::SubpassDescription, 1> subpasses{vk::SubpassDescription()
+                                                        .setColorAttachments(colorRefs)
+                                                        .setPipelineBindPoint(vk::PipelineBindPoint::eGraphics)
+                                                        .setPDepthStencilAttachment(&depthRef)};
     // 4. 创建渲染通道
     vk::RenderPassCreateInfo renderPassCreateInfo;
     renderPassCreateInfo.setAttachments(attachments).setSubpasses(subpasses).setDependencies({});

@@ -36,7 +36,6 @@ class PipelineManager final : public NoCopyable
     std::unordered_map<PipelineType, vk::UniquePipeline> mPipelines;
 
   private:
-    void CommonSetting();
     void CreateGBufferPipeline();
     void CreateShadowDepthPipeline();
     void CreateLightingPipeline();
@@ -44,23 +43,6 @@ class PipelineManager final : public NoCopyable
     void CreatePostProcessPipeline();
     void CreateSkyPipeline();
     void CreateUIPipeline();
-
-  private:
-    std::vector<vk::VertexInputAttributeDescription> mVertexAttributeDescriptions;
-    vk::VertexInputBindingDescription mVertexBindingDescription;
-    vk::PipelineVertexInputStateCreateInfo mVertexInputInfo;
-    vk::PipelineInputAssemblyStateCreateInfo mInputAssemblyInfo;
-    vk::PipelineViewportStateCreateInfo mViewportInfo;
-
-    vk::PipelineRasterizationStateCreateInfo mRasterizationInfo;
-    vk::Viewport mViewport;
-    vk::Rect2D mScissor;
-
-    vk::PipelineMultisampleStateCreateInfo mMultisampleInfo;
-    vk::PipelineDepthStencilStateCreateInfo mDepthStencilInfo;
-    vk::PipelineColorBlendStateCreateInfo mColorBlendInfo;
-
-    vk::GraphicsPipelineCreateInfo mConfig;
 
   public:
     PipelineManager(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context,

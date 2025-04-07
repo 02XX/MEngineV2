@@ -328,4 +328,176 @@
 [2025-03-31 16:53:28.620] [         Context.cpp:423 ] debug - Swapchain Image Views Created
 [2025-03-31 16:53:28.620] [         Context.cpp:424 ] trace - Swapchain Image Count: 2
 [2025-03-31 16:53:28.621] [         Context.cpp:363 ] debug - VMA Allocator Created
-[2025-
+[2025-[2025-04-03 15:35:52.448] [         Context.cpp:73  ] trace - Instance Version: 0.1.4.309
+[2025-04-03 15:35:52.545] [         Context.cpp:86  ] trace - Instance enabled layer: VK_LAYER_KHRONOS_validation
+[2025-04-03 15:35:52.545] [         Context.cpp:90  ] trace - Instance enabled extension: VK_KHR_surface
+[2025-04-03 15:35:52.545] [         Context.cpp:90  ] trace - Instance enabled extension: VK_KHR_xlib_surface
+[2025-04-03 15:35:52.545] [         Context.cpp:92  ] debug - Instance Created
+[2025-04-03 15:35:52.546] [         Context.cpp:209 ] debug - Physical Device Selected: NVIDIA GeForce RTX 2080 Ti
+[2025-04-03 15:35:52.546] [         Context.cpp:101 ] debug - Surface Created
+[2025-04-03 15:35:52.557] [         Context.cpp:154 ] trace - Current Surface Info:
+[2025-04-03 15:35:52.557] [         Context.cpp:155 ] trace - Support Image Count: 2~8
+[2025-04-03 15:35:52.557] [         Context.cpp:156 ] trace - Support Array Layer: 1~1
+[2025-04-03 15:35:52.557] [         Context.cpp:157 ] trace - Support Transforms
+[2025-04-03 15:35:52.557] [         Context.cpp:158 ] trace - Support Usage Flags
+[2025-04-03 15:35:52.557] [         Context.cpp:159 ] trace - Support CompositeAlpha { Opaque }
+[2025-04-03 15:35:52.557] [         Context.cpp:161 ] trace - Support Extent: 800x600~800x600
+[2025-04-03 15:35:52.557] [         Context.cpp:164 ] trace - Support Format: B8G8R8A8Unorm
+[2025-04-03 15:35:52.557] [         Context.cpp:164 ] trace - Support Format: B8G8R8A8Srgb
+[2025-04-03 15:35:52.557] [         Context.cpp:168 ] trace - Support Present Mode: Fifo
+[2025-04-03 15:35:52.557] [         Context.cpp:168 ] trace - Support Present Mode: FifoRelaxed
+[2025-04-03 15:35:52.557] [         Context.cpp:168 ] trace - Support Present Mode: Immediate
+[2025-04-03 15:35:52.557] [         Context.cpp:170 ] debug - Current Format: B8G8R8A8Srgb
+[2025-04-03 15:35:52.557] [         Context.cpp:171 ] debug - Current Color Space: SrgbNonlinear
+[2025-04-03 15:35:52.557] [         Context.cpp:172 ] debug - Current Present Mode: Fifo
+[2025-04-03 15:35:52.557] [         Context.cpp:173 ] debug - Current Extent: 800x600
+[2025-04-03 15:35:52.557] [         Context.cpp:174 ] debug - Current Image Count: 2
+[2025-04-03 15:35:52.557] [         Context.cpp:175 ] debug - Current Image Array Layer: 1
+[2025-04-03 15:35:52.557] [         Context.cpp:270 ] trace - Queue Family Index: 0 Supports Graphics. Supports Queue Index:0~15
+[2025-04-03 15:35:52.557] [         Context.cpp:275 ] trace - Queue Family Index: 0 Supports Presentation. Supports Queue Index:0~15
+[2025-04-03 15:35:52.557] [         Context.cpp:281 ] trace - Queue Family Index: 0 Supports Transfer. Supports Queue Index:0~15
+[2025-04-03 15:35:52.725] [         Context.cpp:251 ] trace - Device enabled layer: 
+[2025-04-03 15:35:52.725] [         Context.cpp:255 ] trace - Device enabled extension: VK_KHR_swapchain
+[2025-04-03 15:35:52.725] [         Context.cpp:257 ] debug - Device Created
+[2025-04-03 15:35:52.725] [         Context.cpp:298 ] debug - Queues Getted
+[2025-04-03 15:35:52.804] [         Context.cpp:403 ] debug - Swapchain Created
+[2025-04-03 15:35:52.804] [         Context.cpp:412 ] debug - Swapchain Images Created
+[2025-04-03 15:35:52.804] [         Context.cpp:413 ] trace - Swapchain Image Count: 2
+[2025-04-03 15:35:52.804] [         Context.cpp:433 ] debug - Swapchain Image Views Created
+[2025-04-03 15:35:52.804] [         Context.cpp:434 ] trace - Swapchain Image Count: 2
+[2025-04-03 15:35:52.805] [         Context.cpp:367 ] debug - VMA Allocator Created
+[2025-04-03 15:35:52.818] [PipelineLayoutManager.cpp:116 ] debug - Translucency pipeline layout created successfully
+[2025-04-03 15:35:52.818] [RenderPassManager.cpp:259 ] debug - Translucency render pass created successfully
+[2025-04-03 15:35:52.818] [RenderPassManager.cpp:325 ] debug - UI render pass created successfully
+[2025-04-03 15:35:52.818] [CommandBuffeManager.cpp:32  ] debug - Allocated 1 primary command buffers.
+[2025-04-03 15:35:52.819] [SyncPrimitiveFactory.cpp:11  ] debug - Fence created with flags: 
+[2025-04-03 15:35:52.8[2025-04-03 15:36:02.344] [         Context.cpp:73  ] trace - Instance Version: 0.1.4.309
+[2025-04-03 15:36:02.424] [         Context.cpp:86  ] trace - Instance enabled layer: VK_LAYER_KHRONOS_validation
+[2025-04-03 15:36:02.424] [         Context.cpp:90  ] trace - Instance enabled extension: VK_KHR_surface
+[2025-04-03 15:36:02.424] [         Context.cpp:90  ] trace - Instance enabled extension: VK_KHR_xlib_surface
+[2025-04-03 15:36:02.424] [         Context.cpp:92  ] debug - Instance Created
+[2025-04-03 15:36:02.426] [         Context.cpp:209 ] debug - Physical Device Selected: NVIDIA GeForce RTX 2080 Ti
+[2025-04-03 15:36:02.426] [         Context.cpp:101 ] debug - Surface Created
+[2025-04-03 15:36:02.432] [         Context.cpp:154 ] trace - Current Surface Info:
+[2025-04-03 15:36:02.432] [         Context.cpp:155 ] trace - Support Image Count: 2~8
+[2025-04-03 15:36:02.432] [         Context.cpp:156 ] trace - Support Array Layer: 1~1
+[2025-04-03 15:36:02.432] [         Context.cpp:157 ] trace - Support Transforms
+[2025-04-03 15:36:02.432] [         Context.cpp:158 ] trace - Support Usage Flags
+[2025-04-03 15:36:02.433] [         Context.cpp:159 ] trace - Support CompositeAlpha { Opaque }
+[2025-04-03 15:36:02.433] [         Context.cpp:161 ] trace - Support Extent: 800x600~800x600
+[2025-04-03 15:36:02.433] [         Context.cpp:164 ] trace - Support Format: B8G8R8A8Unorm
+[2025-04-03 15:36:02.433] [         Context.cpp:164 ] trace - Support Format: B8G8R8A8Srgb
+[2025-04-03 15:36:02.433] [         Context.cpp:168 ] trace - Support Present Mode: Fifo
+[2025-04-03 15:36:02.433] [         Context.cpp:168 ] trace - Support Present Mode: FifoRelaxed
+[2025-04-03 15:36:02.433] [         Context.cpp:168 ] trace - Support Present Mode: Immediate
+[2025-04-03 15:36:02.433] [         Context.cpp:170 ] debug - Current Format: B8G8R8A8Srgb
+[2025-04-03 15:36:02.433] [         Context.cpp:171 ] debug - Current Color Space: SrgbNonlinear
+[2025-04-03 15:36:02.433] [         Context.cpp:172 ] debug - Current Present Mode: Fifo
+[2025-04-03 15:36:02.433] [         Context.cpp:173 ] debug - Current Extent: 800x600
+[2025-04-03 15:36:02.433] [         Context.cpp:174 ] debug - Current Image Count: 2
+[2025-04-03 15:36:02.433] [         Context.cpp:175 ] debug - Current Image Array Layer: 1
+[2025-04-03 15:36:02.433] [         Context.cpp:270 ] trace - Queue Family Index: 0 Supports Graphics. Supports Queue Index:0~15
+[2025-04-03 15:36:02.433] [         Context.cpp:275 ] trace - Queue Family Index: 0 Supports Presentation. Supports Queue Index:0~15
+[2025-04-03 15:36:02.433] [         Context.cpp:281 ] trace - Queue Family Index: 0 Supports Transfer. Supports Queue Index:0~15
+[2025-04-03 15:36:02.601] [         Context.cpp:251 ] trace - Device enabled layer: 
+[2025-04-03 15:36:02.601] [         Context.cpp:255 ] trace - Device enabled extension: VK_KHR_swapchain
+[2025-04-03 15:36:02.601] [         Context.cpp:257 ] debug - Device Created
+[2025-04-03 15:36:02.601] [         Context.cpp:298 ] debug - Queues Getted
+[2025-04-03 15:36:02.699] [         Context.cpp:403 ] debug - Swapchain Created
+[2025-04-03 15:36:02.700] [         Context.cpp:412 ] debug - Swapchain Images Created
+[2025-04-03 15:36:02.700] [         Context.cpp:413 ] trace - Swapchain Image Count: 2
+[2025-04-03 15:36:02.700] [         Context.cpp:433 ] debug - Swapchain Image Views Created
+[2025-04-03 15:36:02.700] [         Context.cpp:434 ] trace - Swapchain Image Count: 2
+[2025-04-03 15:36:02.700] [         Context.cpp:367 ] debug - VMA Allocator Created
+[2025-04-03 15:36:02.700] [PipelineLayoutManager.cpp:116 ] debug - Translucency pipeline layout created successfully
+[2025-04-03 15:36:02.701] [RenderPassManager.cpp:259 ] debug - Translucency render pass created successfully
+[2025-04-03 15:36:02.701] [RenderPassManager.cpp:325 ] debug - UI render pass created successfully
+[2025-04-03 15:36:02.701] [CommandBuffeManager.cpp:32  ] debug - Allocated 1 primary command buffers.
+[2025-04-03 15:36:02.702] [SyncPrimitiveFactory.cpp:11  ] debug - Fence created with flags: 
+[2025-04-03 15:36:02.7[2025-04-07 08:37:02.575] [         ILogger.hpp:24  ] info - Application Started
+[2025-04-07 08:37:02.705] [         ILogger.hpp:14  ] trace - SDL Window created successfully
+[2025-04-07 08:37:02.712] [         ILogger.hpp:14  ] trace - Instance Version: 0.1.4.309
+[2025-04-07 08:37:02.779] [         ILogger.hpp:14  ] trace - Instance enabled layer: VK_LAYER_KHRONOS_validation
+[2025-04-07 08:37:02.779] [         ILogger.hpp:14  ] trace - Instance enabled layer: VK_LAYER_KHRONOS_synchronization2
+[2025-04-07 08:37:02.779] [         ILogger.hpp:14  ] trace - Instance enabled extension: VK_KHR_surface
+[2025-04-07 08:37:02.779] [         ILogger.hpp:14  ] trace - Instance enabled extension: VK_KHR_xlib_surface
+[2025-04-07 08:37:02.779] [         ILogger.hpp:19  ] debug - Instance Created
+[2025-04-07 08:37:02.780] [         ILogger.hpp:19  ] debug - Physical Device Selected: NVIDIA GeForce RTX 2080 Ti
+[2025-04-07 08:37:02.781] [         ILogger.hpp:19  ] debug - Surface Created
+[2025-04-07 08:37:02.787] [         ILogger.hpp:14  ] trace - Current Surface Info:
+[2025-04-07 08:37:02.787] [         ILogger.hpp:14  ] trace - Support Image Count: 2~8
+[2025-04-07 08:37:02.787] [         ILogger.hpp:14  ] trace - Support Array Layer: 1~1
+[2025-04-07 08:37:02.787] [         ILogger.hpp:14  ] trace - Support Transforms
+[2025-04-07 08:37:02.787] [         ILogger.hpp:14  ] trace - Support Usage Flags
+[2025-04-07 08:37:02.787] [         ILogger.hpp:14  ] trace - Support CompositeAlpha { Opaque }
+[2025-04-07 08:37:02.787] [         ILogger.hpp:14  ] trace - Support Extent: 800x600~800x600
+[2025-04-07 08:37:02.787] [         ILogger.hpp:14  ] trace - Support Format: B8G8R8A8Unorm
+[2025-04-07 08:37:02.787] [         ILogger.hpp:14  ] trace - Support Format: B8G8R8A8Srgb
+[2025-04-07 08:37:02.787] [         ILogger.hpp:14  ] trace - Support Present Mode: Fifo
+[2025-04-07 08:37:02.787] [         ILogger.hpp:14  ] trace - Support Present Mode: FifoRelaxed
+[2025-04-07 08:37:02.788] [         ILogger.hpp:14  ] trace - Support Present Mode: Immediate
+[2025-04-07 08:37:02.788] [         ILogger.hpp:19  ] debug - Current Format: B8G8R8A8Srgb
+[2025-04-07 08:37:02.788] [         ILogger.hpp:19  ] debug - Current Color Space: SrgbNonlinear
+[2025-04-07 08:37:02.788] [         ILogger.hpp:19  ] debug - Current Present Mode: Fifo
+[2025-04-07 08:37:02.788] [         ILogger.hpp:19  ] debug - Current Extent: 800x600
+[2025-04-07 08:37:02.788] [         ILogger.hpp:19  ] debug - Current Image Count: 2
+[2025-04-07 08:37:02.788] [         ILogger.hpp:19  ] debug - Current Image Array Layer: 1
+[2025-04-07 08:37:02.788] [         ILogger.hpp:14  ] trace - Queue Family Index: 0 Supports Graphics. Supports Queue Index:0~15
+[2025-04-07 08:37:02.788] [         ILogger.hpp:14  ] trace - Queue Family Index: 0 Supports Presentation. Supports Queue Index:0~15
+[2025-04-07 08:37:02.788] [         ILogger.hpp:14  ] trace - Queue Family Index: 0 Supports Transfer. Supports Queue Index:0~15
+[2025-04-07 08:37:02.950] [         ILogger.hpp:14  ] trace - Device enabled extension: VK_KHR_swapchain
+[2025-04-07 08:37:02.950] [         ILogger.hpp:19  ] debug - Device Created
+[2025-04-07 08:37:02.950] [         ILogger.hpp:19  ] debug - Queues Getted
+[2025-04-07 08:37:02.951] [         ILogger.hpp:19  ] debug - VMA Allocator Created
+[2025-04-07 08:37:03.026] [         ILogger.hpp:19  ] debug - Swapchain Created
+[2025-04-07 08:37:03.026] [         ILogger.hpp:19  ] debug - Swapchain Images Created
+[2025-04-07 08:37:03.026] [         ILogger.hpp:14  ] trace - Swapchain Image Count: 2
+[2025-04-07 08:37:03.027] [         ILogger.hpp:19  ] debug - Swapchain Image Views Created
+[2025-04-07 08:37:03.027] [         ILogger.hpp:14  ] trace - Swapchain Image Count: 2
+[2025-04-07 08:37:03.027] [         ILogger.hpp:19  ] debug - Context Created
+[2025-04-07 08:37:03.027] [         ILogger.hpp:19  ] debug - Translucency pipeline layout created successfully
+[2025-04-07 08:37:03.027] [         ILogger.hpp:19  ] debug - Translucency render pass created successfully
+[2025-04-07 08:37:03.027] [       [2025-04-07 08:37:11.851] [         ILogger.hpp:24  ] info - Application Started
+[2025-04-07 08:37:11.962] [         ILogger.hpp:14  ] trace - SDL Window created successfully
+[2025-04-07 08:37:11.969] [         ILogger.hpp:14  ] trace - Instance Version: 0.1.4.309
+[2025-04-07 08:37:12.063] [         ILogger.hpp:14  ] trace - Instance enabled layer: VK_LAYER_KHRONOS_validation
+[2025-04-07 08:37:12.063] [         ILogger.hpp:14  ] trace - Instance enabled layer: VK_LAYER_KHRONOS_synchronization2
+[2025-04-07 08:37:12.063] [         ILogger.hpp:14  ] trace - Instance enabled extension: VK_KHR_surface
+[2025-04-07 08:37:12.063] [         ILogger.hpp:14  ] trace - Instance enabled extension: VK_KHR_xlib_surface
+[2025-04-07 08:37:12.063] [         ILogger.hpp:19  ] debug - Instance Created
+[2025-04-07 08:37:12.064] [         ILogger.hpp:19  ] debug - Physical Device Selected: NVIDIA GeForce RTX 2080 Ti
+[2025-04-07 08:37:12.064] [         ILogger.hpp:19  ] debug - Surface Created
+[2025-04-07 08:37:12.071] [         ILogger.hpp:14  ] trace - Current Surface Info:
+[2025-04-07 08:37:12.071] [         ILogger.hpp:14  ] trace - Support Image Count: 2~8
+[2025-04-07 08:37:12.071] [         ILogger.hpp:14  ] trace - Support Array Layer: 1~1
+[2025-04-07 08:37:12.071] [         ILogger.hpp:14  ] trace - Support Transforms
+[2025-04-07 08:37:12.071] [         ILogger.hpp:14  ] trace - Support Usage Flags
+[2025-04-07 08:37:12.071] [         ILogger.hpp:14  ] trace - Support CompositeAlpha { Opaque }
+[2025-04-07 08:37:12.071] [         ILogger.hpp:14  ] trace - Support Extent: 800x600~800x600
+[2025-04-07 08:37:12.071] [         ILogger.hpp:14  ] trace - Support Format: B8G8R8A8Unorm
+[2025-04-07 08:37:12.071] [         ILogger.hpp:14  ] trace - Support Format: B8G8R8A8Srgb
+[2025-04-07 08:37:12.071] [         ILogger.hpp:14  ] trace - Support Present Mode: Fifo
+[2025-04-07 08:37:12.071] [         ILogger.hpp:14  ] trace - Support Present Mode: FifoRelaxed
+[2025-04-07 08:37:12.071] [         ILogger.hpp:14  ] trace - Support Present Mode: Immediate
+[2025-04-07 08:37:12.071] [         ILogger.hpp:19  ] debug - Current Format: B8G8R8A8Srgb
+[2025-04-07 08:37:12.071] [         ILogger.hpp:19  ] debug - Current Color Space: SrgbNonlinear
+[2025-04-07 08:37:12.071] [         ILogger.hpp:19  ] debug - Current Present Mode: Fifo
+[2025-04-07 08:37:12.071] [         ILogger.hpp:19  ] debug - Current Extent: 800x600
+[2025-04-07 08:37:12.071] [         ILogger.hpp:19  ] debug - Current Image Count: 2
+[2025-04-07 08:37:12.071] [         ILogger.hpp:19  ] debug - Current Image Array Layer: 1
+[2025-04-07 08:37:12.071] [         ILogger.hpp:14  ] trace - Queue Family Index: 0 Supports Graphics. Supports Queue Index:0~15
+[2025-04-07 08:37:12.071] [         ILogger.hpp:14  ] trace - Queue Family Index: 0 Supports Presentation. Supports Queue Index:0~15
+[2025-04-07 08:37:12.071] [         ILogger.hpp:14  ] trace - Queue Family Index: 0 Supports Transfer. Supports Queue Index:0~15
+[2025-04-07 08:37:12.245] [         ILogger.hpp:14  ] trace - Device enabled extension: VK_KHR_swapchain
+[2025-04-07 08:37:12.245] [         ILogger.hpp:19  ] debug - Device Created
+[2025-04-07 08:37:12.245] [         ILogger.hpp:19  ] debug - Queues Getted
+[2025-04-07 08:37:12.246] [         ILogger.hpp:19  ] debug - VMA Allocator Created
+[2025-04-07 08:37:12.337] [         ILogger.hpp:19  ] debug - Swapchain Created
+[2025-04-07 08:37:12.337] [         ILogger.hpp:19  ] debug - Swapchain Images Created
+[2025-04-07 08:37:12.337] [         ILogger.hpp:14  ] trace - Swapchain Image Count: 2
+[2025-04-07 08:37:12.337] [         ILogger.hpp:19  ] debug - Swapchain Image Views Created
+[2025-04-07 08:37:12.337] [         ILogger.hpp:14  ] trace - Swapchain Image Count: 2
+[2025-04-07 08:37:12.337] [         ILogger.hpp:19  ] debug - Context Created
+[2025-04-07 08:37:12.338] [         ILogger.hpp:19  ] debug - Translucency pipeline layout created successfully
+[2025-04-07 08:37:12.338] [         ILogger.hpp:19  ] debug - Translucency render pass created successfully
+[2025-04-07 08:37:12.338] [       
