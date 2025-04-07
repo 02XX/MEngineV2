@@ -9,6 +9,11 @@ if(Vulkan_FOUND)
 else()
     message(FATAL_ERROR "Vulkan not found")
 endif()
+target_include_directories(Platform PUBLIC 
+${CMAKE_CURRENT_SOURCE_DIR}/include 
+${CMAKE_SOURCE_DIR}/3rdParty/imgui
+${CMAKE_SOURCE_DIR}/3rdParty/imgui/backends)
+
 
 target_include_directories(Platform PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_link_libraries(
@@ -21,5 +26,6 @@ target_link_libraries(
     magic_enum::magic_enum
     fmt::fmt-header-only
     Boost.DI
+
 )
 # target_compile_definitions(Platform PRIVATE MENGINE_EXPORT)

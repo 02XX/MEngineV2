@@ -1,4 +1,5 @@
 #pragma once
+#include "functional"
 #include <vector>
 #include <vulkan/vulkan.hpp>
 namespace MEngine
@@ -19,6 +20,8 @@ class IWindow
     virtual int GetWidth() const = 0;
     virtual int GetHeight() const = 0;
 
+    using EventCallback = std::function<void(const void *event)>;
+    virtual void SetEventCallback(EventCallback callback) = 0;
     // 扩展：获取平台相关句柄（如 SDL_Window*）
     virtual void *GetNativeHandle() const = 0;
 };

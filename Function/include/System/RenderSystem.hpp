@@ -15,13 +15,12 @@
 #include "ShaderManager.hpp"
 #include "SyncPrimitiveManager.hpp"
 #include "System.hpp"
+#include "System/UISystem.hpp"
 #include "TaskScheduler.hpp"
 #include "Vertex.hpp"
 #include "entt/entity/fwd.hpp"
 #include "entt/entt.hpp"
-#include "imgui.h"
-#include "imgui_impl_sdl3.h"
-#include "imgui_impl_vulkan.h"
+
 #include <cstdint>
 #include <memory>
 #include <vector>
@@ -41,6 +40,7 @@ class RenderSystem final : public System
     std::shared_ptr<PipelineLayoutManager> mPipelineLayoutManager;
     std::shared_ptr<PipelineManager> mPipelineManager;
     std::shared_ptr<IWindow> mWindow;
+    std::shared_ptr<UISystem> mUISystem;
 
   private:
     std::map<PipelineType, std::vector<entt::entity>> mBatchMaterialComponents;
@@ -55,18 +55,14 @@ class RenderSystem final : public System
     std::vector<std::vector<vk::UniqueCommandBuffer>> mSecondaryCommandBuffers;
     std::vector<vk::UniqueCommandBuffer> mGraphicCommandBuffers;
 
-    vk::UniqueDescriptorPool mUIDescriptorPool;
-    ImGuiIO *mIO;
-
   private:
-    void InitUI();
     void Prepare();
     void RenderShadowDepthPass();
     void RenderDefferPass();
     void RenderTranslucencyPass();
     void RenderPostProcessPass();
     void RenderSkyPass();
-    void RenderUIPass();
+    void RenderUIPass(float deltaTime);
     void Present();
 
   public:

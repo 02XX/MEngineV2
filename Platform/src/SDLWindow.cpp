@@ -48,15 +48,30 @@ std::vector<const char *> SDLWindow::GetInstanceRequiredExtensions() const
 }
 void SDLWindow::PollEvents()
 {
-    SDL_PollEvent(&mEvent);
+    SDL_Event event;
+    // 循环处理所有事件
+    while (SDL_PollEvent(&event))
+    {
+        mEvent = event;
+        // 触发所有回调
+        for (auto &callback : mEventCallbacks)
+        {
+            callback(&event);
+        }
+        // 处理窗口关闭事件
+        if (event.type == SDL_EVENT_QUIT)
+        {
+            mShouldClose = true;
+        }
+    }
+}
+void SDLWindow::SetEventCallback(EventCallback callback)
+{
+    mEventCallbacks.push_back(callback);
 }
 bool SDLWindow::ShouldClose() const
 {
-    if (mEvent.type == SDL_EVENT_QUIT)
-    {
-        return true;
-    }
-    return false;
+    return mShouldClose;
 }
 
 int SDLWindow::GetWidth() const

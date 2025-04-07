@@ -218,7 +218,7 @@ void RenderPassManager::CreateTranslucencyRenderPass()
                                                         .setPipelineBindPoint(vk::PipelineBindPoint::eGraphics)
                                                         .setPDepthStencilAttachment(&depthRef)};
     // 4. 创建渲染通道
-    vk::RenderPassCreateInfo renderPassCreateInfo;
+    vk::RenderPassCreateInfo renderPassCreateInfo{};
     renderPassCreateInfo.setAttachments(attachments).setSubpasses(subpasses).setDependencies({});
     auto renderPass = mContext->GetDevice().createRenderPassUnique(renderPassCreateInfo);
     if (!renderPass)
@@ -238,28 +238,26 @@ void RenderPassManager::CreateUIRenderPass()
 {
 
     // 1. 创建附件
-    std::array<vk::AttachmentDescription, 1> attachments;
-    attachments[0]
-        .setFormat(mContext->GetSurfaceInfo().format.format) // Swapchain格式
-        .setSamples(vk::SampleCountFlagBits::e1)
-        .setLoadOp(vk::AttachmentLoadOp::eClear)
-        .setStoreOp(vk::AttachmentStoreOp::eStore)
-        .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
-        .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
-        .setInitialLayout(vk::ImageLayout::eUndefined)
-        .setFinalLayout(vk::ImageLayout::ePresentSrcKHR);
+    std::array<vk::AttachmentDescription, 1> attachments{
+        vk::AttachmentDescription()
+            .setFormat(mContext->GetSurfaceInfo().format.format) // Swapchain格式
+            .setSamples(vk::SampleCountFlagBits::e1)
+            .setLoadOp(vk::AttachmentLoadOp::eClear)
+            .setStoreOp(vk::AttachmentStoreOp::eStore)
+            .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
+            .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
+            .setInitialLayout(vk::ImageLayout::eUndefined)
+            .setFinalLayout(vk::ImageLayout::ePresentSrcKHR)};
+
     // 2. 创建子通道
     std::array<vk::SubpassDescription, 1> subpasses;
     std::array<vk::AttachmentReference, 1> colorRefs = {
         vk::AttachmentReference(0, vk::ImageLayout::eColorAttachmentOptimal) // Swapchain
     };
     subpasses[0]
-        .setColorAttachments(colorRefs)                         // 颜色附件引用
-        .setPipelineBindPoint(vk::PipelineBindPoint::eGraphics) // 图形管线绑定点
-        .setPDepthStencilAttachment(nullptr)                    // 深度模板附件引用（无）
-        .setInputAttachments(nullptr)                           // 输入附件引用（无）
-        .setPreserveAttachments(nullptr)                        // 保留附件（无）
-        .setResolveAttachments(nullptr);                        // 解析附件（无）
+        .setColorAttachments(colorRefs)                          // 颜色附件引用
+        .setPipelineBindPoint(vk::PipelineBindPoint::eGraphics); // 图形管线绑定点
+
     // 4. 创建渲染通道
     vk::RenderPassCreateInfo renderPassCreateInfo;
     renderPassCreateInfo

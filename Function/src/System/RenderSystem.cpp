@@ -14,6 +14,7 @@ RenderSystem::RenderSystem(std::shared_ptr<ILogger> logger, std::shared_ptr<Cont
       mRenderPassManager(renderPassManager), mPipelineLayoutManager(pipelineLayoutManager),
       mPipelineManager(pipelineManager), mWindow(window), mLogger(logger), mContext(context)
 {
+    mUISystem = std::make_shared<UISystem>(mLogger, mContext, mWindow, mRenderPassManager);
 }
 void RenderSystem::Init()
 {
@@ -32,49 +33,13 @@ void RenderSystem::Init()
         mRenderFinishedSemaphores.push_back(std::move(renderFinishedSemaphores));
         mInFlightFences.push_back(std::move(inFlightFence));
     }
-    InitUI();
+    mUISystem->Init();
+    mWindow->SetEventCallback(
+        [this](const void *event) { mUISystem->ProcessEvent(static_cast<const SDL_Event *>(event)); });
     mIsInit = true;
     mLogger->Info("RenderSystem Initialized");
 }
-void RenderSystem::InitUI()
-{
 
-    // UI
-    // DescriptorPool
-    vk::DescriptorPoolCreateInfo poolInfo;
-    vk::DescriptorPoolSize poolSize(vk::DescriptorType::eCombinedImageSampler, 1000);
-    poolInfo.setMaxSets(1000).setPoolSizes(poolSize).setFlags(vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet);
-    mUIDescriptorPool = mContext->GetDevice().createDescriptorPoolUnique(poolInfo);
-    if (!mUIDescriptorPool)
-    {
-        mLogger->Error("Failed to create UI descriptor pool");
-    }
-    //  Initialize ImGui context
-    IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
-    mIO = &ImGui::GetIO();
-    mIO->ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
-    ImGui::StyleColorsDark();
-    // Initialize ImGui Vulkan Backend
-    ImGui_ImplSDL3_InitForVulkan(static_cast<SDL_Window *>(mWindow->GetNativeHandle()));
-    ImGui_ImplVulkan_InitInfo initInfo{};
-    initInfo.ApiVersion = mContext->GetInstanceVersion();
-    initInfo.Instance = mContext->GetInstance();
-    initInfo.PhysicalDevice = mContext->GetPhysicalDevice();
-    initInfo.Device = mContext->GetDevice();
-    initInfo.QueueFamily = mContext->GetQueueFamilyIndicates().graphicsFamily.value();
-    initInfo.Queue = mContext->GetGraphicQueue();
-    initInfo.DescriptorPool = mUIDescriptorPool.get();
-    initInfo.RenderPass = mRenderPassManager->GetRenderPass(RenderPassType::UI);
-    initInfo.MinImageCount = mContext->GetSurfaceInfo().imageCount;
-    initInfo.ImageCount = mContext->GetSurfaceInfo().imageCount;
-    initInfo.MSAASamples = static_cast<VkSampleCountFlagBits>(vk::SampleCountFlagBits::e1);
-    // optional
-    initInfo.Subpass = 0;
-    // initInfo.DescriptorPoolSize = 1000;
-    ImGui_ImplVulkan_Init(&initInfo);
-    mLogger->Debug("ImGui Vulkan Backend Initialized");
-}
 RenderSystem::~RenderSystem()
 {
     if (!mIsShutdown)
@@ -84,11 +49,7 @@ void RenderSystem::Shutdown()
 {
 
     mContext->GetDevice().waitIdle();
-
-    ImGui_ImplVulkan_Shutdown();
-    ImGui_ImplSDL3_Shutdown();
-    ImGui::DestroyContext();
-
+    mUISystem->Shutdown();
     mIsShutdown = true;
     mLogger->Info("RenderSystem Shutdown");
 }
@@ -111,11 +72,11 @@ void RenderSystem::Tick(float deltaTime)
     Prepare();               // Prepare
     // RenderDefferPass();       // Deffer pass
     // RenderShadowDepthPass();  // Shadow pass
-    RenderTranslucencyPass(); // Translucency pass
+    // RenderTranslucencyPass(); // Translucency pass
     // RenderPostProcessPass();  // Post process pass
     // RenderSkyPass();          // Sky pass
-    // RenderUIPass(); // UI pass
-    Present(); // Present
+    RenderUIPass(deltaTime); // UI pass
+    Present();               // Present
 }
 
 void RenderSystem::Prepare()
@@ -225,9 +186,9 @@ void RenderSystem::RenderPostProcessPass()
 void RenderSystem::RenderSkyPass()
 {
 }
-void RenderSystem::RenderUIPass()
+void RenderSystem::RenderUIPass(float deltaTime)
 {
-    vk::ClearValue clearValue(std::array<float, 4>{1.0f, 1.0f, 0.0f, 1.0f});
+    vk::ClearValue clearValue(std::array<float, 4>{0.1f, 0.1f, 0.1f, 1.0f});
     vk::RenderPassBeginInfo renderPassBeginInfo;
     auto frameBuffer = mRenderPassManager->GetFrameBuffer(RenderPassType::UI, mImageIndex);
     auto renderPass = mRenderPassManager->GetRenderPass(RenderPassType::UI);
@@ -236,20 +197,9 @@ void RenderSystem::RenderUIPass()
         .setRenderArea(vk::Rect2D({0, 0}, mContext->GetSurfaceInfo().extent))
         .setClearValues(clearValue);
     mGraphicCommandBuffers[mFrameIndex]->beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);
-    ImGui_ImplVulkan_NewFrame();
-    ImGui_ImplSDL3_NewFrame();
-    ImGui::NewFrame();
-    ImGui::Begin("Debug Window", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
-    ImGui::Text("If you can see this, UI is working!");
-    ImGui::End();
-    ImGui::ShowDemoWindow();
-    ImGui::Render();
-    ImDrawData *drawData = ImGui::GetDrawData();
-    bool isMinimized = (drawData->DisplaySize.x <= 0.0f || drawData->DisplaySize.y <= 0.0f);
-    if (!isMinimized)
-    {
-        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), mGraphicCommandBuffers[mFrameIndex].get());
-    }
+    mUISystem->SetCommandBuffer(mGraphicCommandBuffers[mFrameIndex].get());
+
+    mUISystem->Tick(0.0f);
     mGraphicCommandBuffers[mFrameIndex]->endRenderPass();
 }
 void RenderSystem::Present()

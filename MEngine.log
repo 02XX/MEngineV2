@@ -500,4 +500,47 @@
 [2025-04-07 08:37:12.337] [         ILogger.hpp:19  ] debug - Context Created
 [2025-04-07 08:37:12.338] [         ILogger.hpp:19  ] debug - Translucency pipeline layout created successfully
 [2025-04-07 08:37:12.338] [         ILogger.hpp:19  ] debug - Translucency render pass created successfully
-[2025-04-07 08:37:12.338] [       
+[2025-04-07 08:37:12.338] [       [2025-04-07 10:56:54.813] [         ILogger.hpp:24  ] info - Application Started
+[2025-04-07 10:56:54.920] [         ILogger.hpp:14  ] trace - SDL Window created successfully
+[2025-04-07 10:56:54.927] [         ILogger.hpp:14  ] trace - Instance Version: 0.1.4.309
+[2025-04-07 10:56:55.023] [         ILogger.hpp:14  ] trace - Instance enabled layer: VK_LAYER_KHRONOS_validation
+[2025-04-07 10:56:55.023] [         ILogger.hpp:14  ] trace - Instance enabled layer: VK_LAYER_KHRONOS_synchronization2
+[2025-04-07 10:56:55.023] [         ILogger.hpp:14  ] trace - Instance enabled extension: VK_KHR_surface
+[2025-04-07 10:56:55.023] [         ILogger.hpp:14  ] trace - Instance enabled extension: VK_KHR_xlib_surface
+[2025-04-07 10:56:55.023] [         ILogger.hpp:19  ] debug - Instance Created
+[2025-04-07 10:56:55.024] [         ILogger.hpp:19  ] debug - Physical Device Selected: NVIDIA GeForce RTX 2080 Ti
+[2025-04-07 10:56:55.024] [         ILogger.hpp:19  ] debug - Surface Created
+[2025-04-07 10:56:55.034] [         ILogger.hpp:14  ] trace - Current Surface Info:
+[2025-04-07 10:56:55.034] [         ILogger.hpp:14  ] trace - Support Image Count: 2~8
+[2025-04-07 10:56:55.034] [         ILogger.hpp:14  ] trace - Support Array Layer: 1~1
+[2025-04-07 10:56:55.034] [         ILogger.hpp:14  ] trace - Support Transforms
+[2025-04-07 10:56:55.034] [         ILogger.hpp:14  ] trace - Support Usage Flags
+[2025-04-07 10:56:55.034] [         ILogger.hpp:14  ] trace - Support CompositeAlpha { Opaque }
+[2025-04-07 10:56:55.034] [         ILogger.hpp:14  ] trace - Support Extent: 800x600~800x600
+[2025-04-07 10:56:55.034] [         ILogger.hpp:14  ] trace - Support Format: B8G8R8A8Unorm
+[2025-04-07 10:56:55.034] [         ILogger.hpp:14  ] trace - Support Format: B8G8R8A8Srgb
+[2025-04-07 10:56:55.034] [         ILogger.hpp:14  ] trace - Support Present Mode: Fifo
+[2025-04-07 10:56:55.034] [         ILogger.hpp:14  ] trace - Support Present Mode: FifoRelaxed
+[2025-04-07 10:56:55.034] [         ILogger.hpp:14  ] trace - Support Present Mode: Immediate
+[2025-04-07 10:56:55.034] [         ILogger.hpp:19  ] debug - Current Format: B8G8R8A8Srgb
+[2025-04-07 10:56:55.034] [         ILogger.hpp:19  ] debug - Current Color Space: SrgbNonlinear
+[2025-04-07 10:56:55.034] [         ILogger.hpp:19  ] debug - Current Present Mode: Fifo
+[2025-04-07 10:56:55.034] [         ILogger.hpp:19  ] debug - Current Extent: 800x600
+[2025-04-07 10:56:55.034] [         ILogger.hpp:19  ] debug - Current Image Count: 2
+[2025-04-07 10:56:55.034] [         ILogger.hpp:19  ] debug - Current Image Array Layer: 1
+[2025-04-07 10:56:55.034] [         ILogger.hpp:14  ] trace - Queue Family Index: 0 Supports Graphics. Supports Queue Index:0~15
+[2025-04-07 10:56:55.034] [         ILogger.hpp:14  ] trace - Queue Family Index: 0 Supports Presentation. Supports Queue Index:0~15
+[2025-04-07 10:56:55.034] [         ILogger.hpp:14  ] trace - Queue Family Index: 0 Supports Transfer. Supports Queue Index:0~15
+[2025-04-07 10:56:55.203] [         ILogger.hpp:14  ] trace - Device enabled extension: VK_KHR_swapchain
+[2025-04-07 10:56:55.203] [         ILogger.hpp:19  ] debug - Device Created
+[2025-04-07 10:56:55.203] [         ILogger.hpp:19  ] debug - Queues Getted
+[2025-04-07 10:56:55.203] [         ILogger.hpp:19  ] debug - VMA Allocator Created
+[2025-04-07 10:56:55.345] [         ILogger.hpp:19  ] debug - Swapchain Created
+[2025-04-07 10:56:55.345] [         ILogger.hpp:19  ] debug - Swapchain Images Created
+[2025-04-07 10:56:55.345] [         ILogger.hpp:14  ] trace - Swapchain Image Count: 2
+[2025-04-07 10:56:55.345] [         ILogger.hpp:19  ] debug - Swapchain Image Views Created
+[2025-04-07 10:56:55.345] [         ILogger.hpp:14  ] trace - Swapchain Image Count: 2
+[2025-04-07 10:56:55.345] [         ILogger.hpp:19  ] debug - Context Created
+[2025-04-07 10:56:55.346] [         ILogger.hpp:19  ] debug - Translucency pipeline layout created successfully
+[2025-04-07 10:56:55.346] [         ILogger.hpp:19  ] debug - Translucency render pass created successfully
+[2025-04-07 10:56:55.346] [       
