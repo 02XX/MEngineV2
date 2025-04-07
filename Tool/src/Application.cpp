@@ -8,7 +8,7 @@ Application::Application()
     mLogger = std::make_shared<SpdLogger>();
     mLogger->Info("Application Started");
 
-    mWindow = std::make_shared<SDLWindow>(mLogger, WindowConfig{800, 600, "MEngine"});
+    mWindow = std::make_shared<SDLWindow>(mLogger, WindowConfig{1920, 1080, "MEngine"});
     std::vector<const char *> instanceRequiredExtensions = mWindow->GetInstanceRequiredExtensions();
     std::vector<const char *> instanceRequiredLayers{"VK_LAYER_KHRONOS_validation",
                                                      "VK_LAYER_KHRONOS_synchronization2"};

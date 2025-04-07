@@ -32,6 +32,10 @@ class UISystem : public ISystem
     {
         mCommandBuffer = commandBuffer;
     }
+    void HeirarchyWindow();
+    void InspectorWindow();
+    void AssetWindow();
+
     void ProcessEvent(const SDL_Event *event);
     void Init() override;
     void Tick(float deltaTime) override;

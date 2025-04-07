@@ -50,16 +50,32 @@ void UISystem::ProcessEvent(const SDL_Event *event)
 {
     ImGui_ImplSDL3_ProcessEvent(static_cast<const SDL_Event *>(event));
 }
+void HeirarchyWindow()
+{
+    ImGui::Begin("Heirarchy", nullptr, ImGuiWindowFlags_None);
+
+    ImGui::End();
+}
+void InspectorWindow()
+{
+    ImGui::Begin("Inspector", nullptr, ImGuiWindowFlags_None);
+    ImGui::Text("Inspector");
+    ImGui::End();
+}
+void AssetWindow()
+{
+    ImGui::Begin("Asset", nullptr, ImGuiWindowFlags_None);
+    ImGui::Text("Asset");
+    ImGui::End();
+}
 void UISystem::Tick(float deltaTime)
 {
     ImGui_ImplSDL3_NewFrame();
     ImGui_ImplVulkan_NewFrame();
     ImGui::NewFrame();
-    ImGui::Begin("Debug Window", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
-    ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
-    ImGui::End();
-    ImGui::ShowDemoWindow();
-
+    HeirarchyWindow();
+    InspectorWindow();
+    AssetWindow();
     ImGui::Render();
     ImDrawData *drawData = ImGui::GetDrawData();
     bool isMinimized = (drawData->DisplaySize.x <= 0.0f || drawData->DisplaySize.y <= 0.0f);
