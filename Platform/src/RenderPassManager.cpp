@@ -411,6 +411,8 @@ void RenderPassManager::CreateSkyFrameBuffer()
 }
 void RenderPassManager::CreateUIFrameBuffer()
 {
+    mFrameBuffers[RenderPassType::UI].clear();
+    mUIFrameResources.clear();
     auto swapchainImages = mContext->GetSwapchainImages();
     auto swapchainImageViews = mContext->GetSwapchainImageViews();
     auto extent = mContext->GetSurfaceInfo().extent;
@@ -473,6 +475,7 @@ void RenderPassManager::RecreateFrameBuffer(uint32_t width, uint32_t height)
 {
     mWidth = width;
     mHeight = height;
+    mContext->GetDevice().waitIdle();
     // 创建延迟渲染的GBuffer帧缓冲
     // CreateDefferFrameBuffer();
     // // 创建阴影深度图帧缓冲
@@ -487,5 +490,6 @@ void RenderPassManager::RecreateFrameBuffer(uint32_t width, uint32_t height)
     // CreateSkyFrameBuffer();
     // 创建UI帧缓冲
     CreateUIFrameBuffer();
+    mLogger->Debug("Frame buffers recreated successfully");
 }
 } // namespace MEngine

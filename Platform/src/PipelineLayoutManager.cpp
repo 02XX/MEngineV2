@@ -104,9 +104,8 @@ void PipelineLayoutManager::CreateTranslucencyPipelineLayout()
     }
     mDescriptorSetLayouts[PipelineLayoutType::TranslucencyLayout] = std::move(descriptorSetLayout);
     // 3. 创建管线布局
-    vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo;
-    pipelineLayoutCreateInfo.setSetLayouts(mDescriptorSetLayouts[PipelineLayoutType::TranslucencyLayout].get())
-        .setPushConstantRanges(nullptr);
+    vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
+    pipelineLayoutCreateInfo.setSetLayouts(mDescriptorSetLayouts[PipelineLayoutType::TranslucencyLayout].get());
     auto pipelineLayout = mContext->GetDevice().createPipelineLayoutUnique(pipelineLayoutCreateInfo);
     if (!pipelineLayout)
     {

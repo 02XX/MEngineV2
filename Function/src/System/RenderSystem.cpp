@@ -14,6 +14,9 @@ RenderSystem::RenderSystem(std::shared_ptr<ILogger> logger, std::shared_ptr<Cont
       mPipelineManager(pipelineManager), mWindow(window), mLogger(logger), mContext(context)
 {
     mUISystem = std::make_shared<UISystem>(mLogger, mContext, mWindow, mRenderPassManager);
+    mBufferManager = std::make_shared<BufferManager>(mLogger, mContext, mCommandBufferManager, mSyncPrimitiveManager);
+    mImageManager =
+        std::make_shared<ImageManager>(mLogger, mContext, mCommandBufferManager, mSyncPrimitiveManager, mBufferManager);
 }
 void RenderSystem::Init()
 {
@@ -33,6 +36,7 @@ void RenderSystem::Init()
         mRenderFinishedSemaphores.push_back(std::move(renderFinishedSemaphores));
         mInFlightFences.push_back(std::move(inFlightFence));
     }
+    mMVPBuffer = mBufferManager->CreateUniqueUniformBuffer(sizeof(glm::mat4x4));
     mUISystem->Init();
     mWindow->SetEventCallback(
         [this](const void *event) { mUISystem->ProcessEvent(static_cast<const SDL_Event *>(event)); });
@@ -65,11 +69,40 @@ void RenderSystem::CollectRenderEntities()
         mBatchMaterialComponents[material.pipelineType].push_back(entity);
     }
 }
-
+void RenderSystem::CollectMainCamera()
+{
+    auto entities = mRegistry->view<CameraComponent>();
+    for (auto entity : entities)
+    {
+        auto &camera = entities.get<CameraComponent>(entity);
+        if (camera.isMainCamera)
+        {
+            mMainCameraEntity = entity;
+            break;
+        }
+    }
+}
+glm::mat4x4 RenderSystem::GetModelMatrix(entt::entity entity)
+{
+    auto &transform = mRegistry->get<TransformComponent>(entity);
+    glm::mat4x4 modelMatrix = glm::mat4(1.0f);
+    modelMatrix = glm::translate(modelMatrix, transform.position);
+    modelMatrix = glm::rotate(modelMatrix, glm::radians(transform.rotation.x), glm::vec3(1.0f, 0.0f, 0.0f));
+    modelMatrix = glm::rotate(modelMatrix, glm::radians(transform.rotation.y), glm::vec3(0.0f, 1.0f, 0.0f));
+    modelMatrix = glm::rotate(modelMatrix, glm::radians(transform.rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
+    modelMatrix = glm::scale(modelMatrix, transform.scale);
+    return modelMatrix;
+}
+void RenderSystem::TickRotationMatrix()
+{
+    mRotationMatrix = glm::rotate(mRotationMatrix, glm::radians(5.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+}
 void RenderSystem::Tick(float deltaTime)
 {
     CollectRenderEntities(); // Collect same material render entities
-    Prepare();               // Prepare
+    CollectMainCamera();
+    TickRotationMatrix();
+    Prepare(); // Prepare
     // RenderDefferPass();       // Deffer pass
     // RenderShadowDepthPass();  // Shadow pass
     RenderTranslucencyPass(); // Translucency pass
@@ -110,6 +143,14 @@ void RenderSystem::Prepare()
     vk::CommandBufferBeginInfo beginInfo;
     beginInfo.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
     mGraphicCommandBuffers[mFrameIndex]->begin(beginInfo);
+
+    // ReCreateFrameBuffer
+    if (mUISystem->IsSceneViewPortChanged())
+    {
+        auto width = mUISystem->GetSceneWidth();
+        auto height = mUISystem->GetSceneHeight();
+        mRenderPassManager->RecreateFrameBuffer(width, height);
+    }
 }
 void RenderSystem::RenderShadowDepthPass()
 {
@@ -156,6 +197,19 @@ void RenderSystem::RenderTranslucencyPass()
         .setClearValues(clearValues);
     mGraphicCommandBuffers[mFrameIndex]->beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);
     {
+        // viewport
+        vk::Viewport viewport;
+        viewport.setX(0.0f)
+            .setY(0.0f)
+            .setWidth(static_cast<float>(extent.width))
+            .setHeight(static_cast<float>(extent.height))
+            .setMinDepth(0.0f)
+            .setMaxDepth(1.0f);
+        mGraphicCommandBuffers[mFrameIndex]->setViewport(0, viewport);
+        // scissor
+        vk::Rect2D scissor;
+        scissor.setOffset({0, 0}).setExtent(extent);
+        mGraphicCommandBuffers[mFrameIndex]->setScissor(0, scissor);
         // 1. 绑定管线
         mGraphicCommandBuffers[mFrameIndex]->bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
         // 2. 绑定描述符集
@@ -163,6 +217,13 @@ void RenderSystem::RenderTranslucencyPass()
         {
             auto &material = mRegistry->get<MaterialComponent>(entity);
             auto &mesh = mRegistry->get<MeshComponent>(entity);
+            auto M = GetModelMatrix(entity);
+            M = M * mRotationMatrix;
+            auto V = mRegistry->get<CameraComponent>(mMainCameraEntity).viewMatrix;
+            auto P = mRegistry->get<CameraComponent>(mMainCameraEntity).projectionMatrix;
+            auto MVP = P * V * M;
+            mGraphicCommandBuffers[mFrameIndex]->pushConstants(pipelineLayout, vk::ShaderStageFlagBits::eVertex, 0,
+                                                               sizeof(glm::mat4x4), &MVP);
             // auto descriptorSet = mPipelineLayoutManager->GetDescriptorSet(material.pipelineLayoutType, entity);
             // mGraphicCommandBuffers[mFrameIndex]->bindDescriptorSets(
             //     vk::PipelineBindPoint::eGraphics,
@@ -199,7 +260,7 @@ void RenderSystem::RenderUIPass(float deltaTime)
     // --- 1. 渲染前的布局转换
     vk::ImageMemoryBarrier preRenderBarrier;
     preRenderBarrier.setImage(uiFrameResource.swapchainImage)
-        .setOldLayout(vk::ImageLayout::ePresentSrcKHR)
+        .setOldLayout(vk::ImageLayout::eUndefined)
         .setNewLayout(vk::ImageLayout::eColorAttachmentOptimal)
         .setSrcQueueFamilyIndex(queueFamilyIndices.graphicsFamily.value())
         .setDstQueueFamilyIndex(queueFamilyIndices.graphicsFamily.value())

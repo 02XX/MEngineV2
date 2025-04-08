@@ -83,8 +83,8 @@ class RenderPassManager final : public NoCopyable
     std::vector<UIFrameResource> mUIFrameResources;
     std::vector<TranslucencyFrameResource> mTranslucencyFrameResources;
 
-    uint32_t mWidth = 1127;
-    uint32_t mHeight = 695;
+    uint32_t mWidth = 800;
+    uint32_t mHeight = 600;
 
   private:
     void CreateGBufferRenderPass();

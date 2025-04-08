@@ -39,6 +39,8 @@ class UISystem : public ISystem
     std::vector<vk::UniqueDescriptorSet> mSceneDescriptorSets;
     vk::UniqueSampler mSceneSampler;
 
+    bool mIsSceneViewPortChange = false;
+
   private:
     void DockingSpace();
     void HierarchyWindow();
@@ -60,6 +62,18 @@ class UISystem : public ISystem
     void SetCommandBuffer(vk::CommandBuffer commandBuffer)
     {
         mCommandBuffer = commandBuffer;
+    }
+    bool IsSceneViewPortChanged() const
+    {
+        return mIsSceneViewPortChange;
+    }
+    uint32_t GetSceneWidth() const
+    {
+        return mSceneWidth;
+    }
+    uint32_t GetSceneHeight() const
+    {
+        return mSceneHeight;
     }
     void ProcessEvent(const SDL_Event *event);
     void Init() override;

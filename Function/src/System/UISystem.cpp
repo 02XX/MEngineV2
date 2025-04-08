@@ -135,49 +135,36 @@ void UISystem::UpdateSceneDescriptorSet(vk::ImageView imageView, uint32_t imageI
 }
 void UISystem::DockingSpace()
 {
-    ImGuiWindowFlags flags = ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse |
-                             ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
-                             ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
-
     // 获取主视口尺寸
     const ImGuiViewport *viewport = ImGui::GetMainViewport();
-    ImGui::SetNextWindowPos(viewport->WorkPos);
-    ImGui::SetNextWindowSize(viewport->WorkSize);
-    ImGui::SetNextWindowViewport(viewport->ID);
-
-    // 创建主窗口容器
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
-    ImGui::Begin("MainDockSpaceWindow", nullptr, flags);
-    ImGui::PopStyleVar(2);
-
-    // 创建 DockSpace
-    ImGuiID dockSpaceID = ImGui::GetID("MainDockSpace");
-    ImGui::DockSpace(dockSpaceID, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_PassthruCentralNode);
-
-    // 首次运行时初始化默认布局
+    ImGuiID dockSpaceID = ImGui::DockSpaceOverViewport();
     if (mFirstRun)
     {
-        ImGui::DockBuilderRemoveNode(dockSpaceID); // 清除默认布局
-        ImGui::DockBuilderAddNode(dockSpaceID, ImGuiDockNodeFlags_PassthruCentralNode);
+        ImGui::DockBuilderRemoveNode(dockSpaceID);
+        ImGui::DockBuilderAddNode(dockSpaceID, ImGuiDockNodeFlags_DockSpace);
+        ImGui::DockBuilderSetNodeSize(dockSpaceID, viewport->WorkSize);
 
-        // 划分区域
-        ImGuiID center = dockSpaceID; // 保留中心区域
-        ImGuiID bottom = ImGui::DockBuilderSplitNode(center, ImGuiDir_Down, 0.3f, nullptr, &center);
-        ImGuiID left = ImGui::DockBuilderSplitNode(center, ImGuiDir_Left, 0.2f, nullptr, &center);
-        ImGuiID right = ImGui::DockBuilderSplitNode(center, ImGuiDir_Right, 0.25f, nullptr, &center);
-        ImGui::DockBuilderSetNodeSize(center, ImVec2(mSceneWidth, mSceneHeight));
-        // 分配窗口到停靠节点
-        ImGui::DockBuilderDockWindow("SceneView", center);
-        ImGui::DockBuilderDockWindow("Hierarchy", left);
-        ImGui::DockBuilderDockWindow("Inspector", right);
-        ImGui::DockBuilderDockWindow("Assets", bottom);
+        // 1. 主区域拆分为底部（30%）和顶部（70%）
+        ImGuiID dockBottomID, dockTopID;
+        ImGui::DockBuilderSplitNode(dockSpaceID, ImGuiDir_Down, 0.3, &dockBottomID, &dockTopID);
+
+        // 2. 顶部区域拆分为左（30%）和剩余部分（70%）
+        ImGuiID dockLeftID, remainingTop;
+        ImGui::DockBuilderSplitNode(dockTopID, ImGuiDir_Left, 0.3, &dockLeftID, &remainingTop);
+
+        // 3. 剩余部分（70%）拆分为中（60%）和右（40%）
+        ImGuiID dockCenterID, dockRightID;
+        ImGui::DockBuilderSplitNode(remainingTop, ImGuiDir_Right, 0.4, &dockRightID, &dockCenterID);
+
+        // 绑定窗口
+        ImGui::DockBuilderDockWindow("SceneView", dockCenterID); // 中间
+        ImGui::DockBuilderDockWindow("Hierarchy", dockLeftID);   // 左侧
+        ImGui::DockBuilderDockWindow("Inspector", dockRightID);  // 右侧
+        ImGui::DockBuilderDockWindow("Assets", dockBottomID);    // 底部
 
         ImGui::DockBuilderFinish(dockSpaceID);
         mFirstRun = false;
     }
-
-    ImGui::End();
 }
 void UISystem::HierarchyWindow()
 {
@@ -195,21 +182,17 @@ void UISystem::SceneViewWindow()
 {
     ImGui::Begin("SceneView", nullptr, ImGuiWindowFlags_None);
     ImVec2 size = ImGui::GetContentRegionAvail();
-
-    // 四舍五入转换 + 防零处理
-    uint32_t newWidth = static_cast<uint32_t>(size.x);
-    uint32_t newHeight = static_cast<uint32_t>(size.y);
-    newWidth = newWidth ? newWidth : 1;
-    newHeight = newHeight ? newHeight : 1;
     // 尺寸变化检测
-    if (newWidth != mSceneWidth || newHeight != mSceneHeight)
+    uint32_t width = static_cast<uint32_t>(size.x);
+    uint32_t height = static_cast<uint32_t>(size.y);
+    mIsSceneViewPortChange = false;
+    if (width != mSceneWidth || height != mSceneHeight)
     {
-        // mSceneWidth = newWidth;
-        // mSceneHeight = newHeight;
-        // mRenderPassManager->RecreateFrameBuffer(mSceneWidth, mSceneHeight);
+        mSceneWidth = width;
+        mSceneHeight = height;
+        mIsSceneViewPortChange = true;
     }
-    mLogger->Debug("SceneView Size: {} x {}", mSceneWidth, mSceneHeight);
-    ImGui::Text("SceneView Size: %d x %d", mSceneWidth, mSceneHeight);
+    ImGui::Text("SceneView Size: %d x %d", width, height);
     ImTextureID textureId =
         reinterpret_cast<ImTextureID>(static_cast<VkDescriptorSet>(mSceneDescriptorSets[mCurrentFrame].get()));
     ImGui::Image(textureId, ImVec2(mSceneWidth, mSceneHeight), ImVec2(0, 1), ImVec2(1, 0));

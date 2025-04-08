@@ -1,4 +1,5 @@
 #include "BasicGeometry/BasicGeometryEntityManager.hpp"
+#include "Componet/TransformComponent.hpp"
 #include "PipelineLayoutManager.hpp"
 #include "PipelineManager.hpp"
 

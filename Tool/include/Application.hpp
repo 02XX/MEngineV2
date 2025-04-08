@@ -21,6 +21,8 @@
 #include "SpdLogger.hpp"
 
 #include "SyncPrimitiveManager.hpp"
+#include "System/CameraSystem.hpp"
+#include "System/ISystem.hpp"
 #include "System/RenderSystem.hpp"
 #include "entt/entt.hpp"
 namespace MEngine
@@ -34,7 +36,6 @@ class Application final : public NoCopyable
     std::shared_ptr<IWindow> mWindow;
     std::shared_ptr<Context> mContext;
     std::shared_ptr<entt::registry> mRegistry;
-    std::shared_ptr<RenderSystem> mRenderSystem;
     std::shared_ptr<PipelineManager> mPipelineManager;
     std::shared_ptr<PipelineLayoutManager> mPipelineLayoutManager;
     std::shared_ptr<RenderPassManager> mRenderPassManager;
@@ -47,6 +48,14 @@ class Application final : public NoCopyable
     std::shared_ptr<BufferManager> mBufferManager;
 
     std::shared_ptr<BasicGeometryEntityManager> mBasicGeometryEntityManager;
+    // System
+    std::shared_ptr<ISystem> mRenderSystem;
+    std::shared_ptr<ISystem> mCameraSystem;
+
+    // time
+    std::chrono::high_resolution_clock::time_point mStartTime;
+    std::chrono::high_resolution_clock::time_point mLastTime;
+    float mDeltaTime;
 
   private:
     void InitSystem();

@@ -1,13 +1,18 @@
 #pragma once
+#include "Buffer.hpp"
+#include "BufferManager.hpp"
 #include "CommandBuffeManager.hpp"
+#include "Componet/CameraComponent.hpp"
 #include "Componet/MaterialComponent.hpp"
 #include "Componet/MeshComponent.hpp"
+#include "Componet/TransformComponent.hpp"
 #include "Context.hpp"
 #include "Image.hpp"
 #include "ImageManager.hpp"
 #include "Interface/ILogger.hpp"
 #include "Interface/IWindow.hpp"
 #include "MEngine.hpp"
+#include "Math.hpp"
 #include "PipelineLayoutManager.hpp"
 #include "PipelineManager.hpp"
 #include "RenderPassManager.hpp"
@@ -20,7 +25,7 @@
 #include "Vertex.hpp"
 #include "entt/entity/fwd.hpp"
 #include "entt/entt.hpp"
-
+#include "glm/ext/matrix_float4x4.hpp"
 #include <cstdint>
 #include <memory>
 #include <vector>
@@ -43,7 +48,8 @@ class RenderSystem final : public System
     std::shared_ptr<IWindow> mWindow;
     std::shared_ptr<UISystem> mUISystem;
 
-
+    std::shared_ptr<BufferManager> mBufferManager;
+    std::shared_ptr<ImageManager> mImageManager;
 
   private:
     std::map<PipelineType, std::vector<entt::entity>> mBatchMaterialComponents;
@@ -58,7 +64,13 @@ class RenderSystem final : public System
     std::vector<std::vector<vk::UniqueCommandBuffer>> mSecondaryCommandBuffers;
     std::vector<vk::UniqueCommandBuffer> mGraphicCommandBuffers;
 
+    // main camera
+    entt::entity mMainCameraEntity;
+    UniqueBuffer mMVPBuffer;
+
   private:
+    void CollectRenderEntities();
+    void CollectMainCamera();
     void Prepare();
     void RenderShadowDepthPass();
     void RenderDefferPass();
@@ -67,6 +79,10 @@ class RenderSystem final : public System
     void RenderSkyPass();
     void RenderUIPass(float deltaTime);
     void Present();
+
+    glm::mat4x4 GetModelMatrix(entt::entity entity);
+    glm::mat4x4 mRotationMatrix = glm::mat4(1.0f);
+    void TickRotationMatrix();
 
   public:
     RenderSystem(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context, std::shared_ptr<IWindow> window,
@@ -77,7 +93,6 @@ class RenderSystem final : public System
                  std::shared_ptr<PipelineLayoutManager> pipelineLayoutManager = nullptr,
                  std::shared_ptr<PipelineManager> pipelineManager = nullptr);
     ~RenderSystem() override;
-    void CollectRenderEntities();
     void Init() override;
     void Tick(float deltaTime) override;
     void Shutdown() override;

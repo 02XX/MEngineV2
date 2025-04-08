@@ -8,7 +8,7 @@ Application::Application()
     mLogger = std::make_shared<SpdLogger>();
     mLogger->Info("Application Started");
 
-    mWindow = std::make_shared<SDLWindow>(mLogger, WindowConfig{1920, 1080, "MEngine"});
+    mWindow = std::make_shared<SDLWindow>(mLogger, WindowConfig{1400, 800, "MEngine"});
     std::vector<const char *> instanceRequiredExtensions = mWindow->GetInstanceRequiredExtensions();
     std::vector<const char *> instanceRequiredLayers{"VK_LAYER_KHRONOS_validation",
                                                      "VK_LAYER_KHRONOS_synchronization2"};
@@ -40,15 +40,17 @@ Application::Application()
 
     mBasicGeometryEntityManager = std::make_shared<BasicGeometryEntityManager>(mRegistry, mBufferManager);
     mBasicGeometryEntityManager->CreateCube();
+    // Camera
+    auto camera = mRegistry->create();
+    mRegistry->emplace<CameraComponent>(camera).isMainCamera = true;
+
     InitSystem();
+
+    mStartTime = std::chrono::high_resolution_clock::now();
+    mLastTime = mStartTime;
 }
 Application::~Application()
 {
-    // mCurrScene->OnDestroy();
-    // ShutdownSystem();
-    // SDL_DestroyWindow(mWindow);
-    // SDL_Quit();
-    // std::cout << "Application Closed" << std::endl;
     mLogger->Info("Application Closed");
 }
 void Application::InitSystem()
@@ -56,10 +58,13 @@ void Application::InitSystem()
     mRenderSystem = std::make_shared<RenderSystem>(mLogger, mContext, mWindow, mRegistry, mCommandBufferManager,
                                                    mSyncPrimitiveManager, mRenderPassManager, mPipelineLayoutManager,
                                                    mPipelineManager);
+    mCameraSystem = std::make_shared<CameraSystem>(mLogger, mRegistry);
     mRenderSystem->Init();
+    mCameraSystem->Init();
 }
 void Application::ShutdownSystem()
 {
+    mCameraSystem->Shutdown();
     mRenderSystem->Shutdown();
 }
 void Application::Run()
@@ -72,8 +77,11 @@ void Application::Run()
             mIsRunning = false;
             break;
         }
+        mLastTime = std::chrono::high_resolution_clock::now();
+        mDeltaTime = std::chrono::duration<float>(mLastTime - mStartTime).count();
         mWindow->PollEvents();
-        mRenderSystem->Tick(0.016f); // 60 FPS
+        mCameraSystem->Tick(mDeltaTime);
+        mRenderSystem->Tick(mDeltaTime);
     }
 }
 } // namespace MEngine

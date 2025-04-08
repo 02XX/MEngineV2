@@ -248,7 +248,9 @@ void PipelineManager::CreateTranslucencyPipeline()
         .setLogicOp(vk::LogicOp::eCopy)
         .setBlendConstants(blendConstants);
     // ========== 9. 动态状态 ==========
-    // std::array dynamicStates = {vk::DynamicState::eViewport, vk::DynamicState::eScissor};
+    std::array dynamicStates = {vk::DynamicState::eViewport, vk::DynamicState::eScissor};
+    vk::PipelineDynamicStateCreateInfo dynamicStateInfo{};
+    dynamicStateInfo.setDynamicStates(dynamicStates);
     // ========== 10. 管线创建 ==========
     vk::GraphicsPipelineCreateInfo graphicsPipelineCreateInfo{};
     graphicsPipelineCreateInfo.setPViewportState(&viewportInfo)
@@ -261,7 +263,8 @@ void PipelineManager::CreateTranslucencyPipeline()
         .setPRasterizationState(&rasterizationInfo)
         .setPMultisampleState(&multisampleInfo)
         .setPDepthStencilState(&depthStencilInfo)
-        .setPColorBlendState(&colorBlendInfo);
+        .setPColorBlendState(&colorBlendInfo)
+        .setPDynamicState(&dynamicStateInfo);
     auto pipeline = mContext->GetDevice().createGraphicsPipelineUnique(nullptr, graphicsPipelineCreateInfo);
     if (pipeline.result != vk::Result::eSuccess)
     {
