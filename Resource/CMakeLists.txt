@@ -15,3 +15,7 @@ target_link_libraries(
 # target_compile_definitions(Resource PRIVATE MENGINE_EXPORT)
 
 add_subdirectory(Shader)
+add_subdirectory(Assets)
+
+add_dependencies(Resource shaders)
+add_dependencies(Resource assets)

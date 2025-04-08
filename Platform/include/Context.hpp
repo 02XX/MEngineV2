@@ -3,6 +3,7 @@
 #include "Interface/IWindow.hpp"
 #include "MEngine.hpp"
 #include "NoCopyable.hpp"
+#include "SpdLogger.hpp"
 #include "VMA.hpp"
 #include <cstdint>
 #include <memory>
@@ -26,7 +27,7 @@ class Context final : public NoCopyable
     // DI
     std::shared_ptr<ILogger> mLogger;
     std::shared_ptr<IWindow> mWindow;
-
+ 
   private:
     ContextConfig mConfig;
 

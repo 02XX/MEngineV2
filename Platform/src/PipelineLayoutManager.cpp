@@ -88,7 +88,7 @@ void PipelineLayoutManager::CreateTranslucencyPipelineLayout()
 {
     // 1. 创建描述符集布局
     std::array<vk::DescriptorSetLayoutBinding, 1> descriptorSetLayoutBindings;
-    // Binding 0: 模型视图投影矩阵（应该用 Uniform Buffer）
+    // Binding 0: 模型视图投影矩阵（应该用 Uniform Buffer）单个
     descriptorSetLayoutBindings[0]
         .setBinding(0)
         .setDescriptorType(vk::DescriptorType::eUniformBuffer)

@@ -3,14 +3,15 @@
 namespace MEngine
 {
 UISystem::UISystem(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context, std::shared_ptr<IWindow> window,
-                   std::shared_ptr<RenderPassManager> renderPassManager, std::shared_ptr<ImageManager> mImageManager)
+                   std::shared_ptr<RenderPassManager> renderPassManager, std::shared_ptr<ImageManager> imageManager)
     : mLogger(logger), mContext(context), mWindow(window), mRenderPassManager(renderPassManager),
-      mImageManager(mImageManager)
+      mImageManager(imageManager)
 {
-    if (!mImageManager)
+    if (!imageManager)
     {
-        mImageManager = std::make_unique<ImageManager>(mLogger, mContext);
+        mImageManager = std::make_shared<ImageManager>(mLogger, mContext);
     }
+    mSamplerManager = std::make_shared<SamplerManager>(mLogger, mContext);
 }
 
 void UISystem::Init()
@@ -46,6 +47,7 @@ void UISystem::Init()
     CreateSceneDescriptorSetLayout();
     CreateSceneDescriptorSet();
     CreateSampler();
+    LoadAsset();
     mLogger->Info("Uploading Fonts");
 }
 void UISystem::ProcessEvent(const SDL_Event *event)
@@ -133,6 +135,58 @@ void UISystem::UpdateSceneDescriptorSet(vk::ImageView imageView, uint32_t imageI
         .setDescriptorCount(1);
     mContext->GetDevice().updateDescriptorSets(writeSet, {});
 }
+void UISystem::LoadAsset()
+{
+    // 3. 创建采样器
+    mSampler = mSamplerManager->CreateUniqueSampler(vk::Filter::eLinear, vk::Filter::eLinear);
+    // 文件夹图标
+    int folderThumbnailWidth, folderThumbnailHeight, folderThumbnailChannels;
+    auto foldPath = mAssetsPath / "folder.png";
+    stbi_set_flip_vertically_on_load(true);
+    auto folderThumbnail =
+        stbi_load(foldPath.c_str(), &folderThumbnailWidth, &folderThumbnailHeight, &folderThumbnailChannels, 0);
+    if (folderThumbnail)
+    {
+        // 1. 创建Image
+        mFolderImage = mImageManager->CreateUniqueTexture2D(vk::Extent2D(folderThumbnailWidth, folderThumbnailHeight),
+                                                            vk::Format::eR8G8B8A8Srgb, 1, folderThumbnail);
+        // 2. 创建ImageView
+        mFolderImageView = mImageManager->CreateImageView(mFolderImage->GetImage(), vk::Format::eR8G8B8A8Srgb);
+
+        // 4. 创建描述符集
+        mFolderTexture =
+            ImGui_ImplVulkan_AddTexture(mSampler.get(), mFolderImageView.get(),
+                                        static_cast<VkImageLayout>(vk::ImageLayout::eShaderReadOnlyOptimal));
+        mLogger->Debug("Folder thumbnail loaded successfully");
+    }
+    else
+    {
+        mLogger->Error("Failed to load file thumbnail");
+    }
+    stbi_image_free(folderThumbnail);
+    // 文件图标
+    int fileThumbnailWidth, fileThumbnailHeight, fileThumbnailChannels;
+    auto filePath = mAssetsPath / "file.png";
+    auto fileThumbnail =
+        stbi_load(filePath.c_str(), &fileThumbnailWidth, &fileThumbnailHeight, &fileThumbnailChannels, 0);
+    if (fileThumbnail)
+    {
+        // 1. 创建Image
+        mFileImage = mImageManager->CreateUniqueTexture2D(vk::Extent2D(fileThumbnailWidth, fileThumbnailHeight),
+                                                          vk::Format::eR8G8B8A8Srgb, 1, fileThumbnail);
+        // 2. 创建ImageView
+        mFileImageView = mImageManager->CreateImageView(mFileImage->GetImage(), vk::Format::eR8G8B8A8Srgb);
+        // 4. 创建描述符集
+        mFileTexture = ImGui_ImplVulkan_AddTexture(mSampler.get(), mFileImageView.get(),
+                                                   static_cast<VkImageLayout>(vk::ImageLayout::eShaderReadOnlyOptimal));
+        mLogger->Debug("File thumbnail loaded successfully");
+    }
+    else
+    {
+        mLogger->Error("Failed to load file thumbnail");
+    }
+    stbi_image_free(fileThumbnail);
+}
 void UISystem::DockingSpace()
 {
     // 获取主视口尺寸
@@ -200,8 +254,80 @@ void UISystem::SceneViewWindow()
 }
 void UISystem::AssetWindow()
 {
-    ImGui::Begin("Assets", nullptr, ImGuiWindowFlags_None);
-    ImGui::Text("Assets");
+    ImGui::Begin("Assets", nullptr, ImGuiWindowFlags_MenuBar);
+
+    // 1. 菜单栏
+    if (ImGui::BeginMenuBar())
+    {
+        if (ImGui::Button("<-"))
+        {
+            if (mCurrentAssetDir != std::filesystem::current_path())
+            {
+                mCurrentAssetDir = mCurrentAssetDir.parent_path();
+            }
+        }
+
+        ImGui::SameLine();
+        ImGui::Text("%s", mCurrentAssetDir.string().c_str());
+        ImGui::EndMenuBar();
+    }
+
+    ImGui::Separator();
+
+    // 2. 检查目录是否存在
+    if (!std::filesystem::exists(mCurrentAssetDir))
+    {
+        ImGui::TextColored(ImVec4(1, 0, 0, 1), "Directory not exists!");
+        ImGui::End();
+        return;
+    }
+
+    // 3. 设置列数
+    const int columns = std::max(1, static_cast<int>(ImGui::GetContentRegionAvail().x / mThumbnailSize));
+    ImGui::Columns(columns, "AssetColumns", false); // false = 不显示边框
+    try
+    {
+        for (const auto &entry : std::filesystem::directory_iterator(mCurrentAssetDir))
+        {
+            if (!entry.is_directory())
+                continue;
+
+            ImGui::Image(reinterpret_cast<ImTextureID>(static_cast<VkDescriptorSet>(mFolderTexture)),
+                         ImVec2(mThumbnailSize, mThumbnailSize), ImVec2(0, 1), ImVec2(1, 0));
+            ImGui::TextWrapped("%s", entry.path().filename().string().c_str());
+
+            // 双击进入文件夹
+            if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0))
+            {
+                mCurrentAssetDir = entry.path();
+            }
+
+            // 移动到下一列
+            ImGui::NextColumn();
+        }
+        for (const auto &entry : std::filesystem::directory_iterator(mCurrentAssetDir))
+        {
+            if (entry.is_directory())
+                continue;
+
+            ImGui::Image(reinterpret_cast<ImTextureID>(static_cast<VkDescriptorSet>(mFileTexture)),
+                         ImVec2(mThumbnailSize, mThumbnailSize), ImVec2(0, 1), ImVec2(1, 0));
+            ImGui::TextWrapped("%s", entry.path().filename().string().c_str());
+
+            // 双击文件
+            if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0))
+            {
+            }
+
+            // 移动到下一列
+            ImGui::NextColumn();
+        }
+    }
+    catch (const std::exception &e)
+    {
+        ImGui::TextColored(ImVec4(1, 0, 0, 1), "Error: %s", e.what());
+    }
+    ImGui::Columns(1);
     ImGui::End();
 }
 void UISystem::Tick(float deltaTime)

@@ -1,19 +1,22 @@
 #pragma once
 
+#include "CommandBuffeManager.hpp"
 #include "Context.hpp"
 #include "Image.hpp"
 #include "Interface/ILogger.hpp"
 #include "Interface/IWindow.hpp"
 #include "RenderPassManager.hpp"
+#include "SamplerManager.hpp"
 #include "System/ISystem.hpp"
 #include "imgui.h"
 #include "imgui_impl_sdl3.h"
 #include "imgui_impl_vulkan.h"
 #include "imgui_internal.h"
+#include "stb_image.h"
 #include <cstdint>
+#include <filesystem>
 #include <memory>
 #include <vector>
-#include <vulkan/vulkan_handles.hpp>
 
 namespace MEngine
 {
@@ -25,6 +28,9 @@ class UISystem : public ISystem
     std::shared_ptr<IWindow> mWindow;
     std::shared_ptr<RenderPassManager> mRenderPassManager;
     std::shared_ptr<ImageManager> mImageManager;
+    std::shared_ptr<CommandBufferManager> mCommandBufferManager;
+    std::shared_ptr<SyncPrimitiveManager> mSyncPrimitiveManager;
+    std::shared_ptr<SamplerManager> mSamplerManager;
 
   private:
     vk::UniqueDescriptorPool mUIDescriptorPool;
@@ -41,6 +47,18 @@ class UISystem : public ISystem
 
     bool mIsSceneViewPortChange = false;
 
+    std::filesystem::path mCurrentAssetDir = "/media/zero/Data/MEngineAssets";
+    float mThumbnailSize = 64.0f; // 可调整的图标大小
+
+    std::filesystem::path mAssetsPath = std::filesystem::current_path() / "Assets";
+    UniqueImage mFileImage;
+    vk::UniqueImageView mFileImageView;
+    UniqueImage mFolderImage;
+    vk::UniqueImageView mFolderImageView;
+    vk::UniqueSampler mSampler;
+    vk::DescriptorSet mFileTexture;
+    vk::DescriptorSet mFolderTexture;
+
   private:
     void DockingSpace();
     void HierarchyWindow();
@@ -53,12 +71,14 @@ class UISystem : public ISystem
     void CreateSceneDescriptorSet();
     void CreateSampler();
 
+    void LoadAsset();
+
     void RenderScene();
 
   public:
     UISystem(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context, std::shared_ptr<IWindow> window,
              std::shared_ptr<RenderPassManager> renderPassManager,
-             std::shared_ptr<ImageManager> mImageManager = nullptr);
+             std::shared_ptr<ImageManager> imageManager = nullptr);
     void SetCommandBuffer(vk::CommandBuffer commandBuffer)
     {
         mCommandBuffer = commandBuffer;

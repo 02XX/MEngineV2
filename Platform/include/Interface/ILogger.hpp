@@ -2,6 +2,7 @@
 #include "fmt/format.h"
 #include <source_location>
 #include <string>
+
 namespace MEngine
 {
 class ILogger
