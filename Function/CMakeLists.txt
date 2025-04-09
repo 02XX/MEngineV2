@@ -11,13 +11,27 @@ set(IMGUI_SOURCES
     "${IMGUI_DIR}/backends/imgui_impl_vulkan.cpp"
     "${IMGUI_DIR}/imgui_demo.cpp"
 )
-add_library(Function STATIC ${SOURCES} ${IMGUI_SOURCES})
+set(IMGUIZMO_DIR "${CMAKE_SOURCE_DIR}/3rdParty/ImGuizmo")
+message(STATUS "ImGuizmo路径: ${IMGUIZMO_DIR}")
+set(IMGUIZMO_SOURCES
+    "${IMGUIZMO_DIR}/ImGuizmo.cpp"
+    # "${IMGUIZMO_DIR}/ImSequencer.cpp"
+    # "${IMGUIZMO_DIR}/ImCurveEdit.cpp"
+    # "${IMGUIZMO_DIR}/ImGradient.cpp"
+    # "${IMGUIZMO_DIR}/GraphEditor.cpp"
+)
+
+add_library(Function STATIC ${SOURCES} ${IMGUI_SOURCES} ${IMGUIZMO_SOURCES})
+
 
 
 target_include_directories(Function PUBLIC 
 ${CMAKE_CURRENT_SOURCE_DIR}/include 
 ${CMAKE_SOURCE_DIR}/3rdParty/imgui
-${CMAKE_SOURCE_DIR}/3rdParty/imgui/backends)
+${CMAKE_SOURCE_DIR}/3rdParty/imgui/backends
+
+${CMAKE_SOURCE_DIR}/3rdParty/ImGuizmo/
+)
 
 target_link_libraries(
     Function

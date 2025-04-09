@@ -5,12 +5,13 @@ layout(location = 1) in vec3 inNormal;    // Location 1
 layout(location = 2) in vec2 inTexCoords; // Location 2
 
 layout(location = 0) out vec4 color;
-// push constant
-layout(push_constant) uniform Transform
+
+layout(set = 0, binding = 0) uniform UniformBuffer
 {
-    mat4 mvp;
+    mat4 modelMatrix;
 }
 transform;
+
 void main()
 {
     gl_Position = transform.mvp * vec4(inPosition, 1.0);

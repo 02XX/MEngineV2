@@ -1,4 +1,6 @@
 #include "PipelineLayoutManager.hpp"
+#include <array>
+#include <vector>
 
 namespace MEngine
 {
@@ -19,60 +21,82 @@ PipelineLayoutManager::PipelineLayoutManager(std::shared_ptr<ILogger> logger, st
     // // 创建UI管线布局
     // CreateUIPipelineLayout();
 }
-
-void PipelineLayoutManager::CreateDefferPipelineLayout()
+void PipelineLayoutManager::CreateMVPDescriptorSetLayout()
 {
-    // 1. 创建描述符集布局
-    // PBR
-    std::array<vk::DescriptorSetLayoutBinding, 5> descriptorSetLayoutBindings;
-
-    // Binding 0: 模型视图投影矩阵（应该用 Uniform Buffer）
-    descriptorSetLayoutBindings[0]
+    std::array<vk::DescriptorSetLayoutBinding, 3> MVPDescriptorSetLayoutBindings;
+    // Set: 0, Binding: 0 模型矩阵
+    MVPDescriptorSetLayoutBindings[0]
         .setBinding(0)
         .setDescriptorType(vk::DescriptorType::eUniformBuffer)
         .setDescriptorCount(1)
         .setStageFlags(vk::ShaderStageFlagBits::eVertex); // 仅顶点阶段需要
+    // Set: 0, Binding: 1 视图矩阵
+    MVPDescriptorSetLayoutBindings[1]
+        .setBinding(1)
+        .setDescriptorType(vk::DescriptorType::eUniformBuffer)
+        .setDescriptorCount(1)
+        .setStageFlags(vk::ShaderStageFlagBits::eVertex); // 仅顶点阶段需要
+    // Set: 0, Binding: 2 投影矩阵
+    MVPDescriptorSetLayoutBindings[2]
+        .setBinding(2)
+        .setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
+        .setDescriptorCount(1)
+        .setStageFlags(vk::ShaderStageFlagBits::eVertex); // 仅顶点阶段需要
+    vk::DescriptorSetLayoutCreateInfo mvpDescriptorSetLayoutCreateInfo{};
+    mvpDescriptorSetLayoutCreateInfo.setBindings(MVPDescriptorSetLayoutBindings); // set: 0
+    mMVPDescriptorSetLayout = mContext->GetDevice().createDescriptorSetLayoutUnique(mvpDescriptorSetLayoutCreateInfo);
+    if (!mMVPDescriptorSetLayout)
+    {
+        mLogger->Error("Failed to create descriptor set layout for MVP");
+    }
+}
+void PipelineLayoutManager::CreateDefferPipelineLayout()
+{
+    // 1. 创建描述符集布局
+    // PBR
+    std::array<vk::DescriptorSetLayoutBinding, 5> PBRDescriptorSetLayoutBindings;
+    // Set: 1, Binding 0: Albedo（基础颜色）
+    PBRDescriptorSetLayoutBindings[0]
+        .setBinding(0)
+        .setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
+        .setDescriptorCount(1)
+        .setStageFlags(vk::ShaderStageFlagBits::eFragment);
 
-    // Binding 1: Albedo（基础颜色）
-    descriptorSetLayoutBindings[1]
+    // Set: 1, Binding 1: 法线贴图
+    PBRDescriptorSetLayoutBindings[1]
         .setBinding(1)
         .setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
         .setDescriptorCount(1)
         .setStageFlags(vk::ShaderStageFlagBits::eFragment);
 
-    // Binding 2: 法线贴图
-    descriptorSetLayoutBindings[2]
+    // Set: 1, Binding 2: 金属度/粗糙度（通常打包在同一个纹理的 RG 通道）
+    PBRDescriptorSetLayoutBindings[2]
         .setBinding(2)
         .setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
         .setDescriptorCount(1)
         .setStageFlags(vk::ShaderStageFlagBits::eFragment);
 
-    // Binding 3: 金属度/粗糙度（通常打包在同一个纹理的 RG 通道）
-    descriptorSetLayoutBindings[3]
+    // Set: 1, Binding 3: 环境光遮蔽（AO）
+    PBRDescriptorSetLayoutBindings[3]
         .setBinding(3)
         .setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
         .setDescriptorCount(1)
         .setStageFlags(vk::ShaderStageFlagBits::eFragment);
-
-    // Binding 4: 环境光遮蔽（AO）
-    descriptorSetLayoutBindings[4]
-        .setBinding(4)
-        .setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
-        .setDescriptorCount(1)
-        .setStageFlags(vk::ShaderStageFlagBits::eFragment);
     // 2. 创建描述符集布局
-    vk::DescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo;
-    descriptorSetLayoutCreateInfo.setBindings({descriptorSetLayoutBindings}); // set: 0
-    auto descriptorSetLayout = mContext->GetDevice().createDescriptorSetLayoutUnique(descriptorSetLayoutCreateInfo);
-    if (!descriptorSetLayout)
+    vk::DescriptorSetLayoutCreateInfo pbrDescriptorSetLayoutCreateInfo{};
+
+    pbrDescriptorSetLayoutCreateInfo.setBindings(PBRDescriptorSetLayoutBindings); // set: 1
+    auto pbrDescriptorSet = mContext->GetDevice().createDescriptorSetLayoutUnique(pbrDescriptorSetLayoutCreateInfo);
+    if (!pbrDescriptorSet)
     {
         mLogger->Error("Failed to create descriptor set layout for DefferPipelineLayout");
     }
-    mDescriptorSetLayouts[PipelineLayoutType::DefferLayout] = std::move(descriptorSetLayout);
+    mDescriptorSetLayouts[PipelineLayoutType::DefferLayout] = std::move(pbrDescriptorSet);
     // 3. 创建管线布局
     vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo;
-    pipelineLayoutCreateInfo.setSetLayouts(mDescriptorSetLayouts[PipelineLayoutType::DefferLayout].get())
-        .setPushConstantRanges(nullptr);
+    std::vector<vk::DescriptorSetLayout> setLayouts{mMVPDescriptorSetLayout.get(),
+                                                    mDescriptorSetLayouts[PipelineLayoutType::DefferLayout].get()};
+    pipelineLayoutCreateInfo.setSetLayouts(setLayouts);
     auto pipelineLayout = mContext->GetDevice().createPipelineLayoutUnique(pipelineLayoutCreateInfo);
     if (!pipelineLayout)
     {
@@ -86,26 +110,9 @@ void PipelineLayoutManager::CreateShadowDepthPipelineLayout()
 }
 void PipelineLayoutManager::CreateTranslucencyPipelineLayout()
 {
-    // 1. 创建描述符集布局
-    std::array<vk::DescriptorSetLayoutBinding, 1> descriptorSetLayoutBindings;
-    // Binding 0: 模型视图投影矩阵（应该用 Uniform Buffer）单个
-    descriptorSetLayoutBindings[0]
-        .setBinding(0)
-        .setDescriptorType(vk::DescriptorType::eUniformBuffer)
-        .setDescriptorCount(1)
-        .setStageFlags(vk::ShaderStageFlagBits::eVertex); // 仅顶点阶段需要
-    // 2. 创建描述符集布局
-    vk::DescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo;
-    descriptorSetLayoutCreateInfo.setBindings({descriptorSetLayoutBindings}); // set: 0
-    auto descriptorSetLayout = mContext->GetDevice().createDescriptorSetLayoutUnique(descriptorSetLayoutCreateInfo);
-    if (!descriptorSetLayout)
-    {
-        mLogger->Error("Failed to create descriptor set layout for TranslucencyPipelineLayout");
-    }
-    mDescriptorSetLayouts[PipelineLayoutType::TranslucencyLayout] = std::move(descriptorSetLayout);
-    // 3. 创建管线布局
+    // 1. 创建管线布局
     vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
-    pipelineLayoutCreateInfo.setSetLayouts(mDescriptorSetLayouts[PipelineLayoutType::TranslucencyLayout].get());
+    pipelineLayoutCreateInfo.setSetLayouts({mMVPDescriptorSetLayout.get()});
     auto pipelineLayout = mContext->GetDevice().createPipelineLayoutUnique(pipelineLayoutCreateInfo);
     if (!pipelineLayout)
     {
@@ -136,17 +143,5 @@ vk::PipelineLayout PipelineLayoutManager::GetPipelineLayout(PipelineLayoutType t
         return nullptr;
     }
 }
-vk::DescriptorSetLayout PipelineLayoutManager::GetDescriptorSetLayout(PipelineLayoutType type) const
-{
-    auto it = mDescriptorSetLayouts.find(type);
-    if (it != mDescriptorSetLayouts.end())
-    {
-        return it->second.get();
-    }
-    else
-    {
-        mLogger->Error("Descriptor set layout not found for type {}", static_cast<int>(type));
-        return nullptr;
-    }
-}
+
 } // namespace MEngine

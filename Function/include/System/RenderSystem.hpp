@@ -7,6 +7,7 @@
 #include "Componet/MeshComponent.hpp"
 #include "Componet/TransformComponent.hpp"
 #include "Context.hpp"
+#include "DescriptorManager.hpp"
 #include "Image.hpp"
 #include "ImageManager.hpp"
 #include "Interface/ILogger.hpp"
@@ -45,6 +46,7 @@ class RenderSystem final : public System
     std::shared_ptr<RenderPassManager> mRenderPassManager;
     std::shared_ptr<PipelineLayoutManager> mPipelineLayoutManager;
     std::shared_ptr<PipelineManager> mPipelineManager;
+    std::shared_ptr<DescriptorManager> mDescriptorManager;
     std::shared_ptr<IWindow> mWindow;
     std::shared_ptr<UISystem> mUISystem;
 
@@ -66,7 +68,10 @@ class RenderSystem final : public System
 
     // main camera
     entt::entity mMainCameraEntity;
-    UniqueBuffer mMVPBuffer;
+    UniqueBuffer mMBuffer;
+    UniqueBuffer mVBuffer;
+    UniqueBuffer mPBuffer;
+    vk::UniqueDescriptorSet mCameraDescriptorSet;
 
   private:
     void CollectRenderEntities();
@@ -91,7 +96,8 @@ class RenderSystem final : public System
                  std::shared_ptr<SyncPrimitiveManager> syncPrimitiveManager = nullptr,
                  std::shared_ptr<RenderPassManager> renderPassManager = nullptr,
                  std::shared_ptr<PipelineLayoutManager> pipelineLayoutManager = nullptr,
-                 std::shared_ptr<PipelineManager> pipelineManager = nullptr);
+                 std::shared_ptr<PipelineManager> pipelineManager = nullptr,
+                 std::shared_ptr<DescriptorManager> descriptorManager = nullptr);
     ~RenderSystem() override;
     void Init() override;
     void Tick(float deltaTime) override;

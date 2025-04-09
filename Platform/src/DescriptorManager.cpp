@@ -1,4 +1,6 @@
 #include "DescriptorManager.hpp"
+#include "Buffer.hpp"
+#include <functional>
 
 namespace MEngine
 {
@@ -75,17 +77,17 @@ void DescriptorManager::ResetDescriptorPool()
     mExhaustedPools.clear();
 }
 
-void DescriptorManager::UpdateUniformDescriptorSet(const std::vector<Buffer> uniformBuffers, uint32_t binding,
+void DescriptorManager::UpdateUniformDescriptorSet(const std::vector<Buffer *> &uniformBuffers, uint32_t binding,
                                                    vk::DescriptorSet dstSet)
 {
     std::vector<vk::DescriptorBufferInfo> descriptorBufferInfos;
     descriptorBufferInfos.reserve(uniformBuffers.size());
-    for (auto &uniformBuffer : uniformBuffers)
+    for (auto uniformBuffer : uniformBuffers)
     {
         vk::DescriptorBufferInfo descriptorBufferInfo;
-        descriptorBufferInfo.setBuffer(uniformBuffer.GetBuffer())
+        descriptorBufferInfo.setBuffer(uniformBuffer->GetBuffer())
             .setOffset(0)
-            .setRange(uniformBuffer.GetAllocationInfo().size);
+            .setRange(uniformBuffer->GetAllocationInfo().size);
         descriptorBufferInfos.push_back(descriptorBufferInfo);
     }
 

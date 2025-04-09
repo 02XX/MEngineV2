@@ -1,11 +1,13 @@
 #include "System/UISystem.hpp"
+#include "entt/entity/fwd.hpp"
 
 namespace MEngine
 {
 UISystem::UISystem(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context, std::shared_ptr<IWindow> window,
-                   std::shared_ptr<RenderPassManager> renderPassManager, std::shared_ptr<ImageManager> imageManager)
+                   std::shared_ptr<entt::registry> registry, std::shared_ptr<RenderPassManager> renderPassManager,
+                   std::shared_ptr<ImageManager> imageManager)
     : mLogger(logger), mContext(context), mWindow(window), mRenderPassManager(renderPassManager),
-      mImageManager(imageManager)
+      mImageManager(imageManager), mRegistry(registry)
 {
     if (!imageManager)
     {
@@ -42,7 +44,12 @@ void UISystem::Init()
     initInfo.Subpass = 0;
     // initInfo.DescriptorPoolSize = 1000;
     ImGui_ImplVulkan_Init(&initInfo);
+
     // Upload Fonts
+
+    // ImGuizmo
+    ImGuizmo::SetImGuiContext(ImGui::GetCurrentContext());
+    ImGuizmo::Enable(true);
 
     CreateSceneDescriptorSetLayout();
     CreateSceneDescriptorSet();
@@ -235,17 +242,43 @@ void UISystem::InspectorWindow()
 void UISystem::SceneViewWindow()
 {
     ImGui::Begin("SceneView", nullptr, ImGuiWindowFlags_None);
-    ImVec2 size = ImGui::GetContentRegionAvail();
+    ImVec2 windowPos = ImGui::GetWindowPos();
+    ImVec2 windowSize = ImGui::GetContentRegionAvail();
     // 尺寸变化检测
-    uint32_t width = static_cast<uint32_t>(size.x);
-    uint32_t height = static_cast<uint32_t>(size.y);
+    uint32_t width = static_cast<uint32_t>(windowSize.x);
+    uint32_t height = static_cast<uint32_t>(windowSize.y);
     mIsSceneViewPortChange = false;
+    // 获取Camera
+    auto &camera = mRegistry->get<CameraComponent>(mCameraEntity);
+    camera.aspectRatio = static_cast<float>(width) / static_cast<float>(height);
     if (width != mSceneWidth || height != mSceneHeight)
     {
         mSceneWidth = width;
         mSceneHeight = height;
         mIsSceneViewPortChange = true;
     }
+    // imGuizmo
+    const float gizmoLength = 64.0f;                  // Gizmo 视觉大小
+    const ImVec2 gizmoSize(gizmoLength, gizmoLength); // 显示区域
+    ImGuizmo::SetRect(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y, windowSize.x, windowSize.y);
+
+    glm::mat4 view = glm::transpose(camera.viewMatrix);
+    glm::mat4 proj = glm::transpose(camera.projectionMatrix);
+    float viewMatrix[16], projMatrix[16];
+    memcpy(viewMatrix, glm::value_ptr(view), sizeof(float) * 16);
+    memcpy(projMatrix, glm::value_ptr(proj), sizeof(float) * 16);
+    float outputMatrix[16] = {0};              // 声明一个临时矩阵
+    ImGuizmo::ViewManipulate(viewMatrix,       // view
+                             projMatrix,       // projection
+                             ImGuizmo::ROTATE, // operation
+                             ImGuizmo::LOCAL,  // mode
+                             outputMatrix,     // 输出矩阵（可为 null）
+                             gizmoLength,      // length
+                             ImVec2(windowPos.x + windowSize.x - gizmoLength, windowPos.y), // position
+                             gizmoSize,                                                     // size
+                             0x10101010                                                     // background color
+    );
+
     ImGui::Text("SceneView Size: %d x %d", width, height);
     ImTextureID textureId =
         reinterpret_cast<ImTextureID>(static_cast<VkDescriptorSet>(mSceneDescriptorSets[mCurrentFrame].get()));
@@ -335,6 +368,7 @@ void UISystem::Tick(float deltaTime)
     ImGui_ImplSDL3_NewFrame();
     ImGui_ImplVulkan_NewFrame();
     ImGui::NewFrame();
+    ImGuizmo::BeginFrame();
     DockingSpace();
     SceneViewWindow();
     HierarchyWindow();

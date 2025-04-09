@@ -490,6 +490,6 @@ void RenderPassManager::RecreateFrameBuffer(uint32_t width, uint32_t height)
     // CreateSkyFrameBuffer();
     // 创建UI帧缓冲
     CreateUIFrameBuffer();
-    mLogger->Debug("Frame buffers recreated successfully");
+    mLogger->Debug("Frame buffers recreated with {}x{} successfully", width, height);
 }
 } // namespace MEngine

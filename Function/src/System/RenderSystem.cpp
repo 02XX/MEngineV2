@@ -1,4 +1,6 @@
 #include "System/RenderSystem.hpp"
+#include <cstring>
+#include <vector>
 namespace MEngine
 {
 
@@ -8,12 +10,14 @@ RenderSystem::RenderSystem(std::shared_ptr<ILogger> logger, std::shared_ptr<Cont
                            std::shared_ptr<SyncPrimitiveManager> syncPrimitiveManager,
                            std::shared_ptr<RenderPassManager> renderPassManager,
                            std::shared_ptr<PipelineLayoutManager> pipelineLayoutManager,
-                           std::shared_ptr<PipelineManager> pipelineManager)
+                           std::shared_ptr<PipelineManager> pipelineManager,
+                           std::shared_ptr<DescriptorManager> descriptorManager)
     : mRegistry(registry), mCommandBufferManager(commandBufferManager), mSyncPrimitiveManager(syncPrimitiveManager),
       mRenderPassManager(renderPassManager), mPipelineLayoutManager(pipelineLayoutManager),
-      mPipelineManager(pipelineManager), mWindow(window), mLogger(logger), mContext(context)
+      mPipelineManager(pipelineManager), mWindow(window), mLogger(logger), mContext(context),
+      mDescriptorManager(descriptorManager)
 {
-    mUISystem = std::make_shared<UISystem>(mLogger, mContext, mWindow, mRenderPassManager);
+    mUISystem = std::make_shared<UISystem>(mLogger, mContext, mWindow, mRegistry, mRenderPassManager);
     mBufferManager = std::make_shared<BufferManager>(mLogger, mContext, mCommandBufferManager, mSyncPrimitiveManager);
     mImageManager =
         std::make_shared<ImageManager>(mLogger, mContext, mCommandBufferManager, mSyncPrimitiveManager, mBufferManager);
@@ -36,7 +40,13 @@ void RenderSystem::Init()
         mRenderFinishedSemaphores.push_back(std::move(renderFinishedSemaphores));
         mInFlightFences.push_back(std::move(inFlightFence));
     }
-    mMVPBuffer = mBufferManager->CreateUniqueUniformBuffer(sizeof(glm::mat4x4));
+    // Uniform Buffer
+    mMBuffer = mBufferManager->CreateUniqueUniformBuffer(sizeof(glm::mat4x4));
+    mVBuffer = mBufferManager->CreateUniqueUniformBuffer(sizeof(glm::mat4x4));
+    mPBuffer = mBufferManager->CreateUniqueUniformBuffer(sizeof(glm::mat4x4));
+    mCameraDescriptorSet = std::move(
+        mDescriptorManager->AllocateUniqueDescriptorSet({mPipelineLayoutManager->GetMVPDescriptorSetLayout()})[0]);
+
     mUISystem->Init();
     mWindow->SetEventCallback(
         [this](const void *event) { mUISystem->ProcessEvent(static_cast<const SDL_Event *>(event)); });
@@ -66,7 +76,7 @@ void RenderSystem::CollectRenderEntities()
     {
         auto &material = mRegistry->get<MaterialComponent>(entity);
         auto &mesh = entities.get<MeshComponent>(entity);
-        mBatchMaterialComponents[material.pipelineType].push_back(entity);
+        mBatchMaterialComponents[material.material->GetPipelineType()].push_back(entity);
     }
 }
 void RenderSystem::CollectMainCamera()
@@ -78,6 +88,12 @@ void RenderSystem::CollectMainCamera()
         if (camera.isMainCamera)
         {
             mMainCameraEntity = entity;
+            // 设置UISystem
+            mUISystem->SetCamera(entity);
+            // 设置Uniform Buffer
+            memcpy(mVBuffer->GetAllocationInfo().pMappedData, glm::value_ptr(camera.viewMatrix), sizeof(glm::mat4x4));
+            memcpy(mPBuffer->GetAllocationInfo().pMappedData, glm::value_ptr(camera.projectionMatrix),
+                   sizeof(glm::mat4x4));
             break;
         }
     }
@@ -95,7 +111,7 @@ glm::mat4x4 RenderSystem::GetModelMatrix(entt::entity entity)
 }
 void RenderSystem::TickRotationMatrix()
 {
-    mRotationMatrix = glm::rotate(mRotationMatrix, glm::radians(5.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    mRotationMatrix = glm::rotate(mRotationMatrix, glm::radians(5.0f), glm::vec3(1.0f, 0.0f, 1.0f));
 }
 void RenderSystem::Tick(float deltaTime)
 {
@@ -151,6 +167,9 @@ void RenderSystem::Prepare()
         auto height = mUISystem->GetSceneHeight();
         mRenderPassManager->RecreateFrameBuffer(width, height);
     }
+    // 更新描述符集
+    mDescriptorManager->UpdateUniformDescriptorSet({mVBuffer.get()}, 1, mCameraDescriptorSet.get());
+    mDescriptorManager->UpdateUniformDescriptorSet({mPBuffer.get()}, 2, mCameraDescriptorSet.get());
 }
 void RenderSystem::RenderShadowDepthPass()
 {
@@ -212,22 +231,19 @@ void RenderSystem::RenderTranslucencyPass()
         mGraphicCommandBuffers[mFrameIndex]->setScissor(0, scissor);
         // 1. 绑定管线
         mGraphicCommandBuffers[mFrameIndex]->bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
-        // 2. 绑定描述符集
+
         for (auto entity : entities)
         {
             auto &material = mRegistry->get<MaterialComponent>(entity);
             auto &mesh = mRegistry->get<MeshComponent>(entity);
             auto M = GetModelMatrix(entity);
-            M = M * mRotationMatrix;
-            auto V = mRegistry->get<CameraComponent>(mMainCameraEntity).viewMatrix;
-            auto P = mRegistry->get<CameraComponent>(mMainCameraEntity).projectionMatrix;
-            auto MVP = P * V * M;
-            mGraphicCommandBuffers[mFrameIndex]->pushConstants(pipelineLayout, vk::ShaderStageFlagBits::eVertex, 0,
-                                                               sizeof(glm::mat4x4), &MVP);
-            // auto descriptorSet = mPipelineLayoutManager->GetDescriptorSet(material.pipelineLayoutType, entity);
-            // mGraphicCommandBuffers[mFrameIndex]->bindDescriptorSets(
-            //     vk::PipelineBindPoint::eGraphics,
-            //     mPipelineLayoutManager->GetPipelineLayout(material.pipelineLayoutType), 0, descriptorSet, {});
+
+            memcpy(mMBuffer->GetAllocationInfo().pMappedData, glm::value_ptr(M), sizeof(glm::mat4x4));
+            // 更新描述符集
+            mDescriptorManager->UpdateUniformDescriptorSet({mMBuffer.get()}, 0, mCameraDescriptorSet.get());
+            // 2. 绑定MVP描述符集
+            mGraphicCommandBuffers[mFrameIndex]->bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0,
+                                                                    mCameraDescriptorSet.get(), {});
             // 3. 绑定顶点缓冲区
             auto vertexBuffer = mesh.mesh->GetVertexBuffer();
             mGraphicCommandBuffers[mFrameIndex]->bindVertexBuffers(0, vertexBuffer, {0});

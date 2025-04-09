@@ -30,7 +30,7 @@ Application::Application()
     mDescriptorManager = std::make_shared<DescriptorManager>(mLogger, mContext);
     mSamplerManager = std::make_shared<SamplerManager>(mLogger, mContext);
     mBufferManager = std::make_shared<BufferManager>(mLogger, mContext, mCommandBufferManager, mSyncPrimitiveManager);
-
+    mDescriptorManager = std::make_shared<DescriptorManager>(mLogger, mContext);
     mImageManager =
         std::make_shared<ImageManager>(mLogger, mContext, mCommandBufferManager, mSyncPrimitiveManager, mBufferManager);
 
@@ -38,8 +38,8 @@ Application::Application()
     mPipelineManager = std::make_shared<PipelineManager>(mLogger, mContext, mShaderManager, mPipelineLayoutManager,
                                                          mRenderPassManager);
 
-    mBasicGeometryEntityManager = std::make_shared<BasicGeometryEntityManager>(mRegistry, mBufferManager);
-    mBasicGeometryEntityManager->CreateCube();
+    mBasicGeometryEntityManager = std::make_shared<BasicGeometryEntityManager>(mBufferManager);
+    mBasicGeometryEntityManager->CreateCube(mRegistry);
     // Camera
     auto camera = mRegistry->create();
     mRegistry->emplace<CameraComponent>(camera).isMainCamera = true;

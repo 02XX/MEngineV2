@@ -31,3 +31,6 @@
 [submodule "3rdParty/di"]
 	path = 3rdParty/di
 	url = https://github.com/boost-ext/di.git
+[submodule "3rdParty/ImGuizmo"]
+	path = 3rdParty/ImGuizmo
+	url = https://github.com/CedricGuillemet/ImGuizmo.git

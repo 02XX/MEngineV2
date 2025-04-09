@@ -8,10 +8,18 @@
 #include "RenderPassManager.hpp"
 #include "SamplerManager.hpp"
 #include "System/ISystem.hpp"
+#include "entt/entity/fwd.hpp"
+#include "entt/entt.hpp"
 #include "imgui.h"
 #include "imgui_impl_sdl3.h"
 #include "imgui_impl_vulkan.h"
 #include "imgui_internal.h"
+
+#include <glm/gtc/type_ptr.hpp>
+
+#include "Componet/CameraComponent.hpp"
+#include "ImGuizmo.h"
+#include "Math.hpp"
 #include "stb_image.h"
 #include <cstdint>
 #include <filesystem>
@@ -31,6 +39,7 @@ class UISystem : public ISystem
     std::shared_ptr<CommandBufferManager> mCommandBufferManager;
     std::shared_ptr<SyncPrimitiveManager> mSyncPrimitiveManager;
     std::shared_ptr<SamplerManager> mSamplerManager;
+    std::shared_ptr<entt::registry> mRegistry;
 
   private:
     vk::UniqueDescriptorPool mUIDescriptorPool;
@@ -59,6 +68,8 @@ class UISystem : public ISystem
     vk::DescriptorSet mFileTexture;
     vk::DescriptorSet mFolderTexture;
 
+    entt::entity mCameraEntity;
+
   private:
     void DockingSpace();
     void HierarchyWindow();
@@ -77,7 +88,7 @@ class UISystem : public ISystem
 
   public:
     UISystem(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context, std::shared_ptr<IWindow> window,
-             std::shared_ptr<RenderPassManager> renderPassManager,
+             std::shared_ptr<entt::registry> registry, std::shared_ptr<RenderPassManager> renderPassManager,
              std::shared_ptr<ImageManager> imageManager = nullptr);
     void SetCommandBuffer(vk::CommandBuffer commandBuffer)
     {
@@ -100,6 +111,11 @@ class UISystem : public ISystem
     void Tick(float deltaTime) override;
     void Shutdown() override;
     void UpdateSceneDescriptorSet(vk::ImageView imageView, uint32_t imageIndex);
+
+    void SetCamera(entt::entity cameraEntity)
+    {
+        mCameraEntity = cameraEntity;
+    }
 };
 
 } // namespace MEngine

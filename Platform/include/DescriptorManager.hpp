@@ -56,7 +56,7 @@ class DescriptorManager final : public NoCopyable
     {
         mDefaultPoolSizesProportion = defaultPoolSizesProportion;
     }
-    void UpdateUniformDescriptorSet(const std::vector<Buffer> uniformBuffers, uint32_t binding,
+    void UpdateUniformDescriptorSet(const std::vector<Buffer *> &uniformBuffers, uint32_t binding,
                                     vk::DescriptorSet dstSet);
     void UpdateCombinedSamplerImageDescriptorSet(std::vector<ImageDescriptor> imageDescriptors, uint32_t binding,
                                                  vk::DescriptorSet dstSet);
