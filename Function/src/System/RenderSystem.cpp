@@ -1,6 +1,5 @@
 #include "System/RenderSystem.hpp"
-#include <cstring>
-#include <vector>
+
 namespace MEngine
 {
 
@@ -41,12 +40,13 @@ void RenderSystem::Init()
         mInFlightFences.push_back(std::move(inFlightFence));
     }
     // Uniform Buffer
-    mMBuffer = mBufferManager->CreateUniqueUniformBuffer(sizeof(glm::mat4x4));
-    mVBuffer = mBufferManager->CreateUniqueUniformBuffer(sizeof(glm::mat4x4));
-    mPBuffer = mBufferManager->CreateUniqueUniformBuffer(sizeof(glm::mat4x4));
-    mCameraDescriptorSet = std::move(
-        mDescriptorManager->AllocateUniqueDescriptorSet({mPipelineLayoutManager->GetMVPDescriptorSetLayout()})[0]);
-
+    mMVPBuffer = mBufferManager->CreateUniqueUniformBuffer(sizeof(glm::mat4x4));
+    auto MVPDescriptorSetLayout = mPipelineLayoutManager->GetMVPDescriptorSetLayout();
+    for (uint32_t i = 0; i < mFrameCount; ++i)
+    {
+        auto sets = mDescriptorManager->AllocateUniqueDescriptorSet({MVPDescriptorSetLayout});
+        mCameraDescriptorSets.push_back(std::move(sets[0]));
+    }
     mUISystem->Init();
     mWindow->SetEventCallback(
         [this](const void *event) { mUISystem->ProcessEvent(static_cast<const SDL_Event *>(event)); });
@@ -91,9 +91,10 @@ void RenderSystem::CollectMainCamera()
             // 设置UISystem
             mUISystem->SetCamera(entity);
             // 设置Uniform Buffer
-            memcpy(mVBuffer->GetAllocationInfo().pMappedData, glm::value_ptr(camera.viewMatrix), sizeof(glm::mat4x4));
-            memcpy(mPBuffer->GetAllocationInfo().pMappedData, glm::value_ptr(camera.projectionMatrix),
-                   sizeof(glm::mat4x4));
+            mMVPUniform.model = camera.viewMatrix;
+            mMVPUniform.view = camera.viewMatrix;
+            mMVPUniform.projection = camera.projectionMatrix;
+            memcpy(mMVPBuffer->GetAllocationInfo().pMappedData, &mMVPUniform, sizeof(mMVPUniform));
             break;
         }
     }
@@ -168,8 +169,7 @@ void RenderSystem::Prepare()
         mRenderPassManager->RecreateFrameBuffer(width, height);
     }
     // 更新描述符集
-    mDescriptorManager->UpdateUniformDescriptorSet({mVBuffer.get()}, 1, mCameraDescriptorSet.get());
-    mDescriptorManager->UpdateUniformDescriptorSet({mPBuffer.get()}, 2, mCameraDescriptorSet.get());
+    mDescriptorManager->UpdateUniformDescriptorSet({mMVPBuffer.get()}, 0, mCameraDescriptorSets[mFrameIndex].get());
 }
 void RenderSystem::RenderShadowDepthPass()
 {
@@ -238,12 +238,12 @@ void RenderSystem::RenderTranslucencyPass()
             auto &mesh = mRegistry->get<MeshComponent>(entity);
             auto M = GetModelMatrix(entity);
 
-            memcpy(mMBuffer->GetAllocationInfo().pMappedData, glm::value_ptr(M), sizeof(glm::mat4x4));
-            // 更新描述符集
-            mDescriptorManager->UpdateUniformDescriptorSet({mMBuffer.get()}, 0, mCameraDescriptorSet.get());
+            // 1. 绑定push constant
+            mGraphicCommandBuffers[mFrameIndex]->pushConstants(pipelineLayout, vk::ShaderStageFlagBits::eVertex, 0,
+                                                               sizeof(glm::mat4x4), &M);
             // 2. 绑定MVP描述符集
             mGraphicCommandBuffers[mFrameIndex]->bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0,
-                                                                    mCameraDescriptorSet.get(), {});
+                                                                    mCameraDescriptorSets[mFrameIndex].get(), {});
             // 3. 绑定顶点缓冲区
             auto vertexBuffer = mesh.mesh->GetVertexBuffer();
             mGraphicCommandBuffers[mFrameIndex]->bindVertexBuffers(0, vertexBuffer, {0});

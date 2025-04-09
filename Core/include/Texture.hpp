@@ -43,7 +43,6 @@ class Texture final : public NoCopyable
     Texture(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context,
             std::shared_ptr<ImageManager> imageManager, std::shared_ptr<SamplerManager> samplerManager,
             const std::filesystem::path &path);
-    ~Texture();
     vk::ImageView GetImageView() const;
     vk::Sampler GetSampler() const;
     vk::Image GetImage() const;

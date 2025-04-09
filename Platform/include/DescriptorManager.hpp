@@ -50,7 +50,7 @@ class DescriptorManager final : public NoCopyable
                       uint32_t maxDescriptorSize = 1000, PoolSizesProportion defaultPoolSizesProportion = {});
 
     std::vector<UniqueDescriptorSet> AllocateUniqueDescriptorSet(
-        std::vector<vk::DescriptorSetLayout> descriptorSetLayouts);
+        const std::vector<vk::DescriptorSetLayout> &descriptorSetLayouts);
     void ResetDescriptorPool();
     void SetDefaultPoolSizesProportion(PoolSizesProportion defaultPoolSizesProportion)
     {

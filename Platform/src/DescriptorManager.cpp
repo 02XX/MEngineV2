@@ -1,6 +1,4 @@
 #include "DescriptorManager.hpp"
-#include "Buffer.hpp"
-#include <functional>
 
 namespace MEngine
 {
@@ -27,13 +25,14 @@ vk::UniqueDescriptorPool &DescriptorManager::AcquireAllocatablePool()
     vk::DescriptorPoolCreateInfo descriptorPoolCreateInfo;
     descriptorPoolCreateInfo
         .setPoolSizes(descriptorPoolSize) // 设置池中各类描述符的数量
-        .setMaxSets(mMaxDescriptorSize);  // 设置池最多可分配的 Descriptor Set 数量
+        .setMaxSets(mMaxDescriptorSize)   // 设置池最多可分配的 Descriptor Set 数量
+        .setFlags(vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet); // 设置池的标志位
     auto descriptorPool = mContext->GetDevice().createDescriptorPoolUnique(descriptorPoolCreateInfo);
     mAllocatablePools.push_back(std::move(descriptorPool));
     return mAllocatablePools.back();
 }
 std::vector<UniqueDescriptorSet> DescriptorManager::AllocateUniqueDescriptorSet(
-    std::vector<vk::DescriptorSetLayout> descriptorSetLayouts)
+    const std::vector<vk::DescriptorSetLayout> &descriptorSetLayouts)
 {
     auto &allocatablePool = AcquireAllocatablePool();
     vk::DescriptorSetAllocateInfo descriptorSetAllocateInfo;
@@ -99,7 +98,6 @@ void DescriptorManager::UpdateUniformDescriptorSet(const std::vector<Buffer *> &
         .setDstBinding(binding)
         .setDstSet(dstSet);
     mContext->GetDevice().updateDescriptorSets({writer}, {});
-    mLogger->Debug("Uniform descriptor set updated");
 }
 
 void DescriptorManager::UpdateCombinedSamplerImageDescriptorSet(std::vector<ImageDescriptor> imageDescriptors,

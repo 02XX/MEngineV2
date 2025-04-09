@@ -38,7 +38,8 @@ Application::Application()
     mPipelineManager = std::make_shared<PipelineManager>(mLogger, mContext, mShaderManager, mPipelineLayoutManager,
                                                          mRenderPassManager);
 
-    mBasicGeometryEntityManager = std::make_shared<BasicGeometryEntityManager>(mBufferManager);
+    mBasicGeometryEntityManager = std::make_shared<BasicGeometryEntityManager>(
+        mContext, mLogger, mBufferManager, mPipelineManager, mPipelineLayoutManager, mDescriptorManager);
     mBasicGeometryEntityManager->CreateCube(mRegistry);
     // Camera
     auto camera = mRegistry->create();
@@ -57,7 +58,7 @@ void Application::InitSystem()
 {
     mRenderSystem = std::make_shared<RenderSystem>(mLogger, mContext, mWindow, mRegistry, mCommandBufferManager,
                                                    mSyncPrimitiveManager, mRenderPassManager, mPipelineLayoutManager,
-                                                   mPipelineManager);
+                                                   mPipelineManager, mDescriptorManager);
     mCameraSystem = std::make_shared<CameraSystem>(mLogger, mRegistry);
     mRenderSystem->Init();
     mCameraSystem->Init();

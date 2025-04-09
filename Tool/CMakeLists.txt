@@ -1,4 +1,4 @@
-file(GLOB_RECURSE SOURCES CMAKE_CONFIGURE_DEPENDS "src/*.cpp")
+file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "src/*.cpp")
 
 add_executable(MEngine ${SOURCES})
 target_include_directories(MEngine PRIVATE include)

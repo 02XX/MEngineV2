@@ -1,13 +1,11 @@
 #include "PipelineLayoutManager.hpp"
-#include <array>
-#include <vector>
-
 namespace MEngine
 {
 
 PipelineLayoutManager::PipelineLayoutManager(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context)
     : mLogger(logger), mContext(context)
 {
+    CreateMVPDescriptorSetLayout();
     // 创建延迟渲染管线布局
     // CreateDefferPipelineLayout();
     // // 创建阴影深度图管线布局
@@ -23,23 +21,11 @@ PipelineLayoutManager::PipelineLayoutManager(std::shared_ptr<ILogger> logger, st
 }
 void PipelineLayoutManager::CreateMVPDescriptorSetLayout()
 {
-    std::array<vk::DescriptorSetLayoutBinding, 3> MVPDescriptorSetLayoutBindings;
-    // Set: 0, Binding: 0 模型矩阵
+    std::array<vk::DescriptorSetLayoutBinding, 1> MVPDescriptorSetLayoutBindings;
+    // Set: 0, Binding: 0 MVP矩阵
     MVPDescriptorSetLayoutBindings[0]
         .setBinding(0)
         .setDescriptorType(vk::DescriptorType::eUniformBuffer)
-        .setDescriptorCount(1)
-        .setStageFlags(vk::ShaderStageFlagBits::eVertex); // 仅顶点阶段需要
-    // Set: 0, Binding: 1 视图矩阵
-    MVPDescriptorSetLayoutBindings[1]
-        .setBinding(1)
-        .setDescriptorType(vk::DescriptorType::eUniformBuffer)
-        .setDescriptorCount(1)
-        .setStageFlags(vk::ShaderStageFlagBits::eVertex); // 仅顶点阶段需要
-    // Set: 0, Binding: 2 投影矩阵
-    MVPDescriptorSetLayoutBindings[2]
-        .setBinding(2)
-        .setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
         .setDescriptorCount(1)
         .setStageFlags(vk::ShaderStageFlagBits::eVertex); // 仅顶点阶段需要
     vk::DescriptorSetLayoutCreateInfo mvpDescriptorSetLayoutCreateInfo{};
@@ -110,9 +96,12 @@ void PipelineLayoutManager::CreateShadowDepthPipelineLayout()
 }
 void PipelineLayoutManager::CreateTranslucencyPipelineLayout()
 {
+    // 创建push constant
+    std::array<vk::PushConstantRange, 1> pushConstantRanges;
+    pushConstantRanges[0].setOffset(0).setSize(sizeof(glm::mat4x4)).setStageFlags(vk::ShaderStageFlagBits::eVertex);
     // 1. 创建管线布局
     vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
-    pipelineLayoutCreateInfo.setSetLayouts({mMVPDescriptorSetLayout.get()});
+    pipelineLayoutCreateInfo.setSetLayouts({mMVPDescriptorSetLayout.get()}).setPushConstantRanges(pushConstantRanges);
     auto pipelineLayout = mContext->GetDevice().createPipelineLayoutUnique(pipelineLayoutCreateInfo);
     if (!pipelineLayout)
     {
@@ -140,6 +129,19 @@ vk::PipelineLayout PipelineLayoutManager::GetPipelineLayout(PipelineLayoutType t
     else
     {
         mLogger->Error("Pipeline layout not found for type {}", static_cast<int>(type));
+        return nullptr;
+    }
+}
+vk::DescriptorSetLayout PipelineLayoutManager::GetDescriptorSetLayout(PipelineLayoutType type) const
+{
+    auto it = mDescriptorSetLayouts.find(type);
+    if (it != mDescriptorSetLayouts.end())
+    {
+        return it->second.get();
+    }
+    else
+    {
+        mLogger->Error("Descriptor set layout not found for type {}", static_cast<int>(type));
         return nullptr;
     }
 }

@@ -68,10 +68,15 @@ class RenderSystem final : public System
 
     // main camera
     entt::entity mMainCameraEntity;
-    UniqueBuffer mMBuffer;
-    UniqueBuffer mVBuffer;
-    UniqueBuffer mPBuffer;
-    vk::UniqueDescriptorSet mCameraDescriptorSet;
+    UniqueBuffer mMVPBuffer;
+    struct MVPUniform
+    {
+        glm::mat4 model;
+        glm::mat4 view;
+        glm::mat4 projection;
+    } mMVPUniform;
+    // 替换原有的单个描述符集
+    std::vector<vk::UniqueDescriptorSet> mCameraDescriptorSets;
 
   private:
     void CollectRenderEntities();

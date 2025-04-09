@@ -1,7 +1,4 @@
 #include "Material.hpp"
-#include "DescriptorManager.hpp"
-#include "Texture.hpp"
-
 namespace MEngine
 {
 Material::Material(std::shared_ptr<DescriptorManager> descriptorManager,
@@ -14,7 +11,10 @@ Material::Material(std::shared_ptr<DescriptorManager> descriptorManager,
 {
     // 创建描述符集
     auto descriptorSetLayout = mPipelineLayoutManager->GetDescriptorSetLayout(mPipelineLayoutType);
-    mDescriptorSet = std::move(mDescriptorManager->AllocateUniqueDescriptorSet({descriptorSetLayout})[0]);
+    if (descriptorSetLayout)
+    {
+        mDescriptorSet = std::move(mDescriptorManager->AllocateUniqueDescriptorSet({descriptorSetLayout})[0]);
+    }
 }
 
 void Material::AddTexture(TextureType type, std::shared_ptr<Texture> texture)
