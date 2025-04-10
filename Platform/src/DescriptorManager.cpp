@@ -31,7 +31,7 @@ vk::UniqueDescriptorPool &DescriptorManager::AcquireAllocatablePool()
     mAllocatablePools.push_back(std::move(descriptorPool));
     return mAllocatablePools.back();
 }
-std::vector<UniqueDescriptorSet> DescriptorManager::AllocateUniqueDescriptorSet(
+std::vector<vk::DescriptorSet> DescriptorManager::AllocateUniqueDescriptorSet(
     const std::vector<vk::DescriptorSetLayout> &descriptorSetLayouts)
 {
     auto &allocatablePool = AcquireAllocatablePool();
@@ -41,8 +41,15 @@ std::vector<UniqueDescriptorSet> DescriptorManager::AllocateUniqueDescriptorSet(
         .setSetLayouts(descriptorSetLayouts);
     try
     {
-        auto result = mContext->GetDevice().allocateDescriptorSetsUnique(descriptorSetAllocateInfo);
-        return std::move(result);
+        auto descriptorSet = mContext->GetDevice().allocateDescriptorSetsUnique(descriptorSetAllocateInfo);
+        std::vector<vk::DescriptorSet> results;
+        mDescriptorSets.reserve(descriptorSet.size());
+        for (auto &set : descriptorSet)
+        {
+            mDescriptorSets.push_back(std::move(set));
+            results.push_back(mDescriptorSets.back().get());
+        }
+        return results;
     }
     catch (vk::OutOfPoolMemoryError &)
     {
