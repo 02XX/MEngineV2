@@ -25,9 +25,15 @@ void Material::AddTexture(TextureType type, std::shared_ptr<Texture> texture)
     {
     case TextureType::Albedo:
         mDescriptorManager->UpdateCombinedSamplerImageDescriptorSet(
-            std::vector<ImageDescriptor>{ImageDescriptor{texture->GetImageView(), texture->GetSampler()}}, 1,
+            std::vector<ImageDescriptor>{ImageDescriptor{texture->GetImageView(), texture->GetSampler()}}, 0,
             mDescriptorSet.get());
         break;
+    case TextureType::BaseColor:
+        mDescriptorManager->UpdateCombinedSamplerImageDescriptorSet(
+            std::vector<ImageDescriptor>{ImageDescriptor{texture->GetImageView(), texture->GetSampler()}}, 0,
+            mDescriptorSet.get());
+        break;
+
         // TODO
     }
 }

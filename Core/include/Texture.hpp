@@ -13,6 +13,7 @@ namespace MEngine
 {
 enum class TextureType
 {
+    BaseColor,
     Albedo,
     Normal,
     Specular,

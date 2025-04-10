@@ -3,8 +3,10 @@
 
 #include "Image.hpp"
 #include "MEngine.hpp"
+#include "NoCopyable.hpp"
 #include "PipelineLayoutManager.hpp"
 #include "PipelineManager.hpp"
+#include "Texture.hpp"
 #include <cstdint>
 #include <memory>
 #include <unordered_map>
@@ -12,32 +14,13 @@
 
 namespace MEngine
 {
-enum class ResourceType
-{
-    Texture,
-    Pipeline,
-    Mesh,
-    Material,
-    Shader
-};
-
-class ResourceManager
+class ResourceManager : public NoCopyable
 {
   private:
-    std::unordered_map<uint32_t, UniqueBuffer> mBuffers;
-    std::unordered_map<uint32_t, UniqueImage> mImages;
-
-    std::unique_ptr<BufferManager> mBufferManager;
+    std::unordered_map<uint32_t, std::weak_ptr<Texture>> mTextures; // 纹理缓存
 
   public:
     ResourceManager();
-    ResourceManager(const ResourceManager &) = delete;
-    ResourceManager &operator=(const ResourceManager &) = delete;
-    ResourceManager(ResourceManager &&) = delete;
-    ResourceManager &operator=(ResourceManager &&) = delete;
-    ~ResourceManager() = default;
-
-    vk::Buffer GetBuffer(uint32_t id);
-    vk::Image GetImage(uint32_t id);
+    void LoadTexture(const std::filesystem::path &path);
 };
 } // namespace MEngine

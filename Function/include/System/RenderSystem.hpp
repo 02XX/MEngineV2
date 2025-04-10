@@ -75,7 +75,6 @@ class RenderSystem final : public System
         glm::mat4 view;
         glm::mat4 projection;
     } mMVPUniform;
-    // 替换原有的单个描述符集
     std::vector<vk::UniqueDescriptorSet> mCameraDescriptorSets;
 
   private:

@@ -1,4 +1,5 @@
 #include "System/RenderSystem.hpp"
+#include <array>
 
 namespace MEngine
 {
@@ -40,7 +41,7 @@ void RenderSystem::Init()
         mInFlightFences.push_back(std::move(inFlightFence));
     }
     // Uniform Buffer
-    mMVPBuffer = mBufferManager->CreateUniqueUniformBuffer(sizeof(glm::mat4x4));
+    mMVPBuffer = mBufferManager->CreateUniqueUniformBuffer(sizeof(MVPUniform));
     auto MVPDescriptorSetLayout = mPipelineLayoutManager->GetMVPDescriptorSetLayout();
     for (uint32_t i = 0; i < mFrameCount; ++i)
     {
@@ -91,7 +92,7 @@ void RenderSystem::CollectMainCamera()
             // 设置UISystem
             mUISystem->SetCamera(entity);
             // 设置Uniform Buffer
-            mMVPUniform.model = camera.viewMatrix;
+            mMVPUniform.model = mRotationMatrix;
             mMVPUniform.view = camera.viewMatrix;
             mMVPUniform.projection = camera.projectionMatrix;
             memcpy(mMVPBuffer->GetAllocationInfo().pMappedData, &mMVPUniform, sizeof(mMVPUniform));
@@ -117,8 +118,8 @@ void RenderSystem::TickRotationMatrix()
 void RenderSystem::Tick(float deltaTime)
 {
     CollectRenderEntities(); // Collect same material render entities
-    CollectMainCamera();
     TickRotationMatrix();
+    CollectMainCamera();
     Prepare(); // Prepare
     // RenderDefferPass();       // Deffer pass
     // RenderShadowDepthPass();  // Shadow pass
@@ -168,8 +169,17 @@ void RenderSystem::Prepare()
         auto height = mUISystem->GetSceneHeight();
         mRenderPassManager->RecreateFrameBuffer(width, height);
     }
-    // 更新描述符集
     mDescriptorManager->UpdateUniformDescriptorSet({mMVPBuffer.get()}, 0, mCameraDescriptorSets[mFrameIndex].get());
+    // std::array<vk::DescriptorBufferInfo, 1> mvpDescriptorBuffer = {
+    //     vk::DescriptorBufferInfo(mMVPBuffer->GetBuffer(), 0, mMVPBuffer->GetAllocationInfo().size)};
+    // vk::WriteDescriptorSet mvpDescriptorSetWriter;
+    // mvpDescriptorSetWriter.setBufferInfo(mvpDescriptorBuffer)
+    //     .setDescriptorType(vk::DescriptorType::eUniformBuffer)
+    //     .setDescriptorCount(1)
+    //     .setDstSet(mCameraDescriptorSets[mFrameIndex].get())
+    //     .setDstBinding(0)
+    //     .setDstArrayElement(0);
+    // mContext->GetDevice().updateDescriptorSets({mvpDescriptorSetWriter}, {});
 }
 void RenderSystem::RenderShadowDepthPass()
 {
@@ -237,14 +247,17 @@ void RenderSystem::RenderTranslucencyPass()
             auto &material = mRegistry->get<MaterialComponent>(entity);
             auto &mesh = mRegistry->get<MeshComponent>(entity);
             auto M = GetModelMatrix(entity);
-
             // 1. 绑定push constant
             mGraphicCommandBuffers[mFrameIndex]->pushConstants(pipelineLayout, vk::ShaderStageFlagBits::eVertex, 0,
                                                                sizeof(glm::mat4x4), &M);
             // 2. 绑定MVP描述符集
             mGraphicCommandBuffers[mFrameIndex]->bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0,
                                                                     mCameraDescriptorSets[mFrameIndex].get(), {});
-            // 3. 绑定顶点缓冲区
+            // 绑定材质描述符集
+            auto materialDescriptorSet = material.material->GetDescriptorSet();
+            mGraphicCommandBuffers[mFrameIndex]->bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 1,
+                                                                    materialDescriptorSet, {});
+            //  3. 绑定顶点缓冲区
             auto vertexBuffer = mesh.mesh->GetVertexBuffer();
             mGraphicCommandBuffers[mFrameIndex]->bindVertexBuffers(0, vertexBuffer, {0});
             // 4. 绑定索引缓冲区

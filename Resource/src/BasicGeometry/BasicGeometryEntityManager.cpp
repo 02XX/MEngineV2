@@ -1,4 +1,5 @@
 #include "BasicGeometry/BasicGeometryEntityManager.hpp"
+#include "Texture.hpp"
 namespace MEngine
 {
 BasicGeometryEntityManager::BasicGeometryEntityManager(std::shared_ptr<Context> context,
@@ -11,15 +12,20 @@ BasicGeometryEntityManager::BasicGeometryEntityManager(std::shared_ptr<Context> 
       mPipelineLayoutManager(pipelineLayoutManager), mDescriptorManager(descriptorManager)
 {
     mBasicGeometryManager = std::make_unique<BasicGeometryManager>(bufferManager);
+    mImageManager = std::make_shared<ImageManager>(mLogger, mContext);
+    mSamplerManager = std::make_shared<SamplerManager>(mLogger, mContext);
+    mDefaultTexture =
+        std::make_shared<Texture>(mLogger, mContext, mImageManager, mSamplerManager, "Assets/DefaultImage.png");
 }
 entt::entity BasicGeometryEntityManager::CreateCube(std::shared_ptr<entt::registry> registry)
 {
     auto mesh = mBasicGeometryManager->GetPrimitive(PrimitiveType::Cube);
     auto material = std::make_shared<Material>(mDescriptorManager, mPipelineManager, mPipelineLayoutManager,
                                                PipelineType::Translucency, PipelineLayoutType::TranslucencyLayout);
+    material->AddTexture(TextureType::BaseColor, mDefaultTexture);
     auto entity = registry->create();
     registry->emplace<TransformComponent>(entity, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f),
-                                          glm::vec3(1.0f, 1.0f, 1.0f));
+                                          glm::vec3(2.0f, 2.0f, 2.0f));
     registry->emplace<MeshComponent>(entity, mesh);
     registry->emplace<MaterialComponent>(entity, material);
     return entity;

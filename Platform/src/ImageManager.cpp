@@ -128,10 +128,10 @@ void ImageManager::CopyBufferToImage(vk::Buffer srcBuffer, vk::Image dstImage, v
     //     .setLayerCount(layerCount);        // 拷贝层数
     vk::BufferImageCopy region{};
     region
-        .setBufferOffset(0)                      // 缓冲区的起始字节偏移
-        .setBufferRowLength(0)                   // 缓冲区中每行的像素数（内存布局） 0-和extent一样
-        .setBufferImageHeight(0)                 // 缓冲区中每列的像素行数（内存布局） 0-和extent一样
-        .setImageOffset(vk::Offset3D(0, 0, 0))   // 图像起始坐标（x,y,z）
+        .setBufferOffset(0)                    // 缓冲区的起始字节偏移
+        .setBufferRowLength(0)                 // 缓冲区中每行的像素数（内存布局） 0-和extent一样
+        .setBufferImageHeight(0)               // 缓冲区中每列的像素行数（内存布局） 0-和extent一样
+        .setImageOffset(vk::Offset3D(0, 0, 0)) // 图像起始坐标（x,y,z）
         .setImageExtent(vk::Extent3D(extent, 1)) // 拷贝的区域尺寸
         .setImageSubresource(imageSubresourceLayers);
     vk::CommandBufferBeginInfo beginInfo;

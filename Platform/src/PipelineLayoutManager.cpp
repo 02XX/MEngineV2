@@ -96,12 +96,32 @@ void PipelineLayoutManager::CreateShadowDepthPipelineLayout()
 }
 void PipelineLayoutManager::CreateTranslucencyPipelineLayout()
 {
+    // 创建描述符集布局
+    std::array<vk::DescriptorSetLayoutBinding, 1> translucencyDescriptorSetLayoutBindings;
+    // Set: 1, Binding 0: Base Color
+    translucencyDescriptorSetLayoutBindings[0]
+        .setBinding(0)
+        .setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
+        .setDescriptorCount(1)
+        .setStageFlags(vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment);
+    vk::DescriptorSetLayoutCreateInfo translucencyDescriptorSetLayoutCreateInfo{};
+    translucencyDescriptorSetLayoutCreateInfo.setBindings(translucencyDescriptorSetLayoutBindings); // set: 0
+    auto translucencyDescriptorSet =
+        mContext->GetDevice().createDescriptorSetLayoutUnique(translucencyDescriptorSetLayoutCreateInfo);
+    if (!translucencyDescriptorSet)
+    {
+        mLogger->Error("Failed to create descriptor set layout for TranslucencyPipelineLayout");
+    }
+    mDescriptorSetLayouts[PipelineLayoutType::TranslucencyLayout] = std::move(translucencyDescriptorSet);
     // 创建push constant
     std::array<vk::PushConstantRange, 1> pushConstantRanges;
     pushConstantRanges[0].setOffset(0).setSize(sizeof(glm::mat4x4)).setStageFlags(vk::ShaderStageFlagBits::eVertex);
     // 1. 创建管线布局
     vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
-    pipelineLayoutCreateInfo.setSetLayouts({mMVPDescriptorSetLayout.get()}).setPushConstantRanges(pushConstantRanges);
+    std::vector<vk::DescriptorSetLayout> setLayouts{
+        mMVPDescriptorSetLayout.get(), mDescriptorSetLayouts[PipelineLayoutType::TranslucencyLayout].get()};
+
+    pipelineLayoutCreateInfo.setSetLayouts(setLayouts).setPushConstantRanges(pushConstantRanges);
     auto pipelineLayout = mContext->GetDevice().createPipelineLayoutUnique(pipelineLayoutCreateInfo);
     if (!pipelineLayout)
     {

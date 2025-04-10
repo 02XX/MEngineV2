@@ -4,11 +4,13 @@
 #include "Componet/MeshComponent.hpp"
 #include "Componet/TransformComponent.hpp"
 #include "Context.hpp"
+#include "Image.hpp"
 #include "MEngine.hpp"
 // #include "MaterialManager.hpp"
 #include "NoCopyable.hpp"
 #include "PipelineLayoutManager.hpp"
 #include "PipelineManager.hpp"
+#include "Texture.hpp"
 #include "entt/entt.hpp"
 #include <memory>
 
@@ -26,6 +28,12 @@ class BasicGeometryEntityManager : public NoCopyable
     std::shared_ptr<PipelineManager> mPipelineManager;
     std::shared_ptr<PipelineLayoutManager> mPipelineLayoutManager;
     std::shared_ptr<DescriptorManager> mDescriptorManager;
+
+    std::shared_ptr<ImageManager> mImageManager;
+    std::shared_ptr<SamplerManager> mSamplerManager;
+
+  private:
+    std::shared_ptr<Texture> mDefaultTexture;
 
   public:
     BasicGeometryEntityManager(std::shared_ptr<Context> context, std::shared_ptr<ILogger> logger,
