@@ -15,14 +15,14 @@ class Buffer final
   public:
     Buffer(std::shared_ptr<Context> context, vk::DeviceSize size, vk::BufferUsageFlags bufferUsage,
            VmaMemoryUsage memoryUsage, VmaAllocationCreateFlags flags = 0);
-    Buffer(const Buffer &);
-    Buffer &operator=(const Buffer &);
+    Buffer(const Buffer &) = delete;
+    Buffer &operator=(const Buffer &) = delete;
     Buffer(Buffer &&other) noexcept;
     Buffer &operator=(Buffer &&other) noexcept;
     ~Buffer();
 
   public:
-    vk::Buffer GetBuffer() const;
+    vk::Buffer GetHandle() const;
     VmaAllocationInfo GetAllocationInfo() const;
 
   private:

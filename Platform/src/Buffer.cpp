@@ -21,33 +21,13 @@ Buffer::Buffer(std::shared_ptr<Context> context, vk::DeviceSize size, vk::Buffer
                                   &allocationCreateInfo,                                // 内存分配策略
                                   &vkBuffer,                                            // 输出缓冲区句柄
                                   &mAllocation,                                         // 输出内存分配句柄
-                                  &mAllocationInfo // 输出内存分配详细信息
+                                  &mAllocationInfo                                      // 输出内存分配详细信息
     );
     if (result != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to create buffer");
     }
     mBuffer = vk::Buffer(vkBuffer);
-}
-Buffer::Buffer(const Buffer &other)
-{
-    mContext = other.mContext;
-    mBuffer = other.mBuffer;
-    mAllocation = other.mAllocation;
-    mAllocationInfo = other.mAllocationInfo;
-    // 这里不需要深拷贝，因为Vulkan的Buffer是共享的
-}
-Buffer &Buffer::operator=(const Buffer &other)
-{
-    if (this != &other)
-    {
-        Release();
-        mContext = other.mContext;
-        mBuffer = other.mBuffer;
-        mAllocation = other.mAllocation;
-        mAllocationInfo = other.mAllocationInfo;
-    }
-    return *this;
 }
 Buffer::Buffer(Buffer &&other) noexcept
     : mBuffer(std::exchange(other.mBuffer, nullptr)), mAllocation(std::exchange(other.mAllocation, nullptr)),
