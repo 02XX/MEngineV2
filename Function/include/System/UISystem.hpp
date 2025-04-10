@@ -56,7 +56,7 @@ class UISystem : public ISystem
 
     bool mIsSceneViewPortChange = false;
 
-    std::filesystem::path mCurrentAssetDir = "/media/zero/Data/MEngineAssets";
+    std::filesystem::path mCurrentAssetDir = std::filesystem::current_path();
     float mThumbnailSize = 64.0f; // 可调整的图标大小
 
     std::filesystem::path mAssetsPath = std::filesystem::current_path() / "Assets";

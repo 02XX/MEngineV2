@@ -31,7 +31,7 @@ void Texture::LoadTexture(const std::filesystem::path &path)
     int width, height, channels;
     stbi_set_flip_vertically_on_load(true); // 翻转图像
     // 2. 加载图像数据
-    auto imageData = stbi_load(path.c_str(), &width, &height, &channels, STBI_rgb_alpha);
+    auto imageData = stbi_load(path.string().c_str(), &width, &height, &channels, STBI_rgb_alpha);
     if (!imageData)
     {
         mLogger->Error("Failed to load texture: {}", path.string());

@@ -1,5 +1,4 @@
 #include "System/UISystem.hpp"
-#include "entt/entity/fwd.hpp"
 
 namespace MEngine
 {
@@ -150,8 +149,8 @@ void UISystem::LoadAsset()
     int folderThumbnailWidth, folderThumbnailHeight, folderThumbnailChannels;
     auto foldPath = mAssetsPath / "folder.png";
     stbi_set_flip_vertically_on_load(true);
-    auto folderThumbnail =
-        stbi_load(foldPath.c_str(), &folderThumbnailWidth, &folderThumbnailHeight, &folderThumbnailChannels, 0);
+    auto folderThumbnail = stbi_load(foldPath.string().c_str(), &folderThumbnailWidth, &folderThumbnailHeight,
+                                     &folderThumbnailChannels, 0);
     if (folderThumbnail)
     {
         // 1. 创建Image
@@ -175,7 +174,7 @@ void UISystem::LoadAsset()
     int fileThumbnailWidth, fileThumbnailHeight, fileThumbnailChannels;
     auto filePath = mAssetsPath / "file.png";
     auto fileThumbnail =
-        stbi_load(filePath.c_str(), &fileThumbnailWidth, &fileThumbnailHeight, &fileThumbnailChannels, 0);
+        stbi_load(filePath.string().c_str(), &fileThumbnailWidth, &fileThumbnailHeight, &fileThumbnailChannels, 0);
     if (fileThumbnail)
     {
         // 1. 创建Image
@@ -267,13 +266,13 @@ void UISystem::SceneViewWindow()
     float viewMatrix[16], projMatrix[16];
     memcpy(viewMatrix, glm::value_ptr(view), sizeof(float) * 16);
     memcpy(projMatrix, glm::value_ptr(proj), sizeof(float) * 16);
-    float outputMatrix[16] = {0};              // 声明一个临时矩阵
-    ImGuizmo::ViewManipulate(viewMatrix,       // view
-                             projMatrix,       // projection
-                             ImGuizmo::ROTATE, // operation
-                             ImGuizmo::LOCAL,  // mode
-                             outputMatrix,     // 输出矩阵（可为 null）
-                             gizmoLength,      // length
+    float outputMatrix[16] = {0};                                                           // 声明一个临时矩阵
+    ImGuizmo::ViewManipulate(viewMatrix,                                                    // view
+                             projMatrix,                                                    // projection
+                             ImGuizmo::ROTATE,                                              // operation
+                             ImGuizmo::LOCAL,                                               // mode
+                             outputMatrix,                                                  // 输出矩阵（可为 null）
+                             gizmoLength,                                                   // length
                              ImVec2(windowPos.x + windowSize.x - gizmoLength, windowPos.y), // position
                              gizmoSize,                                                     // size
                              0x10101010                                                     // background color
