@@ -24,8 +24,8 @@ vk::UniqueDescriptorPool &DescriptorManager::AcquireAllocatablePool()
     }
     vk::DescriptorPoolCreateInfo descriptorPoolCreateInfo;
     descriptorPoolCreateInfo
-        .setPoolSizes(descriptorPoolSize) // 设置池中各类描述符的数量
-        .setMaxSets(mMaxDescriptorSize)   // 设置池最多可分配的 Descriptor Set 数量
+        .setPoolSizes(descriptorPoolSize)                                // 设置池中各类描述符的数量
+        .setMaxSets(mMaxDescriptorSize)                                  // 设置池最多可分配的 Descriptor Set 数量
         .setFlags(vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet); // 设置池的标志位
     auto descriptorPool = mContext->GetDevice().createDescriptorPoolUnique(descriptorPoolCreateInfo);
     mAllocatablePools.push_back(std::move(descriptorPool));
@@ -84,7 +84,7 @@ void DescriptorManager::UpdateUniformDescriptorSet(const std::vector<Buffer *> &
     for (auto uniformBuffer : uniformBuffers)
     {
         vk::DescriptorBufferInfo descriptorBufferInfo;
-        descriptorBufferInfo.setBuffer(uniformBuffer->GetBuffer())
+        descriptorBufferInfo.setBuffer(uniformBuffer->GetHandle())
             .setOffset(0)
             .setRange(uniformBuffer->GetAllocationInfo().size);
         descriptorBufferInfos.push_back(descriptorBufferInfo);

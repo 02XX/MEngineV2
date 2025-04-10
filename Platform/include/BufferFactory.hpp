@@ -29,8 +29,8 @@ class BufferFactory final : public NoCopyable
     std::shared_ptr<SyncPrimitiveManager> mSyncPrimitiveManager;
 
   private:
-    vk::CommandBuffer mCommandBuffer;
-    vk::Fence mFence;
+    vk::UniqueCommandBuffer mCommandBuffer;
+    vk::UniqueFence mFence;
 
   public:
     BufferFactory(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context,

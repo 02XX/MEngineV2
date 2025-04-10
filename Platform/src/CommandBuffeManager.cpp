@@ -26,17 +26,18 @@ CommandBufferManager::CommandBufferManager(std::shared_ptr<ILogger> logger, std:
         mContext->GetDevice().createCommandPoolUnique(presentCommandPoolCreateInfo);
 }
 
-vk::CommandBuffer CommandBufferManager::CreatePrimaryCommandBuffer(CommandBufferType type)
+vk::UniqueCommandBuffer CommandBufferManager::CreatePrimaryCommandBuffer(CommandBufferType type)
 {
-    return CreatePrimaryCommandBuffers(type, 1)[0];
+    return std::move(CreatePrimaryCommandBuffers(type, 1)[0]);
 }
 
-vk::CommandBuffer CommandBufferManager::CreateSecondaryCommandBuffer(CommandBufferType type)
+vk::UniqueCommandBuffer CommandBufferManager::CreateSecondaryCommandBuffer(CommandBufferType type)
 {
-    return CreateSecondaryCommandBuffers(type, 1)[0];
+    return std::move(CreateSecondaryCommandBuffers(type, 1)[0]);
 }
 
-std::vector<vk::CommandBuffer> CommandBufferManager::CreatePrimaryCommandBuffers(CommandBufferType type, uint32_t count)
+std::vector<vk::UniqueCommandBuffer> CommandBufferManager::CreatePrimaryCommandBuffers(CommandBufferType type,
+                                                                                       uint32_t count)
 {
     vk::CommandBufferAllocateInfo commandBufferAllocateInfo;
     commandBufferAllocateInfo.setLevel(vk::CommandBufferLevel::ePrimary)
@@ -48,20 +49,12 @@ std::vector<vk::CommandBuffer> CommandBufferManager::CreatePrimaryCommandBuffers
         mLogger->Error("Failed to allocate command buffers.");
         throw std::runtime_error("Failed to allocate command buffers.");
     }
-    mPrimaryBuffers[type].reserve(count);
-
-    std::vector<vk::CommandBuffer> result;
-    for (auto &buffer : buffers)
-    {
-        mPrimaryBuffers[type].push_back(std::move(buffer));
-        result.push_back(mPrimaryBuffers[type].back().get());
-    }
     mLogger->Debug("Allocated {} primary command buffers.", std::to_string(count));
-    return result;
+    return buffers;
 }
 
-std::vector<vk::CommandBuffer> CommandBufferManager::CreateSecondaryCommandBuffers(CommandBufferType type,
-                                                                                   uint32_t count)
+std::vector<vk::UniqueCommandBuffer> CommandBufferManager::CreateSecondaryCommandBuffers(CommandBufferType type,
+                                                                                         uint32_t count)
 {
     vk::CommandBufferAllocateInfo commandBufferAllocateInfo;
     commandBufferAllocateInfo.setLevel(vk::CommandBufferLevel::eSecondary)
@@ -74,14 +67,7 @@ std::vector<vk::CommandBuffer> CommandBufferManager::CreateSecondaryCommandBuffe
         mLogger->Error("Failed to allocate command buffers.");
         throw std::runtime_error("Failed to allocate command buffers.");
     }
-    mSecondaryBuffers[type].reserve(count);
-    std::vector<vk::CommandBuffer> result;
-    for (auto &buffer : buffers)
-    {
-        mSecondaryBuffers[type].push_back(std::move(buffer));
-        result.push_back(mSecondaryBuffers[type].back().get());
-    }
     mLogger->Debug("Allocated {} primary command buffers.", std::to_string(count));
-    return result;
+    return buffers;
 }
 } // namespace MEngine

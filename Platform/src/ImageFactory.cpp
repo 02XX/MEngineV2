@@ -113,8 +113,8 @@ UniqueImage ImageFactory::CreateImage(ImageType type, vk::Extent3D extent, vk::F
                 .setSrcQueueFamilyIndex(mContext->GetQueueFamilyIndicates().transferFamily.value())
                 .setDstQueueFamilyIndex(mContext->GetQueueFamilyIndicates().transferFamily.value())
                 .setSubresourceRange({vk::ImageAspectFlagBits::eColor, 0, mipLevels, 0, arrayLayers});
-            mCommandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eTopOfPipe, vk::PipelineStageFlagBits::eTransfer,
-                                           {}, {}, {}, preBarrier);
+            mCommandBuffer->pipelineBarrier(vk::PipelineStageFlagBits::eTopOfPipe, vk::PipelineStageFlagBits::eTransfer,
+                                            {}, {}, {}, preBarrier);
             // 复制数据到图像
             auto buffer = mBufferFactory->CreateBuffer(BufferType::Staging,
                                                        extent.width * extent.height * GetFormatPixelSize(format), data);
@@ -134,8 +134,8 @@ UniqueImage ImageFactory::CreateImage(ImageType type, vk::Extent3D extent, vk::F
                 .setSrcQueueFamilyIndex(mContext->GetQueueFamilyIndicates().transferFamily.value())
                 .setDstQueueFamilyIndex(mContext->GetQueueFamilyIndicates().graphicsFamily.value())
                 .setSubresourceRange({vk::ImageAspectFlagBits::eColor, 0, mipLevels, 0, arrayLayers});
-            mCommandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, pipelineStage, {}, {}, {},
-                                           postBarrier);
+            mCommandBuffer->pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, pipelineStage, {}, {}, {},
+                                            postBarrier);
         }
     }
 }
@@ -154,15 +154,15 @@ void ImageFactory::CopyBufferToImage(Buffer *srcBuffer, Image *dstImage,
         .setImageSubresource(imageSubresourceLayers);
     vk::CommandBufferBeginInfo beginInfo;
     beginInfo.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
-    mCommandBuffer.begin(beginInfo);
-    mCommandBuffer.copyBufferToImage(srcBuffer->GetHandle(), dstImage->GetHandle(),
-                                     vk::ImageLayout::eTransferDstOptimal, {region});
-    mCommandBuffer.end();
+    mCommandBuffer->begin(beginInfo);
+    mCommandBuffer->copyBufferToImage(srcBuffer->GetHandle(), dstImage->GetHandle(),
+                                      vk::ImageLayout::eTransferDstOptimal, {region});
+    mCommandBuffer->end();
 
     vk::SubmitInfo submitInfo;
-    submitInfo.setCommandBuffers(commandBuffer);
-    mContext->SubmitToTransferQueue({submitInfo}, mFence);
-    auto result = mContext->GetDevice().waitForFences(mFence, vk::True, 1'000'000'000);
+    submitInfo.setCommandBuffers(commandBuffer.get());
+    mContext->SubmitToTransferQueue({submitInfo}, mFence.get());
+    auto result = mContext->GetDevice().waitForFences(mFence.get(), vk::True, 1'000'000'000);
     if (result != vk::Result::eSuccess)
     {
         mLogger->Error("Copy image operation failed");

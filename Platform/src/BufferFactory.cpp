@@ -70,18 +70,18 @@ void BufferFactory::CopyBuffer(Buffer *src, Buffer *dst)
 
     vk::CommandBufferBeginInfo beginInfo{};
     beginInfo.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
-    mCommandBuffer.begin(beginInfo);
+    mCommandBuffer->begin(beginInfo);
     {
         vk::BufferCopy copyRegion{};
         copyRegion.setSize(src->GetSize()).setDstOffset(0).setSrcOffset(0);
-        mCommandBuffer.copyBuffer(src->GetHandle(), dst->GetHandle(), copyRegion);
+        mCommandBuffer->copyBuffer(src->GetHandle(), dst->GetHandle(), copyRegion);
     }
-    mCommandBuffer.end();
+    mCommandBuffer->end();
 
     vk::SubmitInfo submitInfo{};
-    submitInfo.setCommandBuffers(mCommandBuffer);
-    mContext->SubmitToTransferQueue({submitInfo}, mFence);
-    auto result = mContext->GetDevice().waitForFences(mFence, vk::True, 1'000'000'000);
+    submitInfo.setCommandBuffers(mCommandBuffer.get());
+    mContext->SubmitToTransferQueue({submitInfo}, mFence.get());
+    auto result = mContext->GetDevice().waitForFences(mFence.get(), vk::True, 1'000'000'000);
     if (result != vk::Result::eSuccess)
     {
         mLogger->Error("Copy buffer failed");

@@ -30,9 +30,9 @@ class CommandBufferManager final : public NoCopyable
 
   public:
     CommandBufferManager(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context);
-    vk::CommandBuffer CreatePrimaryCommandBuffer(CommandBufferType type);
-    vk::CommandBuffer CreateSecondaryCommandBuffer(CommandBufferType type);
-    std::vector<vk::CommandBuffer> CreatePrimaryCommandBuffers(CommandBufferType type, uint32_t count);
-    std::vector<vk::CommandBuffer> CreateSecondaryCommandBuffers(CommandBufferType type, uint32_t count);
+    vk::UniqueCommandBuffer CreatePrimaryCommandBuffer(CommandBufferType type);
+    vk::UniqueCommandBuffer CreateSecondaryCommandBuffer(CommandBufferType type);
+    std::vector<vk::UniqueCommandBuffer> CreatePrimaryCommandBuffers(CommandBufferType type, uint32_t count);
+    std::vector<vk::UniqueCommandBuffer> CreateSecondaryCommandBuffers(CommandBufferType type, uint32_t count);
 };
 } // namespace MEngine

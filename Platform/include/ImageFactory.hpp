@@ -31,8 +31,8 @@ class ImageFactory final : public NoCopyable
     std::shared_ptr<BufferFactory> mBufferFactory;
 
   private:
-    vk::CommandBuffer mCommandBuffer;
-    vk::Fence mFence;
+    vk::UniqueCommandBuffer mCommandBuffer;
+    vk::UniqueFence mFence;
 
   public:
     ImageFactory(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context,

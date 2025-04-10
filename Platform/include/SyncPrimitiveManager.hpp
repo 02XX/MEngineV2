@@ -14,13 +14,9 @@ class SyncPrimitiveManager final : public NoCopyable
     std::shared_ptr<ILogger> mLogger;
     std::shared_ptr<Context> mContext;
 
-  private:
-    std::vector<vk::UniqueFence> mFences;
-    std::vector<vk::UniqueSemaphore> mSemaphores;
-
   public:
     SyncPrimitiveManager(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context);
-    vk::Fence CreateFence(vk::FenceCreateFlags flags = {});
-    vk::Semaphore CreateUniqueSemaphore();
+    vk::UniqueFence CreateFence(vk::FenceCreateFlags flags = {});
+    vk::UniqueSemaphore CreateUniqueSemaphore();
 };
 } // namespace MEngine
