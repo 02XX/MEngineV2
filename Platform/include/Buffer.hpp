@@ -12,6 +12,14 @@ class Buffer final
     // DI
     std::shared_ptr<Context> mContext;
 
+  private:
+    VmaAllocation mAllocation;
+    VmaAllocationInfo mAllocationInfo;
+    vk::Buffer mBuffer;
+
+    vk::DeviceSize mBufferSize;
+    vk::BufferUsageFlags mBufferUsageFlags;
+
   public:
     Buffer(std::shared_ptr<Context> context, vk::DeviceSize size, vk::BufferUsageFlags bufferUsage,
            VmaMemoryUsage memoryUsage, VmaAllocationCreateFlags flags = 0);
@@ -24,12 +32,10 @@ class Buffer final
   public:
     vk::Buffer GetHandle() const;
     VmaAllocationInfo GetAllocationInfo() const;
+    vk::DeviceSize GetSize() const;
+    vk::BufferUsageFlags GetUsage() const;
 
   private:
-    VmaAllocation mAllocation;
-    VmaAllocationInfo mAllocationInfo;
-    vk::Buffer mBuffer;
-
     void Release();
 };
 using UniqueBuffer = std::unique_ptr<Buffer>;

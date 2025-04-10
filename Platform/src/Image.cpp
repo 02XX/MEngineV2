@@ -6,6 +6,7 @@ Image::Image(std::shared_ptr<Context> context, const vk::ImageCreateInfo &imageI
              VmaAllocationCreateFlags flags)
     : mContext(context)
 {
+
     VmaAllocationCreateInfo allocationCreateInfo{};
     allocationCreateInfo.flags = flags;
     allocationCreateInfo.usage = memoryUsage;
@@ -18,6 +19,15 @@ Image::Image(std::shared_ptr<Context> context, const vk::ImageCreateInfo &imageI
         throw std::runtime_error("Failed to create image");
     }
     mImage = vk::Image(image);
+
+    mFormat = imageInfo.format;
+    mExtent = imageInfo.extent;
+    mUsageFlags = imageInfo.usage;
+    mImageType = imageInfo.imageType;
+    mTiling = imageInfo.tiling;
+    mSamples = imageInfo.samples;
+    mMipLevels = imageInfo.mipLevels;
+    mArrayLayers = imageInfo.arrayLayers;
 }
 
 Image::Image(Image &&other) noexcept
@@ -42,7 +52,7 @@ Image::~Image()
     Release();
 }
 
-vk::Image Image::GetImage() const
+vk::Image Image::GetHandle() const
 {
     return mImage;
 }
@@ -51,7 +61,38 @@ VmaAllocationInfo Image::GetAllocationInfo() const
 {
     return mAllocationInfo;
 }
-
+vk::Format Image::GetFormat() const
+{
+    return mFormat;
+}
+vk::Extent3D Image::GetExtent() const
+{
+    return mExtent;
+}
+vk::ImageUsageFlags Image::GetUsage() const
+{
+    return mUsageFlags;
+}
+vk::ImageTiling Image::GetTiling() const
+{
+    return mTiling;
+}
+vk::ImageType Image::GetImageType() const
+{
+    return mImageType;
+}
+vk::SampleCountFlagBits Image::GetSamples() const
+{
+    return mSamples;
+}
+uint32_t Image::GetMipLevels() const
+{
+    return mMipLevels;
+}
+uint32_t Image::GetArrayLayers() const
+{
+    return mArrayLayers;
+}
 void Image::Release()
 {
     vmaDestroyImage(mContext->GetVmaAllocator(), mImage, mAllocation);

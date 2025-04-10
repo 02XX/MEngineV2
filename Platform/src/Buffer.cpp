@@ -28,6 +28,9 @@ Buffer::Buffer(std::shared_ptr<Context> context, vk::DeviceSize size, vk::Buffer
         throw std::runtime_error("Failed to create buffer");
     }
     mBuffer = vk::Buffer(vkBuffer);
+
+    mBufferSize = size;
+    mBufferUsageFlags = bufferUsage;
 }
 Buffer::Buffer(Buffer &&other) noexcept
     : mBuffer(std::exchange(other.mBuffer, nullptr)), mAllocation(std::exchange(other.mAllocation, nullptr)),
@@ -54,14 +57,21 @@ void Buffer::Release()
 {
     vmaDestroyBuffer(mContext->GetVmaAllocator(), mBuffer, mAllocation);
 }
-vk::Buffer Buffer::GetBuffer() const
+vk::Buffer Buffer::GetHandle() const
 {
     return mBuffer;
 }
-
 VmaAllocationInfo Buffer::GetAllocationInfo() const
 {
     return mAllocationInfo;
+}
+vk::DeviceSize Buffer::GetSize() const
+{
+    return mBufferSize;
+}
+vk::BufferUsageFlags Buffer::GetUsage() const
+{
+    return mBufferUsageFlags;
 }
 
 } // namespace MEngine

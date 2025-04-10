@@ -25,34 +25,14 @@ class CommandBufferManager final : public NoCopyable
 
   private:
     std::unordered_map<CommandBufferType, vk::UniqueCommandPool> mCommandPools;
+    std::unordered_map<CommandBufferType, std::vector<vk::UniqueCommandBuffer>> mPrimaryBuffers;
+    std::unordered_map<CommandBufferType, std::vector<vk::UniqueCommandBuffer>> mSecondaryBuffers;
 
   public:
     CommandBufferManager(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context);
-    /**
-     * @brief Create a Primary Command Buffer object
-     *
-     * @return vk::UniqueCommandBuffer
-     */
-    vk::UniqueCommandBuffer CreatePrimaryCommandBuffer(CommandBufferType type);
-    /**
-     * @brief Create a Secondary Command Buffer object
-     *
-     * @return vk::UniqueCommandBuffer
-     */
-    vk::UniqueCommandBuffer CreateSecondaryCommandBuffer(CommandBufferType type);
-    /**
-     * @brief Create multiple Primary Command Buffers object
-     *
-     * @param count Create by the count number
-     * @return std::vector<vk::UniqueCommandBuffer>
-     */
-    std::vector<vk::UniqueCommandBuffer> CreatePrimaryCommandBuffers(CommandBufferType type, uint32_t count);
-    /**
-     * @brief Create multiple Secondary Command Buffers object
-     *
-     * @param count Create by the count number
-     * @return std::vector<vk::UniqueCommandBuffer>
-     */
-    std::vector<vk::UniqueCommandBuffer> CreateSecondaryCommandBuffers(CommandBufferType type, uint32_t count);
+    vk::CommandBuffer CreatePrimaryCommandBuffer(CommandBufferType type);
+    vk::CommandBuffer CreateSecondaryCommandBuffer(CommandBufferType type);
+    std::vector<vk::CommandBuffer> CreatePrimaryCommandBuffers(CommandBufferType type, uint32_t count);
+    std::vector<vk::CommandBuffer> CreateSecondaryCommandBuffers(CommandBufferType type, uint32_t count);
 };
 } // namespace MEngine

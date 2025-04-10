@@ -1,5 +1,4 @@
 #include "BufferFactory.hpp"
-#include "VMA.hpp"
 
 namespace MEngine
 {
@@ -9,12 +8,14 @@ BufferFactory::BufferFactory(std::shared_ptr<ILogger> logger, std::shared_ptr<Co
     : mContext(context), mLogger(logger), mCommandBufferManager(commandBufferManager),
       mSyncPrimitiveManager(syncPrimitiveManager)
 {
+    mCommandBuffer = mCommandBufferManager->CreatePrimaryCommandBuffer(CommandBufferType::Transfer);
+    mFence = mSyncPrimitiveManager->CreateFence();
 }
 UniqueBuffer BufferFactory::CreateBuffer(BufferType type, vk::DeviceSize size, const void *data)
 {
-    VmaMemoryUsage memoryUsage;
-    vk::BufferUsageFlags bufferUsage;
-    VmaAllocationCreateFlags createflags;
+    VmaMemoryUsage memoryUsage{};
+    vk::BufferUsageFlags bufferUsage{};
+    VmaAllocationCreateFlags createflags{};
     switch (type)
     {
     case BufferType::Vertex:
@@ -59,36 +60,33 @@ UniqueBuffer BufferFactory::CreateBuffer(BufferType type, vk::DeviceSize size, c
             auto staging = std::make_unique<Buffer>(mContext, size, bufferUsage, memoryUsage, createflags);
             void *mapped = staging->GetAllocationInfo().pMappedData;
             std::memcpy(mapped, data, size);
-            CopyBuffer(staging.get(), buffer.get(), size);
+            CopyBuffer(staging.get(), buffer.get());
         }
     }
     return buffer;
 }
-void BufferFactory::CopyBuffer(Buffer *src, Buffer *dst, vk::DeviceSize size)
+void BufferFactory::CopyBuffer(Buffer *src, Buffer *dst)
 {
-    auto commandBuffer = mCommandBufferManager->CreatePrimaryCommandBuffer(CommandBufferType::Transfer);
-    auto fence = mSyncPrimitiveManager->CreateFence();
+
     vk::CommandBufferBeginInfo beginInfo{};
     beginInfo.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
-
-    commandBuffer->begin(beginInfo);
+    mCommandBuffer.begin(beginInfo);
     {
         vk::BufferCopy copyRegion{};
-        copyRegion.setSize(size).setDstOffset(0).setSrcOffset(0);
-        commandBuffer->copyBuffer(src->GetHandle(), dst->GetHandle(), copyRegion);
+        copyRegion.setSize(src->GetSize()).setDstOffset(0).setSrcOffset(0);
+        mCommandBuffer.copyBuffer(src->GetHandle(), dst->GetHandle(), copyRegion);
     }
-    commandBuffer->end();
+    mCommandBuffer.end();
 
     vk::SubmitInfo submitInfo{};
-    submitInfo.setCommandBuffers(commandBuffer.get());
-    mContext->SubmitToTransferQueue({submitInfo}, fence.get());
-
-    auto result = mContext->GetDevice().waitForFences(fence.get(), vk::True, 1'000'000'000);
+    submitInfo.setCommandBuffers(mCommandBuffer);
+    mContext->SubmitToTransferQueue({submitInfo}, mFence);
+    auto result = mContext->GetDevice().waitForFences(mFence, vk::True, 1'000'000'000);
     if (result != vk::Result::eSuccess)
     {
-        mLogger->Error("Copy buffer operation failed");
-        throw std::runtime_error("Copy buffer operation failed");
+        mLogger->Error("Copy buffer failed");
+        throw std::runtime_error("Copy buffer failed");
     }
-    mLogger->Debug("Copy buffer operation success");
+    mLogger->Debug("Copy buffer success");
 }
 } // namespace MEngine
