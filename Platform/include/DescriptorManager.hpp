@@ -8,6 +8,7 @@
 #include <memory>
 #include <vector>
 #include <vulkan/vulkan.hpp>
+#include <vulkan/vulkan_handles.hpp>
 
 namespace MEngine
 {
@@ -29,7 +30,6 @@ struct PoolSizesProportion
         {vk::DescriptorType::eStorageBufferDynamic, 1.0f},
     };
 };
-using UniqueDescriptorSet = vk::UniqueDescriptorSet;
 class DescriptorManager final : public NoCopyable
 {
   private:
@@ -43,14 +43,18 @@ class DescriptorManager final : public NoCopyable
     std::vector<vk::UniqueDescriptorPool> mExhaustedPools;
     std::vector<vk::UniqueDescriptorPool> mAllocatablePools;
 
+    std::vector<vk::UniqueDescriptorSet> mDescriptorSets;
+
+  private:
     vk::UniqueDescriptorPool &AcquireAllocatablePool();
 
   public:
     DescriptorManager(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context,
                       uint32_t maxDescriptorSize = 1000, PoolSizesProportion defaultPoolSizesProportion = {});
 
-    std::vector<UniqueDescriptorSet> AllocateUniqueDescriptorSet(
+    std::vector<vk::DescriptorSet> AllocateUniqueDescriptorSet(
         const std::vector<vk::DescriptorSetLayout> &descriptorSetLayouts);
+
     void ResetDescriptorPool();
     void SetDefaultPoolSizesProportion(PoolSizesProportion defaultPoolSizesProportion)
     {
