@@ -40,15 +40,16 @@ class ImageFactory final : public NoCopyable
                  std::shared_ptr<SyncPrimitiveManager> syncPrimitiveManager,
                  std::shared_ptr<BufferFactory> bufferFactory);
 
-    UniqueImage CreateImage(ImageType type, vk::Extent3D extent, vk::Format format, uint32_t mipLevels = 1,
+    UniqueImage CreateImage(ImageType type, vk::Extent3D extent, uint32_t mipLevels = 1,
                             vk::SampleCountFlagBits samples = vk::SampleCountFlagBits::e1);
 
-    UniqueImage CreateImage(ImageType type, vk::Extent3D extent, vk::Format format, const void *data,
-                            uint32_t mipLevels = 1, vk::SampleCountFlagBits samples = vk::SampleCountFlagBits::e1);
+    UniqueImage CreateImage(ImageType type, vk::Extent3D extent, const void *data, uint32_t mipLevels = 1,
+                            vk::SampleCountFlagBits samples = vk::SampleCountFlagBits::e1);
     vk::UniqueImageView CreateImageView(Image *image, vk::ImageAspectFlags aspectMask = {},
                                         vk::ComponentMapping components = {});
 
   private:
+    vk::Format GetBestFormat(ImageType type);
     uint32_t GetFormatPixelSize(vk::Format format) const;
     void CopyBufferToImage(Buffer *srcBuffer, Image *dstImage, vk::ImageSubresourceLayers imageSubresourceLayers);
 };

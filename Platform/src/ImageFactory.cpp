@@ -12,8 +12,8 @@ ImageFactory::ImageFactory(std::shared_ptr<ILogger> logger, std::shared_ptr<Cont
     mFence = mSyncPrimitiveManager->CreateFence();
     mCommandBuffer = mCommandBufferManager->CreatePrimaryCommandBuffer(CommandBufferType::Transfer);
 }
-UniqueImage ImageFactory::CreateImage(ImageType type, vk::Extent3D extent, vk::Format format, const void *data,
-                                      uint32_t mipLevels, vk::SampleCountFlagBits samples)
+UniqueImage ImageFactory::CreateImage(ImageType type, vk::Extent3D extent, const void *data, uint32_t mipLevels,
+                                      vk::SampleCountFlagBits samples)
 {
     uint32_t arrayLayers{};
     VmaMemoryUsage memoryUsage{};
@@ -90,7 +90,7 @@ UniqueImage ImageFactory::CreateImage(ImageType type, vk::Extent3D extent, vk::F
     }
     vk::ImageCreateInfo imageCreateInfo{};
     imageCreateInfo.setImageType(imageType)
-        .setFormat(format)
+        .setFormat(GetBestFormat(type))
         .setExtent(extent)
         .setMipLevels(mipLevels)
         .setArrayLayers(arrayLayers)
@@ -116,8 +116,8 @@ UniqueImage ImageFactory::CreateImage(ImageType type, vk::Extent3D extent, vk::F
             mCommandBuffer->pipelineBarrier(vk::PipelineStageFlagBits::eTopOfPipe, vk::PipelineStageFlagBits::eTransfer,
                                             {}, {}, {}, preBarrier);
             // 复制数据到图像
-            auto buffer = mBufferFactory->CreateBuffer(BufferType::Staging,
-                                                       extent.width * extent.height * GetFormatPixelSize(format), data);
+            auto buffer = mBufferFactory->CreateBuffer(
+                BufferType::Staging, extent.width * extent.height * GetFormatPixelSize(GetBestFormat(type)), data);
             vk::ImageSubresourceLayers imageSubresourceLayers{};
             imageSubresourceLayers.setAspectMask(vk::ImageAspectFlagBits::eColor)
                 .setMipLevel(0)
@@ -170,7 +170,25 @@ void ImageFactory::CopyBufferToImage(Buffer *srcBuffer, Image *dstImage,
     }
     mLogger->Debug("Copy image operation success");
 }
-
+vk::Format ImageFactory::GetBestFormat(ImageType type)
+{
+    switch (type)
+    {
+    case ImageType::Texture2D:
+        return vk::Format::eR8G8B8A8Unorm;
+    case ImageType::TextureCube:
+        return vk::Format::eR8G8B8A8Unorm;
+    case ImageType::RenderTarget:
+        return vk::Format::eR8G8B8A8Unorm;
+    case ImageType::DepthStencil:
+        return vk::Format::eD32SfloatS8Uint;
+    case ImageType::Storage:
+        return vk::Format::eR32G32B32A32Sfloat;
+    default:
+        mLogger->Error("Invalid image type");
+        throw std::invalid_argument("Invalid image type");
+    }
+}
 uint32_t ImageFactory::GetFormatPixelSize(vk::Format format) const
 {
     switch (format)
@@ -284,4 +302,5 @@ vk::UniqueImageView ImageFactory::CreateImageView(Image *image, vk::ImageAspectF
         mLogger->Error("Failed to create image view");
     }
     return imageView;
+}
 } // namespace MEngine
