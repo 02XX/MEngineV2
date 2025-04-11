@@ -3,15 +3,22 @@
 namespace MEngine
 {
 
-SDLWindow::SDLWindow(std::shared_ptr<ILogger> logger, WindowConfig config) : mLogger(logger), mConfig(config)
+SDLWindow::SDLWindow(std::shared_ptr<ILogger> logger, std::shared_ptr<IConfigure> configure)
+    : mLogger(logger), mConfigure(configure)
 {
     if (!SDL_Init(SDL_INIT_VIDEO))
     {
         mLogger->Error("Failed to initialize SDL: {}", SDL_GetError());
         throw std::runtime_error("Failed to initialize SDL");
     }
-    mWindow =
-        SDL_CreateWindow(mConfig.title.c_str(), config.width, config.height, SDL_WINDOW_RESIZABLE | SDL_WINDOW_VULKAN);
+    auto windowWidth = mConfigure->GetJson()["Window"]["Width"].get<int>();
+    auto windowHeight = mConfigure->GetJson()["Window"]["Height"].get<int>();
+    auto windowTitle = mConfigure->GetJson()["Window"]["Title"].get<std::string>();
+    mConfig.width = windowWidth;
+    mConfig.height = windowHeight;
+    mConfig.title = windowTitle;
+    mWindow = SDL_CreateWindow(mConfig.title.c_str(), mConfig.width, mConfig.height,
+                               SDL_WINDOW_RESIZABLE | SDL_WINDOW_VULKAN);
     if (!mWindow)
     {
         mLogger->Error("Failed to create window: {}", SDL_GetError());
@@ -87,11 +94,11 @@ bool SDLWindow::ShouldClose() const
 
 int SDLWindow::GetWidth() const
 {
-    return mWidth;
+    return mConfig.width;
 }
 int SDLWindow::GetHeight() const
 {
-    return mHeight;
+    return mConfig.height;
 }
 void *SDLWindow::GetNativeHandle() const
 {

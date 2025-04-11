@@ -20,6 +20,7 @@
 #include "ShaderManager.hpp"
 #include "SpdLogger.hpp"
 
+#include "Configure.hpp"
 #include "SyncPrimitiveManager.hpp"
 #include "System/CameraSystem.hpp"
 #include "System/ISystem.hpp"
@@ -28,6 +29,7 @@
 #include "entt/entt.hpp"
 #include <cstdint>
 #include <memory>
+
 namespace MEngine
 {
 class Application final : public NoCopyable
@@ -36,6 +38,7 @@ class Application final : public NoCopyable
     bool mIsRunning;
     // DI
     std::shared_ptr<ILogger> mLogger;
+    std::shared_ptr<IConfigure> mConfigure;
     std::shared_ptr<IWindow> mWindow;
     std::shared_ptr<Context> mContext;
     std::shared_ptr<entt::registry> mRegistry;

@@ -1,18 +1,26 @@
 #pragma once
+#include "Interface/IConfigure.hpp"
 #include "Interface/ILogger.hpp"
 #include "MEngine.hpp"
 #include "NoCopyable.hpp"
+#include "magic_enum/magic_enum.hpp"
 #include "spdlog/common.h"
 #include "spdlog/logger.h"
 #include "spdlog/sinks/rotating_file_sink.h"
 #include "spdlog/sinks/sink.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
 #include "spdlog/spdlog.h"
+#include <memory>
 #include <source_location>
+
 namespace MEngine
 {
 class SpdLogger final : public ILogger, NoCopyable
 {
+  private:
+    // DI
+    std::shared_ptr<IConfigure> mConfigure;
+
   private:
     std::shared_ptr<spdlog::sinks::sink> mConsoleSink;
     std::shared_ptr<spdlog::sinks::sink> mFileSink;
@@ -32,6 +40,6 @@ class SpdLogger final : public ILogger, NoCopyable
                   const std::source_location &loc = std::source_location::current()) override;
 
   public:
-    SpdLogger();
+    SpdLogger(std::shared_ptr<IConfigure> configure);
 };
 } // namespace MEngine

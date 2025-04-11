@@ -2,7 +2,7 @@
 
 namespace MEngine
 {
-Configure::Configure(std::shared_ptr<ILogger> logger) : mLogger(logger)
+Configure::Configure()
 {
     mPath = fs::current_path() / "appsettings.json";
     SetJsonSettingFile(mPath);
@@ -10,17 +10,17 @@ Configure::Configure(std::shared_ptr<ILogger> logger) : mLogger(logger)
 void Configure::SetJsonSettingFile(const fs::path &path)
 {
     mPath = path;
-    mLogger->Info("Loading configuration file: {}", path.string());
+    std::cout << "Loading configuration file: " << mPath.string() << std::endl;
     std::ifstream file(path);
     if (!file.is_open())
     {
-        mLogger->Error("Failed to open configuration file: {}", path.string());
+        std::cerr << "Failed to open configuration file: " << path.string() << std::endl;
         throw std::runtime_error("Failed to open configuration file: " + path.string());
     }
     try
     {
         mJson = Json::parse(file);
-        mLogger->Info("Configuration file loaded successfully: {}", path.string());
+        std::cout << "Configuration file loaded successfully." << std::endl;
     }
     catch (const Json::exception &e)
     {

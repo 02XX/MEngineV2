@@ -1,7 +1,4 @@
 #include "Context.hpp"
-#include "Interface/IWindow.hpp"
-#include <memory>
-#include <vulkan/vulkan_handles.hpp>
 
 namespace MEngine
 {
@@ -11,9 +8,23 @@ Context::~Context()
     vmaDestroyAllocator(mVmaAllocator);
     mLogger->Debug("Context Destroyed");
 }
-Context::Context(std::shared_ptr<ILogger> logger, std::shared_ptr<IWindow> window, ContextConfig config)
-    : mLogger(logger), mConfig(config), mWindow(window)
+Context::Context(std::shared_ptr<ILogger> logger, std::shared_ptr<IWindow> window) : mLogger(logger), mWindow(window)
 {
+    std::vector<const char *> instanceRequiredExtensions = mWindow->GetInstanceRequiredExtensions();
+    std::vector<const char *> instanceRequiredLayers{"VK_LAYER_KHRONOS_validation",
+                                                     "VK_LAYER_KHRONOS_synchronization2"};
+    std::vector<const char *> deviceRequiredExtension;
+    std::vector<const char *> deviceRequiredLayers;
+    deviceRequiredExtension.push_back("VK_KHR_swapchain");
+#ifdef PLATFORM_MACOS
+    instanceRequiredExtensions.push_back("VK_KHR_portability_enumeration");
+    deviceRequiredExtension.push_back("VK_KHR_portability_subset");
+#endif
+    mConfig.instanceRequiredExtensions = instanceRequiredExtensions;
+    mConfig.instanceRequiredLayers = instanceRequiredLayers;
+    mConfig.deviceRequiredExtensions = deviceRequiredExtension;
+    mConfig.deviceRequiredLayers = deviceRequiredLayers;
+
     CreateInstance();
     PickPhysicalDevice();
 

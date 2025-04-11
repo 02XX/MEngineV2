@@ -1,4 +1,5 @@
 #pragma once
+#include "Interface/IConfigure.hpp"
 #include "Interface/ILogger.hpp"
 #include "Interface/IWindow.hpp"
 #include "NoCopyable.hpp"
@@ -6,6 +7,7 @@
 #include "SDL3/SDL_events.h"
 #include "SDL3/SDL_vulkan.h"
 #include "imgui_impl_sdl3.h"
+#include <memory>
 #include <queue>
 #include <vulkan/vulkan.hpp>
 namespace MEngine
@@ -20,11 +22,10 @@ class SDLWindow final : public IWindow, public NoCopyable
 {
   private:
     std::shared_ptr<ILogger> mLogger;
+    std::shared_ptr<IConfigure> mConfigure;
 
   private:
     SDL_Window *mWindow = nullptr;
-    int mWidth = 0;
-    int mHeight = 0;
     SDL_Event mEvent;
     WindowConfig mConfig;
     bool mShouldClose = false;
@@ -32,7 +33,7 @@ class SDLWindow final : public IWindow, public NoCopyable
     std::vector<EventCallback> mEventCallbacks;
 
   public:
-    SDLWindow(std::shared_ptr<ILogger> logger, WindowConfig config);
+    SDLWindow(std::shared_ptr<ILogger> logger, std::shared_ptr<IConfigure> configure);
     ~SDLWindow();
 
   public:

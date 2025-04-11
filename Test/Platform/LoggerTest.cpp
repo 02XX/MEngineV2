@@ -1,3 +1,4 @@
+#include "Configure.hpp"
 #include "Interface/ILogger.hpp"
 #include "SpdLogger.hpp"
 #include "gtest/gtest.h"
@@ -11,13 +12,15 @@ class LoggerTest : public ::testing::Test
     void SetUp() override
     {
         // Initialize the logger
-        mLogger = std::make_shared<SpdLogger>();
+        mConfigure = std::make_shared<Configure>();
+        mLogger = std::make_shared<SpdLogger>(mConfigure);
     }
 
     void TearDown() override
     {
         // Clean up if necessary
     }
+    std::shared_ptr<IConfigure> mConfigure;
     std::shared_ptr<SpdLogger> mLogger;
 };
 TEST_F(LoggerTest, Log)

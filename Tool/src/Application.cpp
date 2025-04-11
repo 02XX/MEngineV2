@@ -5,23 +5,13 @@ namespace MEngine
 Application::Application()
 {
     // DI
-    mLogger = std::make_shared<SpdLogger>();
+    mConfigure = std::make_shared<Configure>();
+    mLogger = std::make_shared<SpdLogger>(mConfigure);
     mLogger->Info("Application Started");
 
-    mWindow = std::make_shared<SDLWindow>(mLogger, WindowConfig{1400, 800, "MEngine"});
-    std::vector<const char *> instanceRequiredExtensions = mWindow->GetInstanceRequiredExtensions();
-    std::vector<const char *> instanceRequiredLayers{"VK_LAYER_KHRONOS_validation",
-                                                     "VK_LAYER_KHRONOS_synchronization2"};
-    std::vector<const char *> deviceRequiredExtension;
-    std::vector<const char *> deviceRequiredLayers;
-    deviceRequiredExtension.push_back("VK_KHR_swapchain");
-#ifdef PLATFORM_MACOS
-    instanceRequiredExtensions.push_back("VK_KHR_portability_enumeration");
-    deviceRequiredExtension.push_back("VK_KHR_portability_subset");
-#endif
-    mContext = std::make_shared<Context>(mLogger, mWindow,
-                                         ContextConfig{instanceRequiredExtensions, instanceRequiredLayers,
-                                                       deviceRequiredExtension, deviceRequiredLayers});
+    mWindow = std::make_shared<SDLWindow>(mLogger, mConfigure);
+
+    mContext = std::make_shared<Context>(mLogger, mWindow);
     mRegistry = std::make_shared<entt::registry>();
     mCommandBufferManager = std::make_shared<CommandBufferManager>(mLogger, mContext);
     mSyncPrimitiveManager = std::make_shared<SyncPrimitiveManager>(mLogger, mContext);

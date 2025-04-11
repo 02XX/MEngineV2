@@ -15,8 +15,8 @@ class ConfigureTest : public ::testing::Test
     void SetUp() override
     {
         // Initialize the logger
-        mLogger = std::make_shared<SpdLogger>();
-        mConfigure = std::make_shared<Configure>(mLogger);
+        mConfigure = std::make_shared<Configure>();
+        mLogger = std::make_shared<SpdLogger>(mConfigure);
     }
 
     void TearDown() override

@@ -27,7 +27,7 @@ class Context final : public NoCopyable
     // DI
     std::shared_ptr<ILogger> mLogger;
     std::shared_ptr<IWindow> mWindow;
- 
+
   private:
     ContextConfig mConfig;
 
@@ -85,7 +85,7 @@ class Context final : public NoCopyable
     void CreateSwapchainImageViews();
 
   public:
-    Context(std::shared_ptr<ILogger> logger, std::shared_ptr<IWindow> window, ContextConfig config);
+    Context(std::shared_ptr<ILogger> logger, std::shared_ptr<IWindow> window);
     ~Context();
     void SetPresentQueueFamilyIndex(vk::SurfaceKHR surface);
     inline uint32_t GetInstanceVersion() const
