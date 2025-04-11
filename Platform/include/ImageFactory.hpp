@@ -8,6 +8,8 @@
 #include "SyncPrimitiveManager.hpp"
 #include "VMA.hpp"
 #include <memory>
+#include <unordered_map>
+#include <vector>
 
 namespace MEngine
 {
@@ -33,6 +35,40 @@ class ImageFactory final : public NoCopyable
   private:
     vk::UniqueCommandBuffer mCommandBuffer;
     vk::UniqueFence mFence;
+    const std::vector<vk::Format> mTexture2DFormats = {
+        vk::Format::eR32G32B32A32Sfloat, // HDR
+        vk::Format::eR16G16B16A16Sfloat, // HDR
+        vk::Format::eR8G8B8A8Srgb,       // HDR
+        vk::Format::eB8G8R8A8Srgb,       vk::Format::eR8G8B8A8Unorm,
+    };
+    const std::vector<vk::Format> mTextureCubeFormats = {
+        vk::Format::eR32G32B32A32Sfloat, // HDR
+        vk::Format::eR16G16B16A16Sfloat, // HDR
+        vk::Format::eR8G8B8A8Srgb,       // HDR
+        vk::Format::eB8G8R8A8Srgb,       vk::Format::eR8G8B8A8Unorm,
+    };
+    const std::vector<vk::Format> mRenderTargetFormats = {
+        vk::Format::eR32G32B32A32Sfloat, // HDR
+        vk::Format::eR16G16B16A16Sfloat, // HDR
+        vk::Format::eR8G8B8A8Srgb,       // HDR
+        vk::Format::eB8G8R8A8Srgb,       vk::Format::eR8G8B8A8Unorm,
+    };
+    const std::vector<vk::Format> mDepthStencilCandidintFormats = {
+        vk::Format::eD32SfloatS8Uint,
+        vk::Format::eD24UnormS8Uint,
+    };
+    const std::vector<vk::Format> mStorageFormats = {
+        vk::Format::eR32G32B32A32Sfloat, // HDR
+        vk::Format::eR16G16B16A16Sfloat, // HDR
+        vk::Format::eR8G8B8A8Srgb,       // HDR
+        vk::Format::eB8G8R8A8Srgb,       vk::Format::eR8G8B8A8Unorm,
+    };
+
+    vk::Format mTexture2DFormat;
+    vk::Format mTextureCubeFormat;
+    vk::Format mRenderTargetFormat;
+    vk::Format mDepthStencilFormat;
+    vk::Format mStorageFormat;
 
   public:
     ImageFactory(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context,
@@ -49,6 +85,7 @@ class ImageFactory final : public NoCopyable
                                         vk::ComponentMapping components = {});
 
   private:
+    void QueryImageFormat();
     vk::Format GetBestFormat(ImageType type);
     uint32_t GetFormatPixelSize(vk::Format format) const;
     void CopyBufferToImage(Buffer *srcBuffer, Image *dstImage, vk::ImageSubresourceLayers imageSubresourceLayers);

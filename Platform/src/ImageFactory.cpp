@@ -11,6 +11,7 @@ ImageFactory::ImageFactory(std::shared_ptr<ILogger> logger, std::shared_ptr<Cont
 {
     mFence = mSyncPrimitiveManager->CreateFence();
     mCommandBuffer = mCommandBufferManager->CreatePrimaryCommandBuffer(CommandBufferType::Transfer);
+    QueryImageFormat();
 }
 UniqueImage ImageFactory::CreateImage(ImageType type, vk::Extent3D extent, const void *data, uint32_t mipLevels,
                                       vk::SampleCountFlagBits samples)
@@ -175,15 +176,15 @@ vk::Format ImageFactory::GetBestFormat(ImageType type)
     switch (type)
     {
     case ImageType::Texture2D:
-        return vk::Format::eR8G8B8A8Unorm;
+        return mTexture2DFormat;
     case ImageType::TextureCube:
-        return vk::Format::eR8G8B8A8Unorm;
+        return mTextureCubeFormat;
     case ImageType::RenderTarget:
-        return vk::Format::eR8G8B8A8Unorm;
+        return mRenderTargetFormat;
     case ImageType::DepthStencil:
-        return vk::Format::eD32SfloatS8Uint;
+        return mDepthStencilFormat;
     case ImageType::Storage:
-        return vk::Format::eR32G32B32A32Sfloat;
+        return mStorageFormat;
     default:
         mLogger->Error("Invalid image type");
         throw std::invalid_argument("Invalid image type");
@@ -302,5 +303,80 @@ vk::UniqueImageView ImageFactory::CreateImageView(Image *image, vk::ImageAspectF
         mLogger->Error("Failed to create image view");
     }
     return imageView;
+}
+void ImageFactory::QueryImageFormat()
+{
+    vk::FormatProperties formatProperties;
+    // Texture2D
+    for (auto format : mTexture2DFormats)
+    {
+        formatProperties = mContext->GetPhysicalDevice().getFormatProperties(format);
+        vk::FormatFeatureFlags requiredFeatures =
+            vk::FormatFeatureFlagBits::eSampledImage | vk::FormatFeatureFlagBits::eTransferSrc |
+            vk::FormatFeatureFlagBits::eTransferDst | vk::FormatFeatureFlagBits::eColorAttachment;
+        if (formatProperties.optimalTilingFeatures & requiredFeatures)
+        {
+            mTexture2DFormat = format;
+            break;
+        }
+    }
+    // TextureCube
+    for (auto format : mTextureCubeFormats)
+    {
+        formatProperties = mContext->GetPhysicalDevice().getFormatProperties(format);
+        vk::FormatFeatureFlags requiredFeatures =
+            vk::FormatFeatureFlagBits::eSampledImage | vk::FormatFeatureFlagBits::eTransferSrc |
+            vk::FormatFeatureFlagBits::eTransferDst | vk::FormatFeatureFlagBits::eColorAttachment;
+        if (formatProperties.optimalTilingFeatures & requiredFeatures)
+        {
+            mTextureCubeFormat = format;
+            break;
+        }
+    }
+    // RenderTarget
+    for (auto format : mRenderTargetFormats)
+    {
+        formatProperties = mContext->GetPhysicalDevice().getFormatProperties(format);
+        vk::FormatFeatureFlags requiredFeatures = vk::FormatFeatureFlagBits::eColorAttachment |
+                                                  vk::FormatFeatureFlagBits::eTransferSrc |
+                                                  vk::FormatFeatureFlagBits::eSampledImage;
+        if (formatProperties.optimalTilingFeatures & requiredFeatures)
+        {
+            mRenderTargetFormat = format;
+            break;
+        }
+    }
+    // DepthStencil
+    for (auto format : mDepthStencilCandidintFormats)
+    {
+        formatProperties = mContext->GetPhysicalDevice().getFormatProperties(format);
+        vk::FormatFeatureFlags requiredFeatures = vk::FormatFeatureFlagBits::eDepthStencilAttachment |
+                                                  vk::FormatFeatureFlagBits::eTransferSrc |
+                                                  vk::FormatFeatureFlagBits::eSampledImage;
+        if (formatProperties.optimalTilingFeatures & requiredFeatures)
+        {
+            mDepthStencilFormat = format;
+            break;
+        }
+    }
+    // Storage
+    for (auto format : mStorageFormats)
+    {
+        formatProperties = mContext->GetPhysicalDevice().getFormatProperties(format);
+        vk::FormatFeatureFlags requiredFeatures = vk::FormatFeatureFlagBits::eStorageImage |
+                                                  vk::FormatFeatureFlagBits::eTransferSrc |
+                                                  vk::FormatFeatureFlagBits::eTransferDst;
+        if (formatProperties.optimalTilingFeatures & requiredFeatures)
+        {
+            mStorageFormat = format;
+            break;
+        }
+    }
+    // log
+    mLogger->Info("Texture2D format: {}", vk::to_string(mTexture2DFormat));
+    mLogger->Info("TextureCube format: {}", vk::to_string(mTextureCubeFormat));
+    mLogger->Info("RenderTarget format: {}", vk::to_string(mRenderTargetFormat));
+    mLogger->Info("DepthStencil format: {}", vk::to_string(mDepthStencilFormat));
+    mLogger->Info("Storage format: {}", vk::to_string(mStorageFormat));
 }
 } // namespace MEngine
