@@ -22,7 +22,7 @@
 #include "ShaderManager.hpp"
 #include "SyncPrimitiveManager.hpp"
 #include "System.hpp"
-#include "System/UISystem.hpp"
+#include "System/UI.hpp"
 #include "TaskScheduler.hpp"
 #include "Vertex.hpp"
 #include "entt/entity/fwd.hpp"
@@ -55,7 +55,7 @@ class RenderSystem final : public System
     std::shared_ptr<ImageFactory> mImageFactory;
 
     std::shared_ptr<IWindow> mWindow;
-    std::shared_ptr<UISystem> mUISystem;
+    std::shared_ptr<UI> mUI;
 
   private:
     std::map<PipelineType, std::vector<entt::entity>> mBatchMaterialComponents;

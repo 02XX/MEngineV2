@@ -1,4 +1,5 @@
 #include "System/UI.hpp"
+#include <vulkan/vulkan.hpp>
 
 namespace MEngine
 {
@@ -11,6 +12,10 @@ UI::UI(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context, std::s
       mImageFactory(imageFactory), mCommandBufferManager(commandBufferManager),
       mSyncPrimitiveManager(syncPrimitiveManager), mSamplerManager(samplerManager), mRegistry(registry)
 {
+    mImageTransitionCommandBuffer = mCommandBufferManager->CreatePrimaryCommandBuffer(CommandBufferType::Graphic);
+    mAssetSampler = mSamplerManager->CreateUniqueSampler(vk::Filter::eLinear, vk::Filter::eLinear);
+    mSceneSampler = mSamplerManager->CreateUniqueSampler(vk::Filter::eLinear, vk::Filter::eLinear);
+    mImageTransitionFence = mSyncPrimitiveManager->CreateFence();
     //  Initialize ImGui context
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
@@ -46,7 +51,6 @@ UI::UI(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context, std::s
 
     CreateSceneDescriptorSetLayout();
     CreateSceneDescriptorSet();
-    CreateSampler();
     LoadAsset();
     // mLogger->Info("Uploading Fonts");
 }
@@ -84,25 +88,6 @@ void UI::CreateSceneDescriptorSetLayout()
     }
     mSceneDescriptorSetLayout = std::move(layout);
 }
-void UI::CreateSampler()
-{
-    vk::SamplerCreateInfo samplerInfo;
-    samplerInfo.setMagFilter(vk::Filter::eLinear)
-        .setMinFilter(vk::Filter::eLinear)
-        .setAddressModeU(vk::SamplerAddressMode::eRepeat)
-        .setAddressModeV(vk::SamplerAddressMode::eRepeat)
-        .setAddressModeW(vk::SamplerAddressMode::eRepeat)
-        .setMipLodBias(0.0f)
-        .setMinLod(0.0f)
-        .setMaxLod(0.0f)
-        .setBorderColor(vk::BorderColor::eIntOpaqueBlack);
-    auto sampler = mContext->GetDevice().createSamplerUnique(samplerInfo);
-    if (!sampler)
-    {
-        mLogger->Error("Failed to create UI sampler");
-    }
-    mSceneSampler = std::move(sampler);
-}
 void UI::CreateSceneDescriptorSet()
 {
     auto imageCount = mContext->GetSurfaceInfo().imageCount;
@@ -123,7 +108,6 @@ void UI::CreateSceneDescriptorSet()
 void UI::UpdateSceneDescriptorSet(vk::ImageView imageView, uint32_t imageIndex)
 {
     mCurrentFrame = imageIndex;
-
     vk::DescriptorImageInfo imageInfo;
     imageInfo.setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
         .setImageView(imageView)
@@ -138,19 +122,22 @@ void UI::UpdateSceneDescriptorSet(vk::ImageView imageView, uint32_t imageIndex)
 }
 void UI::LoadAsset()
 {
-    // 3. 创建采样器
-    mSampler = mSamplerManager->CreateUniqueSampler(vk::Filter::eLinear, vk::Filter::eLinear);
+    mImageTransitionCommandBuffer->reset();
+    vk::SubmitInfo folderSubmitInfo;
     // 文件夹图标
     int folderThumbnailWidth, folderThumbnailHeight, folderThumbnailChannels;
     auto foldPath = mAssetsPath / "folder.png";
     stbi_set_flip_vertically_on_load(true);
     auto folderThumbnail = stbi_load(foldPath.string().c_str(), &folderThumbnailWidth, &folderThumbnailHeight,
-                                     &folderThumbnailChannels, 0);
+                                     &folderThumbnailChannels, STBI_rgb_alpha);
+    folderThumbnailChannels = 4;
     if (folderThumbnail)
     {
         // 1. 创建Image
+        vk::DeviceSize folderSize = folderThumbnailWidth * folderThumbnailHeight * folderThumbnailChannels;
         mFolderImage = mImageFactory->CreateImage(ImageType::Texture2D,
-                                                  vk::Extent3D(folderThumbnailWidth, folderThumbnailHeight, 1));
+                                                  vk::Extent3D(folderThumbnailWidth, folderThumbnailHeight, 1),
+                                                  folderSize, folderThumbnail);
         // 2. 创建ImageView
         mFolderImageView = mImageFactory->CreateImageView(mFolderImage.get());
         // 3. 转换布局
@@ -163,10 +150,16 @@ void UI::LoadAsset()
             .setSubresourceRange(vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1))
             .setSrcAccessMask(vk::AccessFlagBits::eNoneKHR)
             .setDstAccessMask(vk::AccessFlagBits::eShaderRead);
+        mImageTransitionCommandBuffer->begin(vk::CommandBufferBeginInfo());
+        mImageTransitionCommandBuffer->pipelineBarrier(vk::PipelineStageFlagBits::eTopOfPipe,
+                                                       vk::PipelineStageFlagBits::eFragmentShader, {}, {}, {},
+                                                       folderImagebarrier);
+        mImageTransitionCommandBuffer->end();
+        folderSubmitInfo.setCommandBuffers(mImageTransitionCommandBuffer.get());
 
         //  4. 创建描述符集
         mFolderTexture =
-            ImGui_ImplVulkan_AddTexture(mSampler.get(), mFolderImageView.get(),
+            ImGui_ImplVulkan_AddTexture(mAssetSampler.get(), mFolderImageView.get(),
                                         static_cast<VkImageLayout>(vk::ImageLayout::eShaderReadOnlyOptimal));
         mLogger->Debug("Folder thumbnail loaded successfully");
     }
@@ -175,20 +168,48 @@ void UI::LoadAsset()
         mLogger->Error("Failed to load file thumbnail");
     }
     stbi_image_free(folderThumbnail);
+    mContext->GetDevice().resetFences({mImageTransitionFence.get()});
+    mContext->GetGraphicQueue().submit({folderSubmitInfo}, mImageTransitionFence.get());
+    auto result = mContext->GetDevice().waitForFences({mImageTransitionFence.get()}, VK_TRUE, 1000000000); // 1s
+    if (result != vk::Result::eSuccess)
+    {
+        mLogger->Error("Failed to wait for folder image transition fence");
+    }
+
+    mImageTransitionCommandBuffer->reset();
+    vk::SubmitInfo fileSubmitInfo;
     // 文件图标
     int fileThumbnailWidth, fileThumbnailHeight, fileThumbnailChannels;
     auto filePath = mAssetsPath / "file.png";
-    auto fileThumbnail =
-        stbi_load(filePath.string().c_str(), &fileThumbnailWidth, &fileThumbnailHeight, &fileThumbnailChannels, 0);
+    auto fileThumbnail = stbi_load(filePath.string().c_str(), &fileThumbnailWidth, &fileThumbnailHeight,
+                                   &fileThumbnailChannels, STBI_rgb_alpha);
+    fileThumbnailChannels = 4;
     if (fileThumbnail)
     {
         // 1. 创建Image
-        mFileImage =
-            mImageFactory->CreateImage(ImageType::Texture2D, vk::Extent3D(fileThumbnailWidth, fileThumbnailHeight, 1));
+        vk::DeviceSize fileSize = fileThumbnailWidth * fileThumbnailHeight * fileThumbnailChannels;
+        mFileImage = mImageFactory->CreateImage(
+            ImageType::Texture2D, vk::Extent3D(fileThumbnailWidth, fileThumbnailHeight, 1), fileSize, fileThumbnail);
         // 2. 创建ImageView
         mFileImageView = mImageFactory->CreateImageView(mFileImage.get());
+        // 3. 转换布局
+        vk::ImageMemoryBarrier fileImagebarrier;
+        fileImagebarrier.setImage(mFileImage->GetHandle())
+            .setOldLayout(vk::ImageLayout::eUndefined)
+            .setNewLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
+            .setSrcQueueFamilyIndex(mContext->GetQueueFamilyIndicates().graphicsFamily.value())
+            .setDstQueueFamilyIndex(mContext->GetQueueFamilyIndicates().graphicsFamily.value())
+            .setSubresourceRange(vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1))
+            .setSrcAccessMask(vk::AccessFlagBits::eNoneKHR)
+            .setDstAccessMask(vk::AccessFlagBits::eShaderRead);
+        mImageTransitionCommandBuffer->begin(vk::CommandBufferBeginInfo());
+        mImageTransitionCommandBuffer->pipelineBarrier(vk::PipelineStageFlagBits::eTopOfPipe,
+                                                       vk::PipelineStageFlagBits::eFragmentShader, {}, {}, {},
+                                                       fileImagebarrier);
+        mImageTransitionCommandBuffer->end();
+        fileSubmitInfo.setCommandBuffers(mImageTransitionCommandBuffer.get());
         // 4. 创建描述符集
-        mFileTexture = ImGui_ImplVulkan_AddTexture(mSampler.get(), mFileImageView.get(),
+        mFileTexture = ImGui_ImplVulkan_AddTexture(mAssetSampler.get(), mFileImageView.get(),
                                                    static_cast<VkImageLayout>(vk::ImageLayout::eShaderReadOnlyOptimal));
         mLogger->Debug("File thumbnail loaded successfully");
     }
@@ -197,6 +218,13 @@ void UI::LoadAsset()
         mLogger->Error("Failed to load file thumbnail");
     }
     stbi_image_free(fileThumbnail);
+    mContext->GetDevice().resetFences({mImageTransitionFence.get()});
+    mContext->GetGraphicQueue().submit({fileSubmitInfo}, mImageTransitionFence.get());
+    result = mContext->GetDevice().waitForFences({mImageTransitionFence.get()}, VK_TRUE, 1000000000); // 1s
+    if (result != vk::Result::eSuccess)
+    {
+        mLogger->Error("Failed to wait for file image transition fence");
+    }
 }
 void UI::DockingSpace()
 {
@@ -271,13 +299,13 @@ void UI::SceneViewWindow()
     float viewMatrix[16], projMatrix[16];
     memcpy(viewMatrix, glm::value_ptr(view), sizeof(float) * 16);
     memcpy(projMatrix, glm::value_ptr(proj), sizeof(float) * 16);
-    float outputMatrix[16] = {0};              // 声明一个临时矩阵
-    ImGuizmo::ViewManipulate(viewMatrix,       // view
-                             projMatrix,       // projection
-                             ImGuizmo::ROTATE, // operation
-                             ImGuizmo::LOCAL,  // mode
-                             outputMatrix,     // 输出矩阵（可为 null）
-                             gizmoLength,      // length
+    float outputMatrix[16] = {0};                                                           // 声明一个临时矩阵
+    ImGuizmo::ViewManipulate(viewMatrix,                                                    // view
+                             projMatrix,                                                    // projection
+                             ImGuizmo::ROTATE,                                              // operation
+                             ImGuizmo::LOCAL,                                               // mode
+                             outputMatrix,                                                  // 输出矩阵（可为 null）
+                             gizmoLength,                                                   // length
                              ImVec2(windowPos.x + windowSize.x - gizmoLength, windowPos.y), // position
                              gizmoSize,                                                     // size
                              0x10101010                                                     // background color
@@ -367,7 +395,7 @@ void UI::AssetWindow()
     ImGui::Columns(1);
     ImGui::End();
 }
-void UI::Tick(float deltaTime)
+void UI::RecordUICommandBuffer(vk::CommandBuffer commandBuffer)
 {
     ImGui_ImplSDL3_NewFrame();
     ImGui_ImplVulkan_NewFrame();
@@ -383,7 +411,7 @@ void UI::Tick(float deltaTime)
     bool isMinimized = (drawData->DisplaySize.x <= 0.0f || drawData->DisplaySize.y <= 0.0f);
     if (!isMinimized)
     {
-        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), mCommandBuffer);
+        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
     }
 }
 UI::~UI()

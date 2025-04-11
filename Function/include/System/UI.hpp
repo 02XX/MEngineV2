@@ -27,6 +27,7 @@
 #include <filesystem>
 #include <memory>
 #include <vector>
+#include <vulkan/vulkan_handles.hpp>
 
 namespace MEngine
 {
@@ -55,6 +56,8 @@ class UI
     vk::UniqueDescriptorSetLayout mSceneDescriptorSetLayout;
     std::vector<vk::UniqueDescriptorSet> mSceneDescriptorSets;
     vk::UniqueSampler mSceneSampler;
+    vk::UniqueCommandBuffer mImageTransitionCommandBuffer;
+    vk::UniqueFence mImageTransitionFence;
 
     bool mIsSceneViewPortChange = false;
 
@@ -66,7 +69,7 @@ class UI
     vk::UniqueImageView mFileImageView;
     UniqueImage mFolderImage;
     vk::UniqueImageView mFolderImageView;
-    vk::UniqueSampler mSampler;
+    vk::UniqueSampler mAssetSampler;
     vk::DescriptorSet mFileTexture;
     vk::DescriptorSet mFolderTexture;
 
@@ -108,13 +111,14 @@ class UI
     {
         return mSceneHeight;
     }
-    void ProcessEvent(const SDL_Event *event);
-    void UpdateSceneDescriptorSet(vk::ImageView imageView, uint32_t imageIndex);
-    void RecordUICommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIndex);
     void SetCamera(entt::entity cameraEntity)
     {
         mCameraEntity = cameraEntity;
     }
+
+    void ProcessEvent(const SDL_Event *event);
+    void UpdateSceneDescriptorSet(vk::ImageView imageView, uint32_t imageIndex);
+    void RecordUICommandBuffer(vk::CommandBuffer commandBuffer);
 };
 
 } // namespace MEngine

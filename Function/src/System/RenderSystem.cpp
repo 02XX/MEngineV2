@@ -18,8 +18,8 @@ RenderSystem::RenderSystem(
       mDescriptorManager(descriptorManager), mSamplerManager(samplerManager), mBufferFactory(bufferFactory),
       mImageFactory(imageFactory), mWindow(window)
 {
-    mUISystem = std::make_shared<UISystem>(mLogger, mContext, mWindow, mRenderPassManager, mImageFactory,
-                                           mCommandBufferManager, mSyncPrimitiveManager, mSamplerManager, mRegistry);
+    mUI = std::make_shared<UI>(mLogger, mContext, mWindow, mRenderPassManager, mImageFactory, mCommandBufferManager,
+                               mSyncPrimitiveManager, mSamplerManager, mRegistry);
 }
 void RenderSystem::Init()
 {
@@ -47,9 +47,7 @@ void RenderSystem::Init()
         auto sets = mDescriptorManager->AllocateUniqueDescriptorSet({MVPDescriptorSetLayout});
         mCameraDescriptorSets.push_back(std::move(sets[0]));
     }
-    mUISystem->Init();
-    mWindow->SetEventCallback(
-        [this](const void *event) { mUISystem->ProcessEvent(static_cast<const SDL_Event *>(event)); });
+    mWindow->SetEventCallback([this](const void *event) { mUI->ProcessEvent(static_cast<const SDL_Event *>(event)); });
     mIsInit = true;
     mLogger->Info("RenderSystem Initialized");
 }
@@ -63,7 +61,6 @@ void RenderSystem::Shutdown()
 {
 
     mContext->GetDevice().waitIdle();
-    mUISystem->Shutdown();
     mIsShutdown = true;
     mLogger->Info("RenderSystem Shutdown");
 }
@@ -89,7 +86,7 @@ void RenderSystem::CollectMainCamera()
         {
             mMainCameraEntity = entity;
             // 设置UISystem
-            mUISystem->SetCamera(entity);
+            mUI->SetCamera(entity);
             // 设置Uniform Buffer
             mMVPUniform.model = mRotationMatrix;
             mMVPUniform.view = camera.viewMatrix;
@@ -162,10 +159,10 @@ void RenderSystem::Prepare()
     mGraphicCommandBuffers[mFrameIndex]->begin(beginInfo);
 
     // ReCreateFrameBuffer
-    if (mUISystem->IsSceneViewPortChanged())
+    if (mUI->IsSceneViewPortChanged())
     {
-        auto width = mUISystem->GetSceneWidth();
-        auto height = mUISystem->GetSceneHeight();
+        auto width = mUI->GetSceneWidth();
+        auto height = mUI->GetSceneHeight();
         // mRenderPassManager->RecreateFrameBuffer(width, height);
     }
     mDescriptorManager->UpdateUniformDescriptorSet({mMVPBuffer.get()}, 0, mCameraDescriptorSets[mFrameIndex].get());
@@ -277,7 +274,7 @@ void RenderSystem::RenderSkyPass()
 void RenderSystem::RenderUIPass(float deltaTime)
 {
     auto &translucencyFrameResource = mRenderPassManager->GetTranslucencyFrameResource(mImageIndex);
-    mUISystem->UpdateSceneDescriptorSet(translucencyFrameResource.renderImageView.get(), mImageIndex);
+    mUI->UpdateSceneDescriptorSet(translucencyFrameResource.renderImageView.get(), mImageIndex);
     auto queueFamilyIndices = mContext->GetQueueFamilyIndicates();
     vk::ClearValue clearValue(std::array<float, 4>{0.1f, 0.1f, 0.1f, 1.0f});
     vk::RenderPassBeginInfo renderPassBeginInfo;
@@ -307,8 +304,7 @@ void RenderSystem::RenderUIPass(float deltaTime)
         .setClearValues(clearValue);
 
     mGraphicCommandBuffers[mFrameIndex]->beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);
-    mUISystem->SetCommandBuffer(mGraphicCommandBuffers[mFrameIndex].get());
-    mUISystem->Tick(deltaTime);
+    mUI->RecordUICommandBuffer(mGraphicCommandBuffers[mFrameIndex].get());
     mGraphicCommandBuffers[mFrameIndex]->endRenderPass();
 
     // // --- 3. 渲染后的布局转换
