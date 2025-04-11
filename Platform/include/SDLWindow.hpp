@@ -10,6 +10,7 @@
 #include <memory>
 #include <queue>
 #include <vulkan/vulkan.hpp>
+
 namespace MEngine
 {
 struct WindowConfig
@@ -58,3 +59,34 @@ class SDLWindow final : public IWindow, public NoCopyable
     void *GetNativeHandle() const override;
 };
 } // namespace MEngine
+
+namespace nlohmann
+{
+template <> struct adl_serializer<MEngine::WindowConfig>
+{
+    static void to_json(json &j, const MEngine::WindowConfig &w)
+    {
+        j = json{{"Width", w.width}, {"Height", w.height}, {"Title", w.title}};
+    }
+
+    static void from_json(const json &j, MEngine::WindowConfig &w)
+    {
+        w.width = j.value("Width", w.width);
+        w.height = j.value("Height", w.height);
+        w.title = j.value("Title", w.title);
+
+        if (w.width <= 0)
+        {
+            throw std::runtime_error("Window width must be positive");
+        }
+        if (w.height <= 0)
+        {
+            throw std::runtime_error("Window height must be positive");
+        }
+        if (w.title.empty())
+        {
+            throw std::runtime_error("Window title cannot be empty");
+        }
+    }
+};
+} // namespace nlohmann

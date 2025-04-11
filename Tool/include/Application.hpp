@@ -26,16 +26,40 @@
 #include "System/ISystem.hpp"
 #include "System/RenderSystem.hpp"
 #include "TextureManager.hpp"
+#include "boost/di.hpp"
 #include "entt/entt.hpp"
 #include <cstdint>
 #include <memory>
 
+namespace di = boost::di;
 namespace MEngine
 {
 class Application final : public NoCopyable
 {
   private:
     bool mIsRunning;
+    // DI
+    decltype(di::make_injector(
+        di::bind<IConfigure>().to<Configure>().in(di::singleton), di::bind<ILogger>().to<SpdLogger>().in(di::singleton),
+        di::bind<IWindow>().to<SDLWindow>().in(di::singleton), di::bind<Context>().to<Context>().in(di::singleton),
+        di::bind<entt::registry>().to<entt::registry>().in(di::singleton),
+        di::bind<CommandBufferManager>().to<CommandBufferManager>().in(di::singleton),
+        di::bind<SyncPrimitiveManager>().to<SyncPrimitiveManager>().in(di::singleton),
+        di::bind<PipelineLayoutManager>().to<PipelineLayoutManager>().in(di::singleton),
+        di::bind<ShaderManager>().to<ShaderManager>().in(di::singleton),
+        di::bind<DescriptorManager>().to<DescriptorManager>().in(di::singleton),
+        di::bind<SamplerManager>().to<SamplerManager>().in(di::singleton),
+        di::bind<BufferFactory>().to<BufferFactory>().in(di::singleton),
+        di::bind<ImageFactory>().to<ImageFactory>().in(di::singleton),
+        di::bind<RenderPassManager>().to<RenderPassManager>().in(di::singleton),
+        di::bind<PipelineManager>().to<PipelineManager>().in(di::singleton),
+        di::bind<TextureManager>().to<TextureManager>().in(di::singleton),
+        di::bind<MaterialManager>().to<MaterialManager>().in(di::singleton),
+        di::bind<BasicGeometryFactory>().to<BasicGeometryFactory>().in(di::singleton),
+        di::bind<BasicGeometryEntityManager>().to<BasicGeometryEntityManager>().in(di::singleton),
+        di::bind<CameraSystem>().to<CameraSystem>().in(di::singleton),
+        di::bind<RenderSystem>().to<RenderSystem>().in(di::singleton))) mInjector;
+
     // DI
     std::shared_ptr<ILogger> mLogger;
     std::shared_ptr<IConfigure> mConfigure;
@@ -56,7 +80,6 @@ class Application final : public NoCopyable
     std::shared_ptr<MaterialManager> mMaterialManager;
     std::shared_ptr<BasicGeometryFactory> mBasicGeometryFactory;
     std::shared_ptr<BasicGeometryEntityManager> mBasicGeometryEntityManager;
-    // System
     std::shared_ptr<ISystem> mRenderSystem;
     std::shared_ptr<ISystem> mCameraSystem;
 

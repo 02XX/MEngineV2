@@ -11,12 +11,7 @@ SDLWindow::SDLWindow(std::shared_ptr<ILogger> logger, std::shared_ptr<IConfigure
         mLogger->Error("Failed to initialize SDL: {}", SDL_GetError());
         throw std::runtime_error("Failed to initialize SDL");
     }
-    auto windowWidth = mConfigure->GetJson()["Window"]["Width"].get<int>();
-    auto windowHeight = mConfigure->GetJson()["Window"]["Height"].get<int>();
-    auto windowTitle = mConfigure->GetJson()["Window"]["Title"].get<std::string>();
-    mConfig.width = windowWidth;
-    mConfig.height = windowHeight;
-    mConfig.title = windowTitle;
+    mConfig = configure->GetJson()["Window"].get<WindowConfig>();
     mWindow = SDL_CreateWindow(mConfig.title.c_str(), mConfig.width, mConfig.height,
                                SDL_WINDOW_RESIZABLE | SDL_WINDOW_VULKAN);
     if (!mWindow)

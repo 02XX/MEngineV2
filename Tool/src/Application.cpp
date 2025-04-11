@@ -3,46 +3,55 @@
 namespace MEngine
 {
 Application::Application()
+    : mInjector(di::make_injector(
+          di::bind<IConfigure>().to<Configure>().in(di::singleton),
+          di::bind<ILogger>().to<SpdLogger>().in(di::singleton), di::bind<IWindow>().to<SDLWindow>().in(di::singleton),
+          di::bind<Context>().to<Context>().in(di::singleton),
+          di::bind<entt::registry>().to<entt::registry>().in(di::singleton),
+          di::bind<CommandBufferManager>().to<CommandBufferManager>().in(di::singleton),
+          di::bind<SyncPrimitiveManager>().to<SyncPrimitiveManager>().in(di::singleton),
+          di::bind<PipelineLayoutManager>().to<PipelineLayoutManager>().in(di::singleton),
+          di::bind<ShaderManager>().to<ShaderManager>().in(di::singleton),
+          di::bind<DescriptorManager>().to<DescriptorManager>().in(di::singleton),
+          di::bind<SamplerManager>().to<SamplerManager>().in(di::singleton),
+          di::bind<BufferFactory>().to<BufferFactory>().in(di::singleton),
+          di::bind<ImageFactory>().to<ImageFactory>().in(di::singleton),
+          di::bind<RenderPassManager>().to<RenderPassManager>().in(di::singleton),
+          di::bind<PipelineManager>().to<PipelineManager>().in(di::singleton),
+          di::bind<TextureManager>().to<TextureManager>().in(di::singleton),
+          di::bind<MaterialManager>().to<MaterialManager>().in(di::singleton),
+          di::bind<BasicGeometryFactory>().to<BasicGeometryFactory>().in(di::singleton),
+          di::bind<BasicGeometryEntityManager>().to<BasicGeometryEntityManager>().in(di::singleton),
+          di::bind<CameraSystem>().to<CameraSystem>().in(di::singleton),
+          di::bind<RenderSystem>().to<RenderSystem>().in(di::singleton)))
 {
     // DI
-    mConfigure = std::make_shared<Configure>();
-    mLogger = std::make_shared<SpdLogger>(mConfigure);
+    mConfigure = mInjector.create<std::shared_ptr<IConfigure>>();
+    mLogger = mInjector.create<std::shared_ptr<ILogger>>();
     mLogger->Info("Application Started");
+    mWindow = mInjector.create<std::shared_ptr<IWindow>>();
+    mContext = mInjector.create<std::shared_ptr<Context>>();
+    mRegistry = mInjector.create<std::shared_ptr<entt::registry>>();
+    mCommandBufferManager = mInjector.create<std::shared_ptr<CommandBufferManager>>();
+    mSyncPrimitiveManager = mInjector.create<std::shared_ptr<SyncPrimitiveManager>>();
+    mPipelineLayoutManager = mInjector.create<std::shared_ptr<PipelineLayoutManager>>();
+    mShaderManager = mInjector.create<std::shared_ptr<ShaderManager>>();
+    mDescriptorManager = mInjector.create<std::shared_ptr<DescriptorManager>>();
+    mSamplerManager = mInjector.create<std::shared_ptr<SamplerManager>>();
+    mBufferFactory = mInjector.create<std::shared_ptr<BufferFactory>>();
+    mDescriptorManager = mInjector.create<std::shared_ptr<DescriptorManager>>();
+    mImageFactory = mInjector.create<std::shared_ptr<ImageFactory>>();
+    mRenderPassManager = mInjector.create<std::shared_ptr<RenderPassManager>>();
+    mPipelineManager = mInjector.create<std::shared_ptr<PipelineManager>>();
+    mTextureManager = mInjector.create<std::shared_ptr<TextureManager>>();
+    mMaterialManager = mInjector.create<std::shared_ptr<MaterialManager>>();
+    mBasicGeometryFactory = mInjector.create<std::shared_ptr<BasicGeometryFactory>>();
+    mBasicGeometryEntityManager = mInjector.create<std::shared_ptr<BasicGeometryEntityManager>>();
 
-    mWindow = std::make_shared<SDLWindow>(mLogger, mConfigure);
-
-    mContext = std::make_shared<Context>(mLogger, mWindow);
-    mRegistry = std::make_shared<entt::registry>();
-    mCommandBufferManager = std::make_shared<CommandBufferManager>(mLogger, mContext);
-    mSyncPrimitiveManager = std::make_shared<SyncPrimitiveManager>(mLogger, mContext);
-    mPipelineLayoutManager = std::make_shared<PipelineLayoutManager>(mLogger, mContext);
-    mShaderManager = std::make_shared<ShaderManager>(mLogger, mContext);
-    mDescriptorManager = std::make_shared<DescriptorManager>(mLogger, mContext);
-    mSamplerManager = std::make_shared<SamplerManager>(mLogger, mContext);
-    mBufferFactory = std::make_shared<BufferFactory>(mLogger, mContext, mCommandBufferManager, mSyncPrimitiveManager);
-    mDescriptorManager = std::make_shared<DescriptorManager>(mLogger, mContext);
-    mImageFactory =
-        std::make_shared<ImageFactory>(mLogger, mContext, mCommandBufferManager, mSyncPrimitiveManager, mBufferFactory);
-
-    mRenderPassManager = std::make_shared<RenderPassManager>(mLogger, mContext, mImageFactory);
-    mPipelineManager = std::make_shared<PipelineManager>(mLogger, mContext, mShaderManager, mPipelineLayoutManager,
-                                                         mRenderPassManager);
-
-    mTextureManager = std::make_shared<TextureManager>(mLogger, mContext, mImageFactory, mSamplerManager);
-    mMaterialManager = std::make_shared<MaterialManager>(mLogger, mContext, mPipelineManager, mPipelineLayoutManager,
-                                                         mDescriptorManager, mSamplerManager, mTextureManager);
-
-    mBasicGeometryFactory = std::make_shared<BasicGeometryFactory>();
-    mBasicGeometryEntityManager = std::make_shared<BasicGeometryEntityManager>(
-        mLogger, mContext, mPipelineManager, mPipelineLayoutManager, mDescriptorManager, mSamplerManager,
-        mMaterialManager, mImageFactory, mBufferFactory, mBasicGeometryFactory);
     mBasicGeometryEntityManager->CreateCube(mRegistry);
-    // Camera
     auto camera = mRegistry->create();
     mRegistry->emplace<CameraComponent>(camera).isMainCamera = true;
-
     InitSystem();
-
     mStartTime = std::chrono::high_resolution_clock::now();
     mLastTime = mStartTime;
 }

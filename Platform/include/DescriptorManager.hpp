@@ -1,13 +1,41 @@
 #pragma once
 #include "Buffer.hpp"
 #include "Context.hpp"
+#include "Interface/IConfigure.hpp"
 #include "Interface/ILogger.hpp"
 #include "MEngine.hpp"
 #include "NoCopyable.hpp"
-
 #include <memory>
 #include <vector>
 #include <vulkan/vulkan.hpp>
+
+namespace nlohmann
+{
+template <> struct adl_serializer<std::pair<vk::DescriptorType, float>>
+{
+    static void to_json(json &j, const std::pair<vk::DescriptorType, float> &p)
+    {
+        j = json{{"type", vk::to_string(p.first)}, {"value", p.second}};
+    }
+
+    static void from_json(const json &j, std::pair<vk::DescriptorType, float> &p)
+    {
+        static const auto type_map = std::unordered_map<std::string, vk::DescriptorType>{
+            {"eSampler", vk::DescriptorType::eSampler},
+            {"eCombinedImageSampler", vk::DescriptorType::eCombinedImageSampler},
+            {"eSampledImage", vk::DescriptorType::eSampledImage},
+            {"eStorageImage", vk::DescriptorType::eStorageImage},
+            {"eUniformBuffer", vk::DescriptorType::eUniformBuffer},
+            {"eStorageBuffer", vk::DescriptorType::eStorageBuffer},
+            {"eUniformBufferDynamic", vk::DescriptorType::eUniformBufferDynamic},
+            {"eStorageBufferDynamic", vk::DescriptorType::eStorageBufferDynamic}};
+
+        const auto type_str = j.at("type").get<std::string>();
+        p.first = type_map.at(type_str);
+        p.second = j.at("value").get<float>();
+    }
+};
+} // namespace nlohmann
 
 namespace MEngine
 {
@@ -29,6 +57,7 @@ struct PoolSizesProportion
         {vk::DescriptorType::eStorageBufferDynamic, 1.0f},
     };
 };
+
 using UniqueDescriptorSet = vk::UniqueDescriptorSet;
 class DescriptorManager final : public NoCopyable
 {
@@ -36,6 +65,7 @@ class DescriptorManager final : public NoCopyable
     // DI
     std::shared_ptr<Context> mContext;
     std::shared_ptr<ILogger> mLogger;
+    std::shared_ptr<IConfigure> mConfigure;
 
   private:
     PoolSizesProportion mDefaultPoolSizesProportion;
@@ -47,7 +77,7 @@ class DescriptorManager final : public NoCopyable
 
   public:
     DescriptorManager(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context,
-                      uint32_t maxDescriptorSize = 1000, PoolSizesProportion defaultPoolSizesProportion = {});
+                      std::shared_ptr<IConfigure> configure);
 
     std::vector<UniqueDescriptorSet> AllocateUniqueDescriptorSet(
         const std::vector<vk::DescriptorSetLayout> &descriptorSetLayouts);

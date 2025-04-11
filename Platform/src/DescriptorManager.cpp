@@ -4,10 +4,19 @@ namespace MEngine
 {
 
 DescriptorManager::DescriptorManager(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context,
-                                     uint32_t maxDescriptorSize, PoolSizesProportion defaultPoolSizesProportion)
-    : mMaxDescriptorSize(maxDescriptorSize), mDefaultPoolSizesProportion(defaultPoolSizesProportion), mContext(context),
-      mLogger(logger)
+                                     std::shared_ptr<IConfigure> configure)
+    : mConfigure(configure), mContext(context), mLogger(logger)
 {
+    auto poolSizesProportion = mConfigure->GetJson()["DescriptorSetting"]["PoolSizesProportion"]
+                                   .get<std::vector<std::pair<vk::DescriptorType, float>>>();
+    mDefaultPoolSizesProportion = PoolSizesProportion{poolSizesProportion};
+    mMaxDescriptorSize = mConfigure->GetJson()["DescriptorSetting"]["MaxDescriptorSize"].get<uint32_t>();
+    mLogger->Info("Max Descriptor Size: {}", mMaxDescriptorSize);
+    for (auto &proportion : mDefaultPoolSizesProportion.proportion)
+    {
+        mLogger->Info("Descriptor Type: {}, Proportion: {}", magic_enum::enum_name(proportion.first),
+                      proportion.second);
+    }
 }
 vk::UniqueDescriptorPool &DescriptorManager::AcquireAllocatablePool()
 {
