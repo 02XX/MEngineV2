@@ -1,23 +1,25 @@
 #include "Mesh.hpp"
+#include "BufferFactory.hpp"
 
 namespace MEngine
 {
-Mesh::Mesh(std::shared_ptr<BufferManager> bufferManager, const std::vector<Vertex> &vertices,
+Mesh::Mesh(std::shared_ptr<BufferFactory> bufferFactory, const std::vector<Vertex> &vertices,
            const std::vector<uint32_t> &indices)
-    : mVertices(vertices), mIndices(indices), mBufferManager(bufferManager)
+    : mVertices(vertices), mIndices(indices), mBufferFactory(bufferFactory)
 {
     // 创建顶点缓冲区
-    mVertexBuffer = mBufferManager->CreateUniqueVertexBuffer(sizeof(Vertex) * mVertices.size(), mVertices.data());
+    mVertexBuffer =
+        mBufferFactory->CreateBuffer(BufferType::Vertex, sizeof(Vertex) * mVertices.size(), mVertices.data());
     // 创建索引缓冲区
-    mIndexBuffer = mBufferManager->CreateUniqueIndexBuffer(sizeof(uint32_t) * mIndices.size(), mIndices.data());
+    mIndexBuffer = mBufferFactory->CreateBuffer(BufferType::Index, sizeof(uint32_t) * mIndices.size(), mIndices.data());
 }
 vk::Buffer Mesh::GetVertexBuffer() const
 {
-    return mVertexBuffer->GetBuffer();
+    return mVertexBuffer->GetHandle();
 }
 vk::Buffer Mesh::GetIndexBuffer() const
 {
-    return mIndexBuffer->GetBuffer();
+    return mIndexBuffer->GetHandle();
 }
 uint32_t Mesh::GetIndexCount() const
 {

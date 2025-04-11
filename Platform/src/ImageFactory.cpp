@@ -36,6 +36,12 @@ ImageFactory::ImageFactory(std::shared_ptr<ILogger> logger, std::shared_ptr<Cont
     };
     QueryImageFormat();
 }
+UniqueImage ImageFactory::CreateImage(ImageType type, vk::Extent3D extent, uint32_t mipLevels,
+                                      vk::SampleCountFlagBits samples)
+{
+    auto image = CreateImage(type, extent, nullptr, mipLevels, samples);
+    return std::move(image);
+}
 UniqueImage ImageFactory::CreateImage(ImageType type, vk::Extent3D extent, const void *data, uint32_t mipLevels,
                                       vk::SampleCountFlagBits samples)
 {
@@ -123,7 +129,7 @@ UniqueImage ImageFactory::CreateImage(ImageType type, vk::Extent3D extent, const
         .setUsage(imageUsage)
         .setInitialLayout(vk::ImageLayout::eUndefined);
     auto image = std::make_unique<Image>(mContext, imageCreateInfo, memoryUsage, createflags);
-    if (data)
+    if (data != nullptr)
     {
         if (type != ImageType::DepthStencil)
         {

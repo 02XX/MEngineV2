@@ -29,17 +29,23 @@ Application::Application()
     mShaderManager = std::make_shared<ShaderManager>(mLogger, mContext);
     mDescriptorManager = std::make_shared<DescriptorManager>(mLogger, mContext);
     mSamplerManager = std::make_shared<SamplerManager>(mLogger, mContext);
-    mBufferManager = std::make_shared<BufferManager>(mLogger, mContext, mCommandBufferManager, mSyncPrimitiveManager);
+    mBufferFactory = std::make_shared<BufferFactory>(mLogger, mContext, mCommandBufferManager, mSyncPrimitiveManager);
     mDescriptorManager = std::make_shared<DescriptorManager>(mLogger, mContext);
-    mImageManager =
-        std::make_shared<ImageManager>(mLogger, mContext, mCommandBufferManager, mSyncPrimitiveManager, mBufferManager);
+    mImageFactory =
+        std::make_shared<ImageFactory>(mLogger, mContext, mCommandBufferManager, mSyncPrimitiveManager, mBufferFactory);
 
-    mRenderPassManager = std::make_shared<RenderPassManager>(mLogger, mContext, mImageManager);
+    mRenderPassManager = std::make_shared<RenderPassManager>(mLogger, mContext, mImageFactory);
     mPipelineManager = std::make_shared<PipelineManager>(mLogger, mContext, mShaderManager, mPipelineLayoutManager,
                                                          mRenderPassManager);
 
+    mTextureManager = std::make_shared<TextureManager>(mLogger, mContext, mImageFactory, mSamplerManager);
+    mMaterialManager = std::make_shared<MaterialManager>(mLogger, mContext, mPipelineManager, mPipelineLayoutManager,
+                                                         mDescriptorManager, mSamplerManager, mTextureManager);
+
+    mBasicGeometryFactory = std::make_shared<BasicGeometryFactory>();
     mBasicGeometryEntityManager = std::make_shared<BasicGeometryEntityManager>(
-        mContext, mLogger, mBufferManager, mPipelineManager, mPipelineLayoutManager, mDescriptorManager);
+        mLogger, mContext, mPipelineManager, mPipelineLayoutManager, mDescriptorManager, mSamplerManager,
+        mMaterialManager, mImageFactory, mBufferFactory, mBasicGeometryFactory);
     mBasicGeometryEntityManager->CreateCube(mRegistry);
     // Camera
     auto camera = mRegistry->create();
@@ -56,9 +62,10 @@ Application::~Application()
 }
 void Application::InitSystem()
 {
-    mRenderSystem = std::make_shared<RenderSystem>(mLogger, mContext, mWindow, mRegistry, mCommandBufferManager,
-                                                   mSyncPrimitiveManager, mRenderPassManager, mPipelineLayoutManager,
-                                                   mPipelineManager, mDescriptorManager);
+    mRenderSystem =
+        std::make_shared<RenderSystem>(mLogger, mContext, mRegistry, mRenderPassManager, mPipelineLayoutManager,
+                                       mPipelineManager, mCommandBufferManager, mSyncPrimitiveManager,
+                                       mDescriptorManager, mSamplerManager, mBufferFactory, mImageFactory, mWindow);
     mCameraSystem = std::make_shared<CameraSystem>(mLogger, mRegistry);
     mRenderSystem->Init();
     mCameraSystem->Init();

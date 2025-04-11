@@ -2,10 +2,9 @@
 
 namespace MEngine
 {
-Texture::Texture(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context,
-                 std::shared_ptr<ImageManager> imageManager, std::shared_ptr<SamplerManager> samplerManager,
-                 const std::filesystem::path &path)
-    : mContext(context), mPath(path), mLogger(logger), mImageManager(imageManager), mSamplerManager(samplerManager)
+Texture::Texture(std::shared_ptr<Context> context, std::shared_ptr<ImageFactory> imageFactory,
+                 std::shared_ptr<SamplerManager> samplerManager, const std::filesystem::path &path)
+    : mContext(context), mPath(path), mImageFactory(imageFactory), mSamplerManager(samplerManager)
 {
     LoadTexture(path);
 }
@@ -22,7 +21,7 @@ vk::Sampler Texture::GetSampler() const
 
 vk::Image Texture::GetImage() const
 {
-    return mImage->GetImage();
+    return mImage->GetHandle();
 }
 
 void Texture::LoadTexture(const std::filesystem::path &path)
@@ -34,17 +33,16 @@ void Texture::LoadTexture(const std::filesystem::path &path)
     auto imageData = stbi_load(path.string().c_str(), &width, &height, &channels, STBI_rgb_alpha);
     if (!imageData)
     {
-        mLogger->Error("Failed to load texture: {}", path.string());
+        throw std::runtime_error("Failed to load texture image: " + path.string());
         return;
     }
     mWidth = static_cast<uint32_t>(width);
     mHeight = static_cast<uint32_t>(height);
     mChannels = 4;
     // 3. 创建图像
-    mImage =
-        mImageManager->CreateUniqueTexture2D(vk::Extent2D{mWidth, mHeight}, vk::Format::eR8G8B8A8Srgb, 1, imageData);
+    mImage = mImageFactory->CreateImage(ImageType::Texture2D, vk::Extent3D{mWidth, mHeight, 1});
     // 4. 创建图像视图
-    mImageView = mImageManager->CreateImageView(mImage->GetImage(), vk::Format::eR8G8B8A8Srgb);
+    mImageView = mImageFactory->CreateImageView(mImage.get());
     // 5. 创建采样器
     mSampler = mSamplerManager->CreateUniqueSampler(vk::Filter::eLinear, vk::Filter::eLinear);
     stbi_image_free(imageData);

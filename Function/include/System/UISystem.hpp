@@ -3,6 +3,7 @@
 #include "CommandBuffeManager.hpp"
 #include "Context.hpp"
 #include "Image.hpp"
+#include "ImageFactory.hpp"
 #include "Interface/ILogger.hpp"
 #include "Interface/IWindow.hpp"
 #include "RenderPassManager.hpp"
@@ -19,6 +20,7 @@
 
 #include "Componet/CameraComponent.hpp"
 #include "ImGuizmo.h"
+#include "ImageFactory.hpp"
 #include "Math.hpp"
 #include "stb_image.h"
 #include <cstdint>
@@ -35,7 +37,7 @@ class UISystem : public ISystem
     std::shared_ptr<Context> mContext;
     std::shared_ptr<IWindow> mWindow;
     std::shared_ptr<RenderPassManager> mRenderPassManager;
-    std::shared_ptr<ImageManager> mImageManager;
+    std::shared_ptr<ImageFactory> mImageFactory;
     std::shared_ptr<CommandBufferManager> mCommandBufferManager;
     std::shared_ptr<SyncPrimitiveManager> mSyncPrimitiveManager;
     std::shared_ptr<SamplerManager> mSamplerManager;
@@ -88,8 +90,10 @@ class UISystem : public ISystem
 
   public:
     UISystem(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context, std::shared_ptr<IWindow> window,
-             std::shared_ptr<entt::registry> registry, std::shared_ptr<RenderPassManager> renderPassManager,
-             std::shared_ptr<ImageManager> imageManager = nullptr);
+             std::shared_ptr<RenderPassManager> renderPassManager, std::shared_ptr<ImageFactory> imageFactory,
+             std::shared_ptr<CommandBufferManager> commandBufferManager,
+             std::shared_ptr<SyncPrimitiveManager> syncPrimitiveManager, std::shared_ptr<SamplerManager> samplerManager,
+             std::shared_ptr<entt::registry> registry);
     void SetCommandBuffer(vk::CommandBuffer commandBuffer)
     {
         mCommandBuffer = commandBuffer;

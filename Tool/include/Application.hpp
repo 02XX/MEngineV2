@@ -2,10 +2,10 @@
 
 #include "Application.hpp"
 #include "BasicGeometry/BasicGeometryEntityManager.hpp"
-#include "BufferManager.hpp"
+#include "BufferFactory.hpp"
 #include "Context.hpp"
 #include "DescriptorManager.hpp"
-#include "ImageManager.hpp"
+#include "ImageFactory.hpp"
 #include "Interface/ILogger.hpp"
 #include "Interface/IWindow.hpp"
 #include "NoCopyable.hpp"
@@ -24,7 +24,9 @@
 #include "System/CameraSystem.hpp"
 #include "System/ISystem.hpp"
 #include "System/RenderSystem.hpp"
+#include "TextureManager.hpp"
 #include "entt/entt.hpp"
+#include <memory>
 namespace MEngine
 {
 class Application final : public NoCopyable
@@ -42,11 +44,13 @@ class Application final : public NoCopyable
     std::shared_ptr<ShaderManager> mShaderManager;
     std::shared_ptr<CommandBufferManager> mCommandBufferManager;
     std::shared_ptr<SyncPrimitiveManager> mSyncPrimitiveManager;
-    std::shared_ptr<ImageManager> mImageManager;
+    std::shared_ptr<ImageFactory> mImageFactory;
     std::shared_ptr<DescriptorManager> mDescriptorManager;
     std::shared_ptr<SamplerManager> mSamplerManager;
-    std::shared_ptr<BufferManager> mBufferManager;
-
+    std::shared_ptr<BufferFactory> mBufferFactory;
+    std::shared_ptr<TextureManager> mTextureManager;
+    std::shared_ptr<MaterialManager> mMaterialManager;
+    std::shared_ptr<BasicGeometryFactory> mBasicGeometryFactory;
     std::shared_ptr<BasicGeometryEntityManager> mBasicGeometryEntityManager;
     // System
     std::shared_ptr<ISystem> mRenderSystem;

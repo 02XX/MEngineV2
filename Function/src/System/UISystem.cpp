@@ -1,18 +1,17 @@
 #include "System/UISystem.hpp"
+#include "ImageFactory.hpp"
 
 namespace MEngine
 {
 UISystem::UISystem(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context, std::shared_ptr<IWindow> window,
-                   std::shared_ptr<entt::registry> registry, std::shared_ptr<RenderPassManager> renderPassManager,
-                   std::shared_ptr<ImageManager> imageManager)
+                   std::shared_ptr<RenderPassManager> renderPassManager, std::shared_ptr<ImageFactory> imageFactory,
+                   std::shared_ptr<CommandBufferManager> commandBufferManager,
+                   std::shared_ptr<SyncPrimitiveManager> syncPrimitiveManager,
+                   std::shared_ptr<SamplerManager> samplerManager, std::shared_ptr<entt::registry> registry)
     : mLogger(logger), mContext(context), mWindow(window), mRenderPassManager(renderPassManager),
-      mImageManager(imageManager), mRegistry(registry)
+      mImageFactory(imageFactory), mCommandBufferManager(commandBufferManager),
+      mSyncPrimitiveManager(syncPrimitiveManager), mSamplerManager(samplerManager), mRegistry(registry)
 {
-    if (!imageManager)
-    {
-        mImageManager = std::make_shared<ImageManager>(mLogger, mContext);
-    }
-    mSamplerManager = std::make_shared<SamplerManager>(mLogger, mContext);
 }
 
 void UISystem::Init()
@@ -154,10 +153,10 @@ void UISystem::LoadAsset()
     if (folderThumbnail)
     {
         // 1. 创建Image
-        mFolderImage = mImageManager->CreateUniqueTexture2D(vk::Extent2D(folderThumbnailWidth, folderThumbnailHeight),
-                                                            vk::Format::eR8G8B8A8Srgb, 1, folderThumbnail);
+        mFolderImage = mImageFactory->CreateImage(ImageType::Texture2D,
+                                                  vk::Extent3D(folderThumbnailWidth, folderThumbnailHeight, 1));
         // 2. 创建ImageView
-        mFolderImageView = mImageManager->CreateImageView(mFolderImage->GetImage(), vk::Format::eR8G8B8A8Srgb);
+        mFolderImageView = mImageFactory->CreateImageView(mFolderImage.get());
 
         // 4. 创建描述符集
         mFolderTexture =
@@ -178,10 +177,10 @@ void UISystem::LoadAsset()
     if (fileThumbnail)
     {
         // 1. 创建Image
-        mFileImage = mImageManager->CreateUniqueTexture2D(vk::Extent2D(fileThumbnailWidth, fileThumbnailHeight),
-                                                          vk::Format::eR8G8B8A8Srgb, 1, fileThumbnail);
+        mFileImage =
+            mImageFactory->CreateImage(ImageType::Texture2D, vk::Extent3D(fileThumbnailWidth, fileThumbnailHeight, 1));
         // 2. 创建ImageView
-        mFileImageView = mImageManager->CreateImageView(mFileImage->GetImage(), vk::Format::eR8G8B8A8Srgb);
+        mFileImageView = mImageFactory->CreateImageView(mFileImage.get());
         // 4. 创建描述符集
         mFileTexture = ImGui_ImplVulkan_AddTexture(mSampler.get(), mFileImageView.get(),
                                                    static_cast<VkImageLayout>(vk::ImageLayout::eShaderReadOnlyOptimal));
@@ -266,13 +265,13 @@ void UISystem::SceneViewWindow()
     float viewMatrix[16], projMatrix[16];
     memcpy(viewMatrix, glm::value_ptr(view), sizeof(float) * 16);
     memcpy(projMatrix, glm::value_ptr(proj), sizeof(float) * 16);
-    float outputMatrix[16] = {0};                                                           // 声明一个临时矩阵
-    ImGuizmo::ViewManipulate(viewMatrix,                                                    // view
-                             projMatrix,                                                    // projection
-                             ImGuizmo::ROTATE,                                              // operation
-                             ImGuizmo::LOCAL,                                               // mode
-                             outputMatrix,                                                  // 输出矩阵（可为 null）
-                             gizmoLength,                                                   // length
+    float outputMatrix[16] = {0};              // 声明一个临时矩阵
+    ImGuizmo::ViewManipulate(viewMatrix,       // view
+                             projMatrix,       // projection
+                             ImGuizmo::ROTATE, // operation
+                             ImGuizmo::LOCAL,  // mode
+                             outputMatrix,     // 输出矩阵（可为 null）
+                             gizmoLength,      // length
                              ImVec2(windowPos.x + windowSize.x - gizmoLength, windowPos.y), // position
                              gizmoSize,                                                     // size
                              0x10101010                                                     // background color

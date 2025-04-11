@@ -1,40 +1,28 @@
-#include "BasicGeometry/BasicGeometryManager.hpp"
+#include "BasicGeometry/BasicGeometryFactory.hpp"
 namespace MEngine
 {
-BasicGeometryManager::BasicGeometryManager(std::shared_ptr<BufferManager> bufferManager) : mBufferManager(bufferManager)
+BasicGeometryFactory::BasicGeometryFactory()
 {
 }
-std::shared_ptr<Mesh> BasicGeometryManager::GetPrimitive(PrimitiveType type)
+Geometry BasicGeometryFactory::GetGeometry(PrimitiveType type)
 {
-    if (mCache.find(type) != mCache.end())
-    {
-        if (auto mesh = mCache[type].lock())
-        {
-            return mesh;
-        }
-    }
-    std::shared_ptr<Mesh> mesh;
+    Geometry geometry;
     switch (type)
     {
     case PrimitiveType::Cube:
-        mesh = CreateCube();
-        break;
+        return GetCube();
     case PrimitiveType::Cylinder:
-        mesh = CreateCylinder();
-        break;
+        return GetCylinder();
     case PrimitiveType::Sphere:
-        mesh = CreateSphere();
-        break;
+        return GetSphere();
     case PrimitiveType::Quad:
-        mesh = CreateQuad();
-        break;
+        return GetQuad();
     default:
+        throw std::invalid_argument("Invalid primitive type");
         break;
     }
-    mCache[type] = mesh;
-    return mesh;
 }
-std::shared_ptr<Mesh> BasicGeometryManager::CreateCube()
+Geometry BasicGeometryFactory::GetCube()
 {
     // 立方体顶点数据（每个面4个顶点，共24个顶点）
     const std::vector<Vertex> vertices = {
@@ -90,9 +78,9 @@ std::shared_ptr<Mesh> BasicGeometryManager::CreateCube()
                                            // 底面
                                            20, 21, 22, 20, 22, 23};
 
-    return std::make_shared<Mesh>(mBufferManager, vertices, indices);
+    return Geometry{vertices, indices};
 }
-std::shared_ptr<Mesh> BasicGeometryManager::CreateCylinder()
+Geometry BasicGeometryFactory::GetCylinder()
 {
     const int segments = 32;
     const float radius = 0.5f;
@@ -140,9 +128,9 @@ std::shared_ptr<Mesh> BasicGeometryManager::CreateCylinder()
         indices.insert(indices.end(), {top, bottom, nextTop});
         indices.insert(indices.end(), {nextTop, bottom, nextBottom});
     }
-    return std::make_shared<Mesh>(mBufferManager, vertices, indices);
+    return Geometry{vertices, indices};
 }
-std::shared_ptr<Mesh> BasicGeometryManager::CreateSphere()
+Geometry BasicGeometryFactory::GetSphere()
 {
     const int segments = 32;
     const int rings = 16;
@@ -183,9 +171,9 @@ std::shared_ptr<Mesh> BasicGeometryManager::CreateSphere()
             indices.insert(indices.end(), {current + 1, next + 1, next});
         }
     }
-    return std::make_shared<Mesh>(mBufferManager, vertices, indices);
+    return Geometry{vertices, indices};
 }
-std::shared_ptr<Mesh> BasicGeometryManager::CreateQuad()
+Geometry BasicGeometryFactory::GetQuad()
 {
     const std::vector<Vertex> vertices = {
         {{-0.5f, 0.0f, -0.5f}, {0, 1, 0}, {0, 0}}, // 0
@@ -196,6 +184,6 @@ std::shared_ptr<Mesh> BasicGeometryManager::CreateQuad()
 
     const std::vector<uint32_t> indices = {0, 2, 1, 0, 3, 2};
 
-    return std::make_shared<Mesh>(mBufferManager, vertices, indices);
+    return Geometry{vertices, indices};
 }
 } // namespace MEngine

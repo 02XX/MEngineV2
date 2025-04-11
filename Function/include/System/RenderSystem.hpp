@@ -1,6 +1,6 @@
 #pragma once
 #include "Buffer.hpp"
-#include "BufferManager.hpp"
+#include "BufferFactory.hpp"
 #include "CommandBuffeManager.hpp"
 #include "Componet/CameraComponent.hpp"
 #include "Componet/MaterialComponent.hpp"
@@ -9,7 +9,7 @@
 #include "Context.hpp"
 #include "DescriptorManager.hpp"
 #include "Image.hpp"
-#include "ImageManager.hpp"
+#include "ImageFactory.hpp"
 #include "Interface/ILogger.hpp"
 #include "Interface/IWindow.hpp"
 #include "MEngine.hpp"
@@ -18,6 +18,7 @@
 #include "PipelineManager.hpp"
 #include "RenderPassManager.hpp"
 #include "ResourceManager.hpp"
+#include "SamplerManager.hpp"
 #include "ShaderManager.hpp"
 #include "SyncPrimitiveManager.hpp"
 #include "System.hpp"
@@ -41,17 +42,20 @@ class RenderSystem final : public System
     std::shared_ptr<Context> mContext;
     std::shared_ptr<entt::registry> mRegistry;
 
-    std::shared_ptr<CommandBufferManager> mCommandBufferManager;
-    std::shared_ptr<SyncPrimitiveManager> mSyncPrimitiveManager;
     std::shared_ptr<RenderPassManager> mRenderPassManager;
     std::shared_ptr<PipelineLayoutManager> mPipelineLayoutManager;
     std::shared_ptr<PipelineManager> mPipelineManager;
+
+    std::shared_ptr<CommandBufferManager> mCommandBufferManager;
+    std::shared_ptr<SyncPrimitiveManager> mSyncPrimitiveManager;
     std::shared_ptr<DescriptorManager> mDescriptorManager;
+    std::shared_ptr<SamplerManager> mSamplerManager;
+
+    std::shared_ptr<BufferFactory> mBufferFactory;
+    std::shared_ptr<ImageFactory> mImageFactory;
+
     std::shared_ptr<IWindow> mWindow;
     std::shared_ptr<UISystem> mUISystem;
-
-    std::shared_ptr<BufferManager> mBufferManager;
-    std::shared_ptr<ImageManager> mImageManager;
 
   private:
     std::map<PipelineType, std::vector<entt::entity>> mBatchMaterialComponents;
@@ -94,14 +98,15 @@ class RenderSystem final : public System
     void TickRotationMatrix();
 
   public:
-    RenderSystem(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context, std::shared_ptr<IWindow> window,
-                 std::shared_ptr<entt::registry> registry,
-                 std::shared_ptr<CommandBufferManager> commandBufferManager = nullptr,
-                 std::shared_ptr<SyncPrimitiveManager> syncPrimitiveManager = nullptr,
-                 std::shared_ptr<RenderPassManager> renderPassManager = nullptr,
-                 std::shared_ptr<PipelineLayoutManager> pipelineLayoutManager = nullptr,
-                 std::shared_ptr<PipelineManager> pipelineManager = nullptr,
-                 std::shared_ptr<DescriptorManager> descriptorManager = nullptr);
+    RenderSystem(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context,
+                 std::shared_ptr<entt::registry> registry, std::shared_ptr<RenderPassManager> renderPassManager,
+                 std::shared_ptr<PipelineLayoutManager> pipelineLayoutManager,
+                 std::shared_ptr<PipelineManager> pipelineManager,
+                 std::shared_ptr<CommandBufferManager> commandBufferManager,
+                 std::shared_ptr<SyncPrimitiveManager> syncPrimitiveManager,
+                 std::shared_ptr<DescriptorManager> descriptorManager, std::shared_ptr<SamplerManager> samplerManager,
+                 std::shared_ptr<BufferFactory> bufferFactory, std::shared_ptr<ImageFactory> imageFactory,
+                 std::shared_ptr<IWindow> window);
     ~RenderSystem() override;
     void Init() override;
     void Tick(float deltaTime) override;

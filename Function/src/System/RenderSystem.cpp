@@ -1,26 +1,25 @@
 #include "System/RenderSystem.hpp"
+#include "BufferFactory.hpp"
 #include <array>
 
 namespace MEngine
 {
 
-RenderSystem::RenderSystem(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context,
-                           std::shared_ptr<IWindow> window, std::shared_ptr<entt::registry> registry,
-                           std::shared_ptr<CommandBufferManager> commandBufferManager,
-                           std::shared_ptr<SyncPrimitiveManager> syncPrimitiveManager,
-                           std::shared_ptr<RenderPassManager> renderPassManager,
-                           std::shared_ptr<PipelineLayoutManager> pipelineLayoutManager,
-                           std::shared_ptr<PipelineManager> pipelineManager,
-                           std::shared_ptr<DescriptorManager> descriptorManager)
-    : mRegistry(registry), mCommandBufferManager(commandBufferManager), mSyncPrimitiveManager(syncPrimitiveManager),
-      mRenderPassManager(renderPassManager), mPipelineLayoutManager(pipelineLayoutManager),
-      mPipelineManager(pipelineManager), mWindow(window), mLogger(logger), mContext(context),
-      mDescriptorManager(descriptorManager)
+RenderSystem::RenderSystem(
+    std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context, std::shared_ptr<entt::registry> registry,
+    std::shared_ptr<RenderPassManager> renderPassManager, std::shared_ptr<PipelineLayoutManager> pipelineLayoutManager,
+    std::shared_ptr<PipelineManager> pipelineManager, std::shared_ptr<CommandBufferManager> commandBufferManager,
+    std::shared_ptr<SyncPrimitiveManager> syncPrimitiveManager, std::shared_ptr<DescriptorManager> descriptorManager,
+    std::shared_ptr<SamplerManager> samplerManager, std::shared_ptr<BufferFactory> bufferFactory,
+    std::shared_ptr<ImageFactory> imageFactory, std::shared_ptr<IWindow> window)
+    : mLogger(logger), mContext(context), mRegistry(registry), mRenderPassManager(renderPassManager),
+      mPipelineLayoutManager(pipelineLayoutManager), mPipelineManager(pipelineManager),
+      mCommandBufferManager(commandBufferManager), mSyncPrimitiveManager(syncPrimitiveManager),
+      mDescriptorManager(descriptorManager), mSamplerManager(samplerManager), mBufferFactory(bufferFactory),
+      mImageFactory(imageFactory), mWindow(window)
 {
-    mUISystem = std::make_shared<UISystem>(mLogger, mContext, mWindow, mRegistry, mRenderPassManager);
-    mBufferManager = std::make_shared<BufferManager>(mLogger, mContext, mCommandBufferManager, mSyncPrimitiveManager);
-    mImageManager =
-        std::make_shared<ImageManager>(mLogger, mContext, mCommandBufferManager, mSyncPrimitiveManager, mBufferManager);
+    mUISystem = std::make_shared<UISystem>(mLogger, mContext, mWindow, mRenderPassManager, mImageFactory,
+                                           mCommandBufferManager, mSyncPrimitiveManager, mSamplerManager, mRegistry);
 }
 void RenderSystem::Init()
 {
@@ -41,7 +40,7 @@ void RenderSystem::Init()
         mInFlightFences.push_back(std::move(inFlightFence));
     }
     // Uniform Buffer
-    mMVPBuffer = mBufferManager->CreateUniqueUniformBuffer(sizeof(MVPUniform));
+    mMVPBuffer = mBufferFactory->CreateBuffer(BufferType::Uniform, sizeof(MVPUniform));
     auto MVPDescriptorSetLayout = mPipelineLayoutManager->GetMVPDescriptorSetLayout();
     for (uint32_t i = 0; i < mFrameCount; ++i)
     {
