@@ -45,9 +45,10 @@ add_subdirectory(3rdParty/glm)
 add_subdirectory(3rdParty/magic_enum)
 add_subdirectory(3rdParty/fmt)
 add_subdirectory(3rdParty/di)
+add_subdirectory(3rdParty/json)
 
 
 # test
 enable_testing()
-# add_subdirectory(Test)
+add_subdirectory(Test)
 

@@ -34,3 +34,6 @@
 [submodule "3rdParty/ImGuizmo"]
 	path = 3rdParty/ImGuizmo
 	url = https://github.com/CedricGuillemet/ImGuizmo.git
+[submodule "3rdParty/json"]
+	path = 3rdParty/json
+	url = https://github.com/nlohmann/json.git

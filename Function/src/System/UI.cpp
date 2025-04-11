@@ -299,19 +299,14 @@ void UI::SceneViewWindow()
     float viewMatrix[16], projMatrix[16];
     memcpy(viewMatrix, glm::value_ptr(view), sizeof(float) * 16);
     memcpy(projMatrix, glm::value_ptr(proj), sizeof(float) * 16);
-    float outputMatrix[16] = {0};                                                           // 声明一个临时矩阵
-    ImGuizmo::ViewManipulate(viewMatrix,                                                    // view
-                             projMatrix,                                                    // projection
-                             ImGuizmo::ROTATE,                                              // operation
-                             ImGuizmo::LOCAL,                                               // mode
-                             outputMatrix,                                                  // 输出矩阵（可为 null）
-                             gizmoLength,                                                   // length
-                             ImVec2(windowPos.x + windowSize.x - gizmoLength, windowPos.y), // position
-                             gizmoSize,                                                     // size
-                             0x10101010                                                     // background color
-    );
+    float outputMatrix[16] = {0};
+    // ImGuizmo::ViewManipulate(viewMatrix, projMatrix, ImGuizmo::ROTATE, ImGuizmo::LOCAL, outputMatrix, gizmoLength,
+    //                          ImVec2(windowPos.x + windowSize.x - gizmoLength, windowPos.y), gizmoSize, 0x10101010);
 
     ImGui::Text("SceneView Size: %d x %d", width, height);
+    ImGui::SetCursorPos(ImVec2(windowSize.x - 100, 20));
+    ImGui::TextColored(ImVec4(1, 1, 0, 1), "FPS: %1.f", ImGui::GetIO().Framerate);
+    // ImGui::TextColored(ImVec4(1, 1, 0, 1), "FPS: %1.f", 1.0f / mDeltaTime);
     ImTextureID textureId =
         reinterpret_cast<ImTextureID>(static_cast<VkDescriptorSet>(mSceneDescriptorSets[mCurrentFrame].get()));
     ImGui::Image(textureId, ImVec2(mSceneWidth, mSceneHeight), ImVec2(0, 1), ImVec2(1, 0));

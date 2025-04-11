@@ -26,6 +26,7 @@
 #include "System/RenderSystem.hpp"
 #include "TextureManager.hpp"
 #include "entt/entt.hpp"
+#include <cstdint>
 #include <memory>
 namespace MEngine
 {
@@ -57,7 +58,9 @@ class Application final : public NoCopyable
     std::shared_ptr<ISystem> mCameraSystem;
 
     // time
+    uint32_t mTargetFPS = 120;
     std::chrono::high_resolution_clock::time_point mStartTime;
+    std::chrono::high_resolution_clock::time_point mCurrentTime;
     std::chrono::high_resolution_clock::time_point mLastTime;
     float mDeltaTime;
 

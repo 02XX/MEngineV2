@@ -26,6 +26,6 @@ target_link_libraries(
     magic_enum::magic_enum
     fmt::fmt-header-only
     Boost.DI
-
+    nlohmann_json::nlohmann_json
 )
 # target_compile_definitions(Platform PRIVATE MENGINE_EXPORT)

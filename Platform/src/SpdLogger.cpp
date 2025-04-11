@@ -12,6 +12,11 @@ void SpdLogger::LogDebug(const std::string &message, const std::source_location 
     mLogger->log(spdlog::source_loc{loc.file_name(), static_cast<int>(loc.line()), loc.function_name()},
                  spdlog::level::debug, message);
 }
+void SpdLogger::LogWarn(const std::string &message, const std::source_location &loc)
+{
+    mLogger->log(spdlog::source_loc{loc.file_name(), static_cast<int>(loc.line()), loc.function_name()},
+                 spdlog::level::warn, message);
+}
 void SpdLogger::LogInfo(const std::string &message, const std::source_location &loc)
 {
     mLogger->log(spdlog::source_loc{loc.file_name(), static_cast<int>(loc.line()), loc.function_name()},

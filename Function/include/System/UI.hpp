@@ -75,6 +75,8 @@ class UI
 
     entt::entity mCameraEntity;
 
+    float mDeltaTime = 0.0f;
+
   private:
     void DockingSpace();
     void HierarchyWindow();
@@ -115,7 +117,10 @@ class UI
     {
         mCameraEntity = cameraEntity;
     }
-
+    void SetDeltaTime(float deltaTime)
+    {
+        mDeltaTime = deltaTime;
+    }
     void ProcessEvent(const SDL_Event *event);
     void UpdateSceneDescriptorSet(vk::ImageView imageView, uint32_t imageIndex);
     void RecordUICommandBuffer(vk::CommandBuffer commandBuffer);

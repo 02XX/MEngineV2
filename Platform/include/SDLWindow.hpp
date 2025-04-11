@@ -39,6 +39,12 @@ class SDLWindow final : public IWindow, public NoCopyable
     vk::SurfaceKHR GetSurface(vk::Instance instance) const override;
     std::vector<const char *> GetInstanceRequiredExtensions() const override;
 
+    /**
+     * @brief Deprecated: Use Manual Control.
+     *
+     * @param enable
+     */
+    void SetVSync(bool enable) override;
     void SetEventCallback(EventCallback callback) override;
 
   public:

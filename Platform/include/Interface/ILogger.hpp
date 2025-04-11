@@ -19,6 +19,11 @@ class ILogger
         std::string message = fmt::format(format, std::forward<Args>(args)...);
         LogDebug(message);
     }
+    template <typename... Args>
+    void Warn(const std::string &message, const std::source_location &loc = std::source_location::current())
+    {
+        LogWarn(message, loc);
+    }
     template <typename... Args> void Info(fmt::format_string<Args...> format, Args &&...args)
     {
         std::string message = fmt::format(format, std::forward<Args>(args)...);
@@ -40,6 +45,8 @@ class ILogger
                           const std::source_location &loc = std::source_location::current()) = 0;
     virtual void LogDebug(const std::string &message,
                           const std::source_location &loc = std::source_location::current()) = 0;
+    virtual void LogWarn(const std::string &message,
+                         const std::source_location &loc = std::source_location::current()) = 0;
     virtual void LogInfo(const std::string &message,
                          const std::source_location &loc = std::source_location::current()) = 0;
     virtual void LogError(const std::string &message,

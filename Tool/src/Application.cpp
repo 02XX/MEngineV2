@@ -85,11 +85,20 @@ void Application::Run()
             mIsRunning = false;
             break;
         }
-        mLastTime = std::chrono::high_resolution_clock::now();
-        mDeltaTime = std::chrono::duration<float>(mLastTime - mStartTime).count();
+        mCurrentTime = std::chrono::high_resolution_clock::now();
+        auto elapsedTime = mCurrentTime - mLastTime;
+        mDeltaTime = std::chrono::duration<float>(elapsedTime).count();
+        mLastTime = mCurrentTime;
+
         mWindow->PollEvents();
         mCameraSystem->Tick(mDeltaTime);
         mRenderSystem->Tick(mDeltaTime);
+
+        if (mDeltaTime < 1.0f / mTargetFPS)
+        {
+            auto sleepTime = (1.0f / mTargetFPS - mDeltaTime);
+            std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(sleepTime * 1000)));
+        }
     }
 }
 } // namespace MEngine

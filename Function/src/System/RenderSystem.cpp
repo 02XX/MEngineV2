@@ -1,6 +1,4 @@
 #include "System/RenderSystem.hpp"
-#include "BufferFactory.hpp"
-#include <array>
 
 namespace MEngine
 {
@@ -68,6 +66,7 @@ void RenderSystem::Shutdown()
 
 void RenderSystem::CollectRenderEntities()
 {
+    mBatchMaterialComponents.clear();
     auto entities = mRegistry->view<MaterialComponent, MeshComponent>();
     for (auto entity : entities)
     {
@@ -304,6 +303,7 @@ void RenderSystem::RenderUIPass(float deltaTime)
         .setClearValues(clearValue);
 
     mGraphicCommandBuffers[mFrameIndex]->beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);
+    mUI->SetDeltaTime(deltaTime);
     mUI->RecordUICommandBuffer(mGraphicCommandBuffers[mFrameIndex].get());
     mGraphicCommandBuffers[mFrameIndex]->endRenderPass();
 

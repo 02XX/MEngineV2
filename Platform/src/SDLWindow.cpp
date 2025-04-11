@@ -19,6 +19,17 @@ SDLWindow::SDLWindow(std::shared_ptr<ILogger> logger, WindowConfig config) : mLo
     }
     mLogger->Trace("SDL Window created successfully");
 }
+void SDLWindow::SetVSync(bool enable)
+{
+    if (enable)
+    {
+        SDL_GL_SetSwapInterval(1); // Enable VSync
+    }
+    else
+    {
+        SDL_GL_SetSwapInterval(0); // Disable VSync
+    }
+}
 SDLWindow::~SDLWindow()
 {
     if (mWindow)

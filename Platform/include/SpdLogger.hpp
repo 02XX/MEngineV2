@@ -22,6 +22,8 @@ class SpdLogger final : public ILogger, NoCopyable
                   const std::source_location &loc = std::source_location::current()) override;
     void LogDebug(const std::string &message,
                   const std::source_location &loc = std::source_location::current()) override;
+    void LogWarn(const std::string &message,
+                 const std::source_location &loc = std::source_location::current()) override;
     void LogInfo(const std::string &message,
                  const std::source_location &loc = std::source_location::current()) override;
     void LogError(const std::string &message,

@@ -16,6 +16,8 @@ target_link_libraries(
 
 add_subdirectory(Shader)
 add_subdirectory(Assets)
+add_subdirectory(Config)
 
 add_dependencies(Resource shaders)
 add_dependencies(Resource assets)
+add_dependencies(Resource config)

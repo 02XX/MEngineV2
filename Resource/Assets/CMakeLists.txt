@@ -1,5 +1,4 @@
 file(GLOB_RECURSE PNG_SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/*.png)
-find_program(GLSLC glslc REQUIRED)
 
 add_custom_target(
     assets
