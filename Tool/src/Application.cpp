@@ -3,27 +3,26 @@
 namespace MEngine
 {
 Application::Application()
-    : mInjector(di::make_injector(
-          di::bind<IConfigure>().to<Configure>().in(di::singleton),
-          di::bind<ILogger>().to<SpdLogger>().in(di::singleton), di::bind<IWindow>().to<SDLWindow>().in(di::singleton),
-          di::bind<Context>().to<Context>().in(di::singleton),
-          di::bind<entt::registry>().to<entt::registry>().in(di::singleton),
-          di::bind<CommandBufferManager>().to<CommandBufferManager>().in(di::singleton),
-          di::bind<SyncPrimitiveManager>().to<SyncPrimitiveManager>().in(di::singleton),
-          di::bind<PipelineLayoutManager>().to<PipelineLayoutManager>().in(di::singleton),
-          di::bind<ShaderManager>().to<ShaderManager>().in(di::singleton),
-          di::bind<DescriptorManager>().to<DescriptorManager>().in(di::singleton),
-          di::bind<SamplerManager>().to<SamplerManager>().in(di::singleton),
-          di::bind<BufferFactory>().to<BufferFactory>().in(di::singleton),
-          di::bind<ImageFactory>().to<ImageFactory>().in(di::singleton),
-          di::bind<RenderPassManager>().to<RenderPassManager>().in(di::singleton),
-          di::bind<PipelineManager>().to<PipelineManager>().in(di::singleton),
-          di::bind<TextureManager>().to<TextureManager>().in(di::singleton),
-          di::bind<MaterialManager>().to<MaterialManager>().in(di::singleton),
-          di::bind<BasicGeometryFactory>().to<BasicGeometryFactory>().in(di::singleton),
-          di::bind<BasicGeometryEntityManager>().to<BasicGeometryEntityManager>().in(di::singleton),
-          di::bind<CameraSystem>().to<CameraSystem>().in(di::singleton),
-          di::bind<RenderSystem>().to<RenderSystem>().in(di::singleton)))
+    : mInjector(
+          make_injector(bind<IConfigure>().to<Configure>().in(singleton), bind<ILogger>().to<SpdLogger>().in(singleton),
+                        bind<IWindow>().to<SDLWindow>().in(singleton), bind<Context>().to<Context>().in(singleton),
+                        bind<entt::registry>().to<entt::registry>().in(singleton),
+                        bind<CommandBufferManager>().to<CommandBufferManager>().in(singleton),
+                        bind<SyncPrimitiveManager>().to<SyncPrimitiveManager>().in(singleton),
+                        bind<PipelineLayoutManager>().to<PipelineLayoutManager>().in(singleton),
+                        bind<ShaderManager>().to<ShaderManager>().in(singleton),
+                        bind<DescriptorManager>().to<DescriptorManager>().in(singleton),
+                        bind<SamplerManager>().to<SamplerManager>().in(singleton),
+                        bind<BufferFactory>().to<BufferFactory>().in(singleton),
+                        bind<ImageFactory>().to<ImageFactory>().in(singleton),
+                        bind<RenderPassManager>().to<RenderPassManager>().in(singleton),
+                        bind<PipelineManager>().to<PipelineManager>().in(singleton),
+                        bind<TextureManager>().to<TextureManager>().in(singleton),
+                        bind<MaterialManager>().to<MaterialManager>().in(singleton),
+                        bind<BasicGeometryFactory>().to<BasicGeometryFactory>().in(singleton),
+                        bind<BasicGeometryEntityManager>().to<BasicGeometryEntityManager>().in(singleton),
+                        bind<CameraSystem>().to<CameraSystem>().in(singleton), bind<UI>().to<UI>().in(singleton),
+                        bind<RenderSystem>().to<RenderSystem>().in(singleton)))
 {
     // DI
     mConfigure = mInjector.create<std::shared_ptr<IConfigure>>();
@@ -47,6 +46,7 @@ Application::Application()
     mMaterialManager = mInjector.create<std::shared_ptr<MaterialManager>>();
     mBasicGeometryFactory = mInjector.create<std::shared_ptr<BasicGeometryFactory>>();
     mBasicGeometryEntityManager = mInjector.create<std::shared_ptr<BasicGeometryEntityManager>>();
+    mUI = mInjector.create<std::shared_ptr<UI>>();
 
     mBasicGeometryEntityManager->CreateCube(mRegistry);
     auto camera = mRegistry->create();
@@ -61,10 +61,10 @@ Application::~Application()
 }
 void Application::InitSystem()
 {
-    mRenderSystem =
-        std::make_shared<RenderSystem>(mLogger, mContext, mRegistry, mRenderPassManager, mPipelineLayoutManager,
-                                       mPipelineManager, mCommandBufferManager, mSyncPrimitiveManager,
-                                       mDescriptorManager, mSamplerManager, mBufferFactory, mImageFactory, mWindow);
+    mRenderSystem = std::make_shared<RenderSystem>(mLogger, mContext, mRegistry, mRenderPassManager,
+                                                   mPipelineLayoutManager, mPipelineManager, mCommandBufferManager,
+                                                   mSyncPrimitiveManager, mDescriptorManager, mSamplerManager,
+                                                   mBufferFactory, mImageFactory, mWindow, mUI);
     mCameraSystem = std::make_shared<CameraSystem>(mLogger, mRegistry);
     mRenderSystem->Init();
     mCameraSystem->Init();

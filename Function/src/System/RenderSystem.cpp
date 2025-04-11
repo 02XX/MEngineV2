@@ -9,15 +9,13 @@ RenderSystem::RenderSystem(
     std::shared_ptr<PipelineManager> pipelineManager, std::shared_ptr<CommandBufferManager> commandBufferManager,
     std::shared_ptr<SyncPrimitiveManager> syncPrimitiveManager, std::shared_ptr<DescriptorManager> descriptorManager,
     std::shared_ptr<SamplerManager> samplerManager, std::shared_ptr<BufferFactory> bufferFactory,
-    std::shared_ptr<ImageFactory> imageFactory, std::shared_ptr<IWindow> window)
+    std::shared_ptr<ImageFactory> imageFactory, std::shared_ptr<IWindow> window, std::shared_ptr<UI> ui)
     : mLogger(logger), mContext(context), mRegistry(registry), mRenderPassManager(renderPassManager),
       mPipelineLayoutManager(pipelineLayoutManager), mPipelineManager(pipelineManager),
       mCommandBufferManager(commandBufferManager), mSyncPrimitiveManager(syncPrimitiveManager),
       mDescriptorManager(descriptorManager), mSamplerManager(samplerManager), mBufferFactory(bufferFactory),
-      mImageFactory(imageFactory), mWindow(window)
+      mImageFactory(imageFactory), mWindow(window), mUI(ui)
 {
-    mUI = std::make_shared<UI>(mLogger, mContext, mWindow, mRenderPassManager, mImageFactory, mCommandBufferManager,
-                               mSyncPrimitiveManager, mSamplerManager, mRegistry);
 }
 void RenderSystem::Init()
 {

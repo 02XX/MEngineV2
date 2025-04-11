@@ -106,7 +106,7 @@ class RenderSystem final : public System
                  std::shared_ptr<SyncPrimitiveManager> syncPrimitiveManager,
                  std::shared_ptr<DescriptorManager> descriptorManager, std::shared_ptr<SamplerManager> samplerManager,
                  std::shared_ptr<BufferFactory> bufferFactory, std::shared_ptr<ImageFactory> imageFactory,
-                 std::shared_ptr<IWindow> window);
+                 std::shared_ptr<IWindow> window, std::shared_ptr<UI> ui);
     ~RenderSystem() override;
     void Init() override;
     void Tick(float deltaTime) override;
