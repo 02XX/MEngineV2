@@ -10,11 +10,17 @@ ImageFactory::ImageFactory(std::shared_ptr<ILogger> logger, std::shared_ptr<Cont
       mSyncPrimitiveManager(syncPrimitiveManager), mBufferFactory(bufferFactory)
 {
     mFence = mSyncPrimitiveManager->CreateFence();
-    mCommandBuffer = mCommandBufferManager->CreatePrimaryCommandBuffer(CommandBufferType::Transfer);
+    mCopyCommandBuffer = mCommandBufferManager->CreatePrimaryCommandBuffer(CommandBufferType::Transfer);
+    mPreTransitionCommandBuffer = mCommandBufferManager->CreatePrimaryCommandBuffer(CommandBufferType::Transfer);
+    mPostTransitionCommandBuffer = mCommandBufferManager->CreatePrimaryCommandBuffer(CommandBufferType::Transfer);
+    mPreTransitionDone = mSyncPrimitiveManager->CreateUniqueSemaphore();
+    mPostTransitionDone = mSyncPrimitiveManager->CreateUniqueSemaphore();
+    mCopyDone = mSyncPrimitiveManager->CreateUniqueSemaphore();
+
     mTexture2DFormats = {
+        vk::Format::eR8G8B8A8Srgb,       // HDR
         vk::Format::eR32G32B32A32Sfloat, // HDR
         vk::Format::eR16G16B16A16Sfloat, // HDR
-        vk::Format::eR8G8B8A8Srgb,       // HDR
         vk::Format::eB8G8R8A8Srgb,       vk::Format::eR8G8B8A8Unorm,
     };
     mTextureCubeFormats = {
@@ -39,11 +45,10 @@ ImageFactory::ImageFactory(std::shared_ptr<ILogger> logger, std::shared_ptr<Cont
 UniqueImage ImageFactory::CreateImage(ImageType type, vk::Extent3D extent, uint32_t mipLevels,
                                       vk::SampleCountFlagBits samples)
 {
-    auto image = CreateImage(type, extent, nullptr, mipLevels, samples);
-    return std::move(image);
+    return CreateImage(type, extent, 0, nullptr, mipLevels, samples);
 }
-UniqueImage ImageFactory::CreateImage(ImageType type, vk::Extent3D extent, const void *data, uint32_t mipLevels,
-                                      vk::SampleCountFlagBits samples)
+UniqueImage ImageFactory::CreateImage(ImageType type, vk::Extent3D extent, vk::DeviceSize size, const void *data,
+                                      uint32_t mipLevels, vk::SampleCountFlagBits samples)
 {
     uint32_t arrayLayers{};
     VmaMemoryUsage memoryUsage{};
@@ -96,7 +101,7 @@ UniqueImage ImageFactory::CreateImage(ImageType type, vk::Extent3D extent, const
         imageType = vk::ImageType::e2D;
         arrayLayers = 1;
         imageUsage = vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eTransferSrc |
-                     vk::ImageUsageFlagBits::eSampled;
+                     vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eInputAttachment;
         tiling = vk::ImageTiling::eOptimal;
         memoryUsage = VMA_MEMORY_USAGE_GPU_ONLY;
         imageLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
@@ -129,76 +134,115 @@ UniqueImage ImageFactory::CreateImage(ImageType type, vk::Extent3D extent, const
         .setUsage(imageUsage)
         .setInitialLayout(vk::ImageLayout::eUndefined);
     auto image = std::make_unique<Image>(mContext, imageCreateInfo, memoryUsage, createflags);
-    if (data != nullptr)
+    if (data)
     {
         if (type != ImageType::DepthStencil)
         {
+            mContext->GetDevice().resetFences({mFence.get()});
             // 转换图像布局到eTransferDst
+            mPreTransitionCommandBuffer->reset();
+            mPreTransitionCommandBuffer->begin(vk::CommandBufferBeginInfo{});
             vk::ImageMemoryBarrier preBarrier{};
             preBarrier.setImage(image->GetHandle())
                 .setOldLayout(vk::ImageLayout::eUndefined)
                 .setNewLayout(vk::ImageLayout::eTransferDstOptimal)
                 .setSrcAccessMask(vk::AccessFlagBits::eNoneKHR)
                 .setDstAccessMask(vk::AccessFlagBits::eTransferWrite)
-                .setSrcQueueFamilyIndex(mContext->GetQueueFamilyIndicates().transferFamily.value())
-                .setDstQueueFamilyIndex(mContext->GetQueueFamilyIndicates().transferFamily.value())
+                .setSrcQueueFamilyIndex(mContext->GetQueueFamilyIndicates().graphicsFamily.value())
+                .setDstQueueFamilyIndex(mContext->GetQueueFamilyIndicates().graphicsFamily.value())
                 .setSubresourceRange({vk::ImageAspectFlagBits::eColor, 0, mipLevels, 0, arrayLayers});
-            mCommandBuffer->pipelineBarrier(vk::PipelineStageFlagBits::eTopOfPipe, vk::PipelineStageFlagBits::eTransfer,
-                                            {}, {}, {}, preBarrier);
+            mPreTransitionCommandBuffer->pipelineBarrier(vk::PipelineStageFlagBits::eTopOfPipe,
+                                                         vk::PipelineStageFlagBits::eTransfer, {}, {}, {}, preBarrier);
+            mPreTransitionCommandBuffer->end();
+            vk::SubmitInfo preSubmitInfo;
+            std::vector<vk::PipelineStageFlags> waitDstStageMask = {vk::PipelineStageFlagBits::eTransfer};
+            preSubmitInfo.setCommandBuffers(mPreTransitionCommandBuffer.get())
+                .setSignalSemaphores({mPreTransitionDone.get()});
+
             // 复制数据到图像
-            auto buffer = mBufferFactory->CreateBuffer(
-                BufferType::Staging, extent.width * extent.height * GetFormatPixelSize(GetBestFormat(type)), data);
+            auto buffer = mBufferFactory->CreateBuffer(BufferType::Staging, size, data);
             vk::ImageSubresourceLayers imageSubresourceLayers{};
             imageSubresourceLayers.setAspectMask(vk::ImageAspectFlagBits::eColor)
                 .setMipLevel(0)
                 .setBaseArrayLayer(0)
                 .setLayerCount(arrayLayers);
-            CopyBufferToImage(buffer.get(), image.get(), imageSubresourceLayers);
+            mCopyCommandBuffer->reset();
+            vk::BufferImageCopy region{};
+            region.setBufferOffset(0)
+                .setBufferRowLength(0)
+                .setBufferImageHeight(0)
+                .setImageOffset(vk::Offset3D(0, 0, 0))
+                .setImageExtent(extent)
+                .setImageSubresource(imageSubresourceLayers);
+            vk::CommandBufferBeginInfo beginInfo;
+            beginInfo.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
+            mCopyCommandBuffer->begin(beginInfo);
+            mCopyCommandBuffer->copyBufferToImage(buffer->GetHandle(), image->GetHandle(),
+                                                  vk::ImageLayout::eTransferDstOptimal, {region});
+            mCopyCommandBuffer->end();
+
+            vk::SubmitInfo copySubmitInfo;
+            copySubmitInfo.setCommandBuffers(mCopyCommandBuffer.get())
+                .setWaitSemaphores({mPreTransitionDone.get()})
+                .setSignalSemaphores({mCopyDone.get()})
+                .setWaitDstStageMask(waitDstStageMask);
             // 转换图像布局
+            mPostTransitionCommandBuffer->reset();
+            mPostTransitionCommandBuffer->begin(vk::CommandBufferBeginInfo{});
             vk::ImageMemoryBarrier postBarrier{};
             postBarrier.setImage(image->GetHandle())
                 .setOldLayout(vk::ImageLayout::eTransferDstOptimal)
                 .setNewLayout(imageLayout)
                 .setSrcAccessMask(vk::AccessFlagBits::eTransferWrite)
                 .setDstAccessMask(accessMask)
-                .setSrcQueueFamilyIndex(mContext->GetQueueFamilyIndicates().transferFamily.value())
+                .setSrcQueueFamilyIndex(mContext->GetQueueFamilyIndicates().graphicsFamily.value())
                 .setDstQueueFamilyIndex(mContext->GetQueueFamilyIndicates().graphicsFamily.value())
                 .setSubresourceRange({vk::ImageAspectFlagBits::eColor, 0, mipLevels, 0, arrayLayers});
-            mCommandBuffer->pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, pipelineStage, {}, {}, {},
-                                            postBarrier);
+            mPostTransitionCommandBuffer->pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, pipelineStage, {}, {},
+                                                          {}, postBarrier);
+            mPostTransitionCommandBuffer->end();
+            vk::SubmitInfo postSubmitInfo;
+            postSubmitInfo.setCommandBuffers(mPostTransitionCommandBuffer.get())
+                .setWaitSemaphores({mCopyDone.get()})
+                .setWaitDstStageMask(waitDstStageMask);
+            mContext->SubmitToTransferQueue({preSubmitInfo, copySubmitInfo, postSubmitInfo}, mFence.get());
+            auto result = mContext->GetDevice().waitForFences(mFence.get(), vk::True, 1'000'000'000);
+            if (result != vk::Result::eSuccess)
+            {
+                mLogger->Error("Transition image layout operation failed");
+                throw std::runtime_error("Transition image layout operation failed");
+            }
         }
     }
+    return image;
 }
 void ImageFactory::CopyBufferToImage(Buffer *srcBuffer, Image *dstImage,
-                                     vk::ImageSubresourceLayers imageSubresourceLayers)
+                                     vk::ImageSubresourceLayers imageSubresourceLayers,
+                                     const std::vector<vk::Semaphore> &waitSemaphores,
+                                     const std::vector<vk::Semaphore> &signalSemaphores,
+                                     const std::vector<vk::PipelineStageFlags> &waitDstStageMask, vk::Fence fences)
 {
-    auto commandBuffer = mCommandBufferManager->CreatePrimaryCommandBuffer(CommandBufferType::Transfer);
-
+    mCopyCommandBuffer->reset();
     vk::BufferImageCopy region{};
-    region
-        .setBufferOffset(0)                    // 缓冲区的起始字节偏移
-        .setBufferRowLength(0)                 // 缓冲区中每行的像素数（内存布局） 0-和extent一样
-        .setBufferImageHeight(0)               // 缓冲区中每列的像素行数（内存布局） 0-和extent一样
-        .setImageOffset(vk::Offset3D(0, 0, 0)) // 图像起始坐标（x,y,z）
-        .setImageExtent(dstImage->GetExtent()) // 拷贝的区域尺寸
+    region.setBufferOffset(0)
+        .setBufferRowLength(0)
+        .setBufferImageHeight(0)
+        .setImageOffset(vk::Offset3D(0, 0, 0))
+        .setImageExtent(dstImage->GetExtent())
         .setImageSubresource(imageSubresourceLayers);
     vk::CommandBufferBeginInfo beginInfo;
     beginInfo.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
-    mCommandBuffer->begin(beginInfo);
-    mCommandBuffer->copyBufferToImage(srcBuffer->GetHandle(), dstImage->GetHandle(),
-                                      vk::ImageLayout::eTransferDstOptimal, {region});
-    mCommandBuffer->end();
+    mCopyCommandBuffer->begin(beginInfo);
+    mCopyCommandBuffer->copyBufferToImage(srcBuffer->GetHandle(), dstImage->GetHandle(),
+                                          vk::ImageLayout::eTransferDstOptimal, {region});
+    mCopyCommandBuffer->end();
 
     vk::SubmitInfo submitInfo;
-    submitInfo.setCommandBuffers(commandBuffer.get());
-    mContext->SubmitToTransferQueue({submitInfo}, mFence.get());
-    auto result = mContext->GetDevice().waitForFences(mFence.get(), vk::True, 1'000'000'000);
-    if (result != vk::Result::eSuccess)
-    {
-        mLogger->Error("Copy image operation failed");
-        throw std::runtime_error("Copy image operation failed");
-    }
-    mLogger->Debug("Copy image operation success");
+    submitInfo.setCommandBuffers(mCopyCommandBuffer.get())
+        .setWaitSemaphores(waitSemaphores)
+        .setSignalSemaphores(signalSemaphores)
+        .setWaitDstStageMask(waitDstStageMask);
+    mContext->SubmitToTransferQueue({submitInfo}, fences);
 }
 vk::Format ImageFactory::GetBestFormat(ImageType type)
 {
@@ -223,45 +267,108 @@ uint32_t ImageFactory::GetFormatPixelSize(vk::Format format) const
 {
     switch (format)
     {
-    // 8-bit 单通道格式
+    // 单通道
+    // 1字节
     case vk::Format::eR8Unorm:
     case vk::Format::eR8Snorm:
-    case vk::Format::eR8Uscaled:
+    case vk::Format::eR8Uint:
+    case vk::Format::eR8Sint:
+    case vk::Format::eR8Srgb:
         return 1;
-
-    // 16-bit 双通道格式
-    case vk::Format::eR8G8Unorm:
-    case vk::Format::eR8G8Snorm:
-        return 2;
-
-    // 24-bit RGB 无压缩格式
-    case vk::Format::eR8G8B8Unorm:
-    case vk::Format::eB8G8R8Srgb:
-        return 3;
-
-    // 32-bit 格式（含四通道/深度）
-    case vk::Format::eR8G8B8A8Unorm:
-    case vk::Format::eB8G8R8A8Srgb:
-    case vk::Format::eD32Sfloat:
-        return 4;
-
-    // 16-bit 浮点格式
+    case vk::Format::eR16Unorm:
+    case vk::Format::eR16Snorm:
+    case vk::Format::eR16Uint:
+    case vk::Format::eR16Sint:
     case vk::Format::eR16Sfloat:
         return 2;
+    case vk::Format::eR32Uint:
+    case vk::Format::eR32Sint:
+    case vk::Format::eR32Sfloat:
+        return 4;
+    case vk::Format::eR64Uint:
+    case vk::Format::eR64Sint:
+    case vk::Format::eR64Sfloat:
+        return 8;
+    // 双通道
+    // 2字节
+    case vk::Format::eR8G8Unorm:
+    case vk::Format::eR8G8Snorm:
+    case vk::Format::eR8G8Uint:
+    case vk::Format::eR8G8Sint:
+    case vk::Format::eR8G8Srgb:
+        return 2;
+    case vk::Format::eR16G16Unorm:
+    case vk::Format::eR16G16Snorm:
+    case vk::Format::eR16G16Uint:
+    case vk::Format::eR16G16Sint:
     case vk::Format::eR16G16Sfloat:
         return 4;
-
-    // 64-bit 格式
+    case vk::Format::eR32G32Uint:
+    case vk::Format::eR32G32Sint:
+    case vk::Format::eR32G32Sfloat:
+        return 8;
+    case vk::Format::eR64G64Uint:
+    case vk::Format::eR64G64Sint:
+    case vk::Format::eR64G64Sfloat:
+        return 16;
+    // 三通道
+    case vk::Format::eR8G8B8Unorm:
+    case vk::Format::eR8G8B8Snorm:
+    case vk::Format::eR8G8B8Uint:
+    case vk::Format::eR8G8B8Sint:
+    case vk::Format::eR8G8B8Srgb:
+        return 3;
+    case vk::Format::eR16G16B16Unorm:
+    case vk::Format::eR16G16B16Snorm:
+    case vk::Format::eR16G16B16Uint:
+    case vk::Format::eR16G16B16Sint:
+    case vk::Format::eR16G16B16Sfloat:
+        return 6;
+    case vk::Format::eR32G32B32Uint:
+    case vk::Format::eR32G32B32Sint:
+    case vk::Format::eR32G32B32Sfloat:
+        return 12;
+    case vk::Format::eR64G64B64Uint:
+    case vk::Format::eR64G64B64Sint:
+    case vk::Format::eR64G64B64Sfloat:
+        return 24;
+    // 四通道
+    case vk::Format::eR8G8B8A8Unorm:
+    case vk::Format::eR8G8B8A8Snorm:
+    case vk::Format::eR8G8B8A8Uint:
+    case vk::Format::eR8G8B8A8Sint:
+    case vk::Format::eR8G8B8A8Srgb:
+    case vk::Format::eB8G8R8A8Unorm:
+    case vk::Format::eB8G8R8A8Snorm:
+    case vk::Format::eB8G8R8A8Uint:
+    case vk::Format::eB8G8R8A8Sint:
+    case vk::Format::eB8G8R8A8Srgb:
+        return 4;
+    case vk::Format::eR16G16B16A16Unorm:
+    case vk::Format::eR16G16B16A16Snorm:
+    case vk::Format::eR16G16B16A16Uint:
+    case vk::Format::eR16G16B16A16Sint:
     case vk::Format::eR16G16B16A16Sfloat:
         return 8;
-
-    // 128-bit 浮点格式（用户已实现）
+    case vk::Format::eR32G32B32A32Uint:
+    case vk::Format::eR32G32B32A32Sint:
     case vk::Format::eR32G32B32A32Sfloat:
         return 16;
-
-    // 特殊格式处理
-    case vk::Format::eD24UnormS8Uint: // 深度+模板（24+8 bits）
+    case vk::Format::eR64G64B64A64Uint:
+    case vk::Format::eR64G64B64A64Sint:
+    case vk::Format::eR64G64B64A64Sfloat:
+        return 32;
+    // 其他格式
+    case vk::Format::eD16Unorm:
+        return 2;
+    case vk::Format::eD32Sfloat:
         return 4;
+    case vk::Format::eD16UnormS8Uint: // D16(2字节) + S8(1字节) + 1字节填充
+        return 4;
+    case vk::Format::eD24UnormS8Uint: // D24(3字节) + S8(1字节)
+        return 4;
+    case vk::Format::eD32SfloatS8Uint: // D32(4字节) + S8(1字节) + 3字节填充
+        return 8;
 
     // 压缩格式（需特别处理）
     case vk::Format::eBc1RgbUnormBlock:
@@ -287,10 +394,12 @@ vk::UniqueImageView ImageFactory::CreateImageView(Image *image, vk::ImageAspectF
         case vk::Format::eD16Unorm:
             aspectMask = vk::ImageAspectFlagBits::eDepth;
             break;
-        case vk::Format::eR8G8B8A8Unorm:
-        case vk::Format::eB8G8R8A8Unorm:
+        case vk::Format::eR32G32B32A32Sfloat:
+        case vk::Format::eR16G16B16A16Sfloat:
         case vk::Format::eR8G8B8A8Srgb:
         case vk::Format::eB8G8R8A8Srgb:
+        case vk::Format::eR8G8B8A8Unorm:
+        case vk::Format::eB8G8R8A8Unorm:
             aspectMask = vk::ImageAspectFlagBits::eColor;
             break;
         default:

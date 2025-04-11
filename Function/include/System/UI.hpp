@@ -30,7 +30,7 @@
 
 namespace MEngine
 {
-class UISystem : public ISystem
+class UI
 {
   private:
     std::shared_ptr<ILogger> mLogger;
@@ -46,7 +46,7 @@ class UISystem : public ISystem
   private:
     vk::UniqueDescriptorPool mUIDescriptorPool;
     ImGuiIO *mIO;
-    vk::CommandBuffer mCommandBuffer;
+
     uint32_t mCurrentFrame = 0;
     bool mFirstRun = true;
 
@@ -89,15 +89,13 @@ class UISystem : public ISystem
     void RenderScene();
 
   public:
-    UISystem(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context, std::shared_ptr<IWindow> window,
-             std::shared_ptr<RenderPassManager> renderPassManager, std::shared_ptr<ImageFactory> imageFactory,
-             std::shared_ptr<CommandBufferManager> commandBufferManager,
-             std::shared_ptr<SyncPrimitiveManager> syncPrimitiveManager, std::shared_ptr<SamplerManager> samplerManager,
-             std::shared_ptr<entt::registry> registry);
-    void SetCommandBuffer(vk::CommandBuffer commandBuffer)
-    {
-        mCommandBuffer = commandBuffer;
-    }
+    UI(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context, std::shared_ptr<IWindow> window,
+       std::shared_ptr<RenderPassManager> renderPassManager, std::shared_ptr<ImageFactory> imageFactory,
+       std::shared_ptr<CommandBufferManager> commandBufferManager,
+       std::shared_ptr<SyncPrimitiveManager> syncPrimitiveManager, std::shared_ptr<SamplerManager> samplerManager,
+       std::shared_ptr<entt::registry> registry);
+    ~UI();
+
     bool IsSceneViewPortChanged() const
     {
         return mIsSceneViewPortChange;
@@ -111,11 +109,8 @@ class UISystem : public ISystem
         return mSceneHeight;
     }
     void ProcessEvent(const SDL_Event *event);
-    void Init() override;
-    void Tick(float deltaTime) override;
-    void Shutdown() override;
     void UpdateSceneDescriptorSet(vk::ImageView imageView, uint32_t imageIndex);
-
+    void RecordUICommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIndex);
     void SetCamera(entt::entity cameraEntity)
     {
         mCameraEntity = cameraEntity;

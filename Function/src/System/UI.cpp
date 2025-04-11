@@ -1,20 +1,15 @@
-#include "System/UISystem.hpp"
-#include "ImageFactory.hpp"
+#include "System/UI.hpp"
 
 namespace MEngine
 {
-UISystem::UISystem(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context, std::shared_ptr<IWindow> window,
-                   std::shared_ptr<RenderPassManager> renderPassManager, std::shared_ptr<ImageFactory> imageFactory,
-                   std::shared_ptr<CommandBufferManager> commandBufferManager,
-                   std::shared_ptr<SyncPrimitiveManager> syncPrimitiveManager,
-                   std::shared_ptr<SamplerManager> samplerManager, std::shared_ptr<entt::registry> registry)
+UI::UI(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context, std::shared_ptr<IWindow> window,
+       std::shared_ptr<RenderPassManager> renderPassManager, std::shared_ptr<ImageFactory> imageFactory,
+       std::shared_ptr<CommandBufferManager> commandBufferManager,
+       std::shared_ptr<SyncPrimitiveManager> syncPrimitiveManager, std::shared_ptr<SamplerManager> samplerManager,
+       std::shared_ptr<entt::registry> registry)
     : mLogger(logger), mContext(context), mWindow(window), mRenderPassManager(renderPassManager),
       mImageFactory(imageFactory), mCommandBufferManager(commandBufferManager),
       mSyncPrimitiveManager(syncPrimitiveManager), mSamplerManager(samplerManager), mRegistry(registry)
-{
-}
-
-void UISystem::Init()
 {
     //  Initialize ImGui context
     IMGUI_CHECKVERSION();
@@ -53,14 +48,15 @@ void UISystem::Init()
     CreateSceneDescriptorSet();
     CreateSampler();
     LoadAsset();
-    mLogger->Info("Uploading Fonts");
+    // mLogger->Info("Uploading Fonts");
 }
-void UISystem::ProcessEvent(const SDL_Event *event)
+
+void UI::ProcessEvent(const SDL_Event *event)
 {
     ImGui_ImplSDL3_ProcessEvent(static_cast<const SDL_Event *>(event));
 }
 
-void UISystem::CreateDescriptorPool()
+void UI::CreateDescriptorPool()
 {
     // DescriptorPool
     vk::DescriptorPoolCreateInfo poolInfo;
@@ -72,7 +68,7 @@ void UISystem::CreateDescriptorPool()
         mLogger->Error("Failed to create UI descriptor pool");
     }
 }
-void UISystem::CreateSceneDescriptorSetLayout()
+void UI::CreateSceneDescriptorSetLayout()
 {
     vk::DescriptorSetLayoutBinding binding;
     binding.setBinding(0)
@@ -88,7 +84,7 @@ void UISystem::CreateSceneDescriptorSetLayout()
     }
     mSceneDescriptorSetLayout = std::move(layout);
 }
-void UISystem::CreateSampler()
+void UI::CreateSampler()
 {
     vk::SamplerCreateInfo samplerInfo;
     samplerInfo.setMagFilter(vk::Filter::eLinear)
@@ -107,7 +103,7 @@ void UISystem::CreateSampler()
     }
     mSceneSampler = std::move(sampler);
 }
-void UISystem::CreateSceneDescriptorSet()
+void UI::CreateSceneDescriptorSet()
 {
     auto imageCount = mContext->GetSurfaceInfo().imageCount;
     for (int i = 0; i < imageCount; i++)
@@ -124,7 +120,7 @@ void UISystem::CreateSceneDescriptorSet()
         mSceneDescriptorSets.push_back(std::move(descriptorSets[0]));
     }
 }
-void UISystem::UpdateSceneDescriptorSet(vk::ImageView imageView, uint32_t imageIndex)
+void UI::UpdateSceneDescriptorSet(vk::ImageView imageView, uint32_t imageIndex)
 {
     mCurrentFrame = imageIndex;
 
@@ -140,7 +136,7 @@ void UISystem::UpdateSceneDescriptorSet(vk::ImageView imageView, uint32_t imageI
         .setDescriptorCount(1);
     mContext->GetDevice().updateDescriptorSets(writeSet, {});
 }
-void UISystem::LoadAsset()
+void UI::LoadAsset()
 {
     // 3. 创建采样器
     mSampler = mSamplerManager->CreateUniqueSampler(vk::Filter::eLinear, vk::Filter::eLinear);
@@ -157,8 +153,18 @@ void UISystem::LoadAsset()
                                                   vk::Extent3D(folderThumbnailWidth, folderThumbnailHeight, 1));
         // 2. 创建ImageView
         mFolderImageView = mImageFactory->CreateImageView(mFolderImage.get());
+        // 3. 转换布局
+        vk::ImageMemoryBarrier folderImagebarrier;
+        folderImagebarrier.setImage(mFolderImage->GetHandle())
+            .setOldLayout(vk::ImageLayout::eUndefined)
+            .setNewLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
+            .setSrcQueueFamilyIndex(mContext->GetQueueFamilyIndicates().graphicsFamily.value())
+            .setDstQueueFamilyIndex(mContext->GetQueueFamilyIndicates().graphicsFamily.value())
+            .setSubresourceRange(vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1))
+            .setSrcAccessMask(vk::AccessFlagBits::eNoneKHR)
+            .setDstAccessMask(vk::AccessFlagBits::eShaderRead);
 
-        // 4. 创建描述符集
+        //  4. 创建描述符集
         mFolderTexture =
             ImGui_ImplVulkan_AddTexture(mSampler.get(), mFolderImageView.get(),
                                         static_cast<VkImageLayout>(vk::ImageLayout::eShaderReadOnlyOptimal));
@@ -192,7 +198,7 @@ void UISystem::LoadAsset()
     }
     stbi_image_free(fileThumbnail);
 }
-void UISystem::DockingSpace()
+void UI::DockingSpace()
 {
     // 获取主视口尺寸
     const ImGuiViewport *viewport = ImGui::GetMainViewport();
@@ -225,19 +231,19 @@ void UISystem::DockingSpace()
         mFirstRun = false;
     }
 }
-void UISystem::HierarchyWindow()
+void UI::HierarchyWindow()
 {
     ImGui::Begin("Hierarchy", nullptr, ImGuiWindowFlags_None);
 
     ImGui::End();
 }
-void UISystem::InspectorWindow()
+void UI::InspectorWindow()
 {
     ImGui::Begin("Inspector", nullptr, ImGuiWindowFlags_None);
     ImGui::Text("Inspector");
     ImGui::End();
 }
-void UISystem::SceneViewWindow()
+void UI::SceneViewWindow()
 {
     ImGui::Begin("SceneView", nullptr, ImGuiWindowFlags_None);
     ImVec2 windowPos = ImGui::GetWindowPos();
@@ -283,7 +289,7 @@ void UISystem::SceneViewWindow()
     ImGui::Image(textureId, ImVec2(mSceneWidth, mSceneHeight), ImVec2(0, 1), ImVec2(1, 0));
     ImGui::End();
 }
-void UISystem::AssetWindow()
+void UI::AssetWindow()
 {
     ImGui::Begin("Assets", nullptr, ImGuiWindowFlags_MenuBar);
 
@@ -361,7 +367,7 @@ void UISystem::AssetWindow()
     ImGui::Columns(1);
     ImGui::End();
 }
-void UISystem::Tick(float deltaTime)
+void UI::Tick(float deltaTime)
 {
     ImGui_ImplSDL3_NewFrame();
     ImGui_ImplVulkan_NewFrame();
@@ -380,7 +386,7 @@ void UISystem::Tick(float deltaTime)
         ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), mCommandBuffer);
     }
 }
-void UISystem::Shutdown()
+UI::~UI()
 {
     ImGui_ImplVulkan_Shutdown();
     ImGui_ImplSDL3_Shutdown();

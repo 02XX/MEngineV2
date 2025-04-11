@@ -1,4 +1,5 @@
 #include "SyncPrimitiveManager.hpp"
+#include <vulkan/vulkan_enums.hpp>
 
 namespace MEngine
 {

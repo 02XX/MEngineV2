@@ -10,6 +10,7 @@
 #include <memory>
 #include <unordered_map>
 #include <vector>
+#include <vulkan/vulkan_handles.hpp>
 
 namespace MEngine
 {
@@ -33,8 +34,14 @@ class ImageFactory final : public NoCopyable
     std::shared_ptr<BufferFactory> mBufferFactory;
 
   private:
-    vk::UniqueCommandBuffer mCommandBuffer;
+    vk::UniqueCommandBuffer mCopyCommandBuffer;
+    vk::UniqueCommandBuffer mPreTransitionCommandBuffer;
+    vk::UniqueCommandBuffer mPostTransitionCommandBuffer;
     vk::UniqueFence mFence;
+    vk::UniqueSemaphore mPreTransitionDone;
+    vk::UniqueSemaphore mPostTransitionDone;
+    vk::UniqueSemaphore mCopyDone;
+
     std::vector<vk::Format> mTexture2DFormats;
     std::vector<vk::Format> mTextureCubeFormats;
     std::vector<vk::Format> mRenderTargetFormats;
@@ -56,8 +63,8 @@ class ImageFactory final : public NoCopyable
     UniqueImage CreateImage(ImageType type, vk::Extent3D extent, uint32_t mipLevels = 1,
                             vk::SampleCountFlagBits samples = vk::SampleCountFlagBits::e1);
 
-    UniqueImage CreateImage(ImageType type, vk::Extent3D extent, const void *data, uint32_t mipLevels = 1,
-                            vk::SampleCountFlagBits samples = vk::SampleCountFlagBits::e1);
+    UniqueImage CreateImage(ImageType type, vk::Extent3D extent, vk::DeviceSize size, const void *data,
+                            uint32_t mipLevels = 1, vk::SampleCountFlagBits samples = vk::SampleCountFlagBits::e1);
     vk::UniqueImageView CreateImageView(Image *image, vk::ImageAspectFlags aspectMask = {},
                                         vk::ComponentMapping components = {});
 
@@ -65,6 +72,9 @@ class ImageFactory final : public NoCopyable
     void QueryImageFormat();
     vk::Format GetBestFormat(ImageType type);
     uint32_t GetFormatPixelSize(vk::Format format) const;
-    void CopyBufferToImage(Buffer *srcBuffer, Image *dstImage, vk::ImageSubresourceLayers imageSubresourceLayers);
+    void CopyBufferToImage(Buffer *srcBuffer, Image *dstImage, vk::ImageSubresourceLayers imageSubresourceLayers,
+                           const std::vector<vk::Semaphore> &waitSemaphores,
+                           const std::vector<vk::Semaphore> &signalSemaphores,
+                           const std::vector<vk::PipelineStageFlags> &waitDstStageMask, vk::Fence fences);
 };
 } // namespace MEngine

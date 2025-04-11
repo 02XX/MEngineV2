@@ -55,19 +55,26 @@ UniqueBuffer BufferFactory::CreateBuffer(BufferType type, vk::DeviceSize size, c
         else
         {
             memoryUsage = VMA_MEMORY_USAGE_CPU_TO_GPU;
-            bufferUsage = vk::BufferUsageFlagBits::eTransferDst;
+            bufferUsage = vk::BufferUsageFlagBits::eTransferSrc;
             createflags = VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT;
             auto staging = std::make_unique<Buffer>(mContext, size, bufferUsage, memoryUsage, createflags);
             void *mapped = staging->GetAllocationInfo().pMappedData;
             std::memcpy(mapped, data, size);
+            mContext->GetDevice().resetFences({mFence.get()});
             CopyBuffer(staging.get(), buffer.get());
+            auto result = mContext->GetDevice().waitForFences(mFence.get(), vk::True, 1'000'000'000);
+            if (result != vk::Result::eSuccess)
+            {
+                mLogger->Error("Copy buffer operation failed");
+                throw std::runtime_error("Copy buffer operation failed");
+            }
         }
     }
     return buffer;
 }
 void BufferFactory::CopyBuffer(Buffer *src, Buffer *dst)
 {
-
+    mCommandBuffer->reset();
     vk::CommandBufferBeginInfo beginInfo{};
     beginInfo.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
     mCommandBuffer->begin(beginInfo);
@@ -77,16 +84,14 @@ void BufferFactory::CopyBuffer(Buffer *src, Buffer *dst)
         mCommandBuffer->copyBuffer(src->GetHandle(), dst->GetHandle(), copyRegion);
     }
     mCommandBuffer->end();
-
     vk::SubmitInfo submitInfo{};
     submitInfo.setCommandBuffers(mCommandBuffer.get());
     mContext->SubmitToTransferQueue({submitInfo}, mFence.get());
     auto result = mContext->GetDevice().waitForFences(mFence.get(), vk::True, 1'000'000'000);
     if (result != vk::Result::eSuccess)
     {
-        mLogger->Error("Copy buffer failed");
-        throw std::runtime_error("Copy buffer failed");
+        mLogger->Error("Copy buffer operation failed");
+        throw std::runtime_error("Copy buffer operation failed");
     }
-    mLogger->Debug("Copy buffer success");
 }
 } // namespace MEngine

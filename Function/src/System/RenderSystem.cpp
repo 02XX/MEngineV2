@@ -166,7 +166,7 @@ void RenderSystem::Prepare()
     {
         auto width = mUISystem->GetSceneWidth();
         auto height = mUISystem->GetSceneHeight();
-        mRenderPassManager->RecreateFrameBuffer(width, height);
+        // mRenderPassManager->RecreateFrameBuffer(width, height);
     }
     mDescriptorManager->UpdateUniformDescriptorSet({mMVPBuffer.get()}, 0, mCameraDescriptorSets[mFrameIndex].get());
     // std::array<vk::DescriptorBufferInfo, 1> mvpDescriptorBuffer = {

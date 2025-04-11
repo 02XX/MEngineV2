@@ -39,8 +39,9 @@ void Texture::LoadTexture(const std::filesystem::path &path)
     mWidth = static_cast<uint32_t>(width);
     mHeight = static_cast<uint32_t>(height);
     mChannels = 4;
+    auto size = static_cast<vk::DeviceSize>(mWidth * mHeight * mChannels);
     // 3. 创建图像
-    mImage = mImageFactory->CreateImage(ImageType::Texture2D, vk::Extent3D{mWidth, mHeight, 1});
+    mImage = mImageFactory->CreateImage(ImageType::Texture2D, vk::Extent3D{mWidth, mHeight, 1}, size, imageData);
     // 4. 创建图像视图
     mImageView = mImageFactory->CreateImageView(mImage.get());
     // 5. 创建采样器
