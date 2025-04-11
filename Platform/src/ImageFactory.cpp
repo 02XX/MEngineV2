@@ -224,4 +224,64 @@ uint32_t ImageFactory::GetFormatPixelSize(vk::Format format) const
         throw std::runtime_error("Unsupported format");
     }
 }
+vk::UniqueImageView ImageFactory::CreateImageView(Image *image, vk::ImageAspectFlags aspectMask,
+                                                  vk::ComponentMapping components)
+{
+    if (aspectMask == vk::ImageAspectFlags{})
+    {
+        switch (image->GetFormat())
+        {
+        case vk::Format::eD32SfloatS8Uint:
+        case vk::Format::eD24UnormS8Uint:
+            aspectMask = vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil;
+            break;
+        case vk::Format::eD32Sfloat:
+        case vk::Format::eD16Unorm:
+            aspectMask = vk::ImageAspectFlagBits::eDepth;
+            break;
+        case vk::Format::eR8G8B8A8Unorm:
+        case vk::Format::eB8G8R8A8Unorm:
+        case vk::Format::eR8G8B8A8Srgb:
+        case vk::Format::eB8G8R8A8Srgb:
+            aspectMask = vk::ImageAspectFlagBits::eColor;
+            break;
+        default:
+            mLogger->Error("Unsupported image format for aspect mask");
+            throw std::runtime_error("Unsupported image format for aspect mask");
+        }
+    }
+    vk::ImageViewType viewType{};
+    switch (image->GetImageType())
+    {
+    case vk::ImageType::e1D:
+        viewType = vk::ImageViewType::e1D;
+        break;
+    case vk::ImageType::e2D:
+        viewType = vk::ImageViewType::e2D;
+        break;
+    case vk::ImageType::e3D:
+        viewType = vk::ImageViewType::e3D;
+        break;
+    default:
+        mLogger->Error("Unsupported image type for view type");
+        throw std::runtime_error("Unsupported image type for view type");
+    }
+    vk::ImageSubresourceRange subresourceRange{};
+    subresourceRange.setAspectMask(aspectMask)
+        .setBaseArrayLayer(0)
+        .setLayerCount(image->GetArrayLayers())
+        .setBaseMipLevel(0)
+        .setLevelCount(image->GetMipLevels());
+    vk::ImageViewCreateInfo imageViewCreateInfo{};
+    imageViewCreateInfo.setImage(image->GetHandle())
+        .setViewType(viewType)
+        .setFormat(image->GetFormat())
+        .setSubresourceRange(subresourceRange)
+        .setComponents(components);
+    auto imageView = mContext->GetDevice().createImageViewUnique(imageViewCreateInfo);
+    if (!imageView)
+    {
+        mLogger->Error("Failed to create image view");
+    }
+    return imageView;
 } // namespace MEngine

@@ -45,6 +45,8 @@ class ImageFactory final : public NoCopyable
 
     UniqueImage CreateImage(ImageType type, vk::Extent3D extent, vk::Format format, const void *data,
                             uint32_t mipLevels = 1, vk::SampleCountFlagBits samples = vk::SampleCountFlagBits::e1);
+    vk::UniqueImageView CreateImageView(Image *image, vk::ImageAspectFlags aspectMask = {},
+                                        vk::ComponentMapping components = {});
 
   private:
     uint32_t GetFormatPixelSize(vk::Format format) const;
