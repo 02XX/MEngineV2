@@ -2,7 +2,7 @@
 
 #include "Context.hpp"
 #include "Image.hpp"
-#include "ImageManager.hpp"
+#include "ImageFactory.hpp"
 #include "Interface/ILogger.hpp"
 #include "MEngine.hpp"
 #include "NoCopyable.hpp"
@@ -74,7 +74,7 @@ class RenderPassManager final : public NoCopyable
     // DI
     std::shared_ptr<ILogger> mLogger;
     std::shared_ptr<Context> mContext;
-    std::shared_ptr<ImageManager> mImageManager;
+    std::shared_ptr<ImageFactory> mImageFactory;
 
   private:
     std::unordered_map<RenderPassType, vk::UniqueRenderPass> mRenderPasses;
@@ -105,7 +105,7 @@ class RenderPassManager final : public NoCopyable
 
   public:
     RenderPassManager(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context,
-                      std::shared_ptr<ImageManager> imageManager);
+                      std::shared_ptr<ImageFactory> imageFactory);
     vk::RenderPass GetRenderPass(RenderPassType type) const;
     vk::Framebuffer GetFrameBuffer(RenderPassType type, uint32_t index) const;
     const DefferFrameResource &GetDefferFrameResource(uint32_t index) const

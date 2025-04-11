@@ -35,34 +35,11 @@ class ImageFactory final : public NoCopyable
   private:
     vk::UniqueCommandBuffer mCommandBuffer;
     vk::UniqueFence mFence;
-    const std::vector<vk::Format> mTexture2DFormats = {
-        vk::Format::eR32G32B32A32Sfloat, // HDR
-        vk::Format::eR16G16B16A16Sfloat, // HDR
-        vk::Format::eR8G8B8A8Srgb,       // HDR
-        vk::Format::eB8G8R8A8Srgb,       vk::Format::eR8G8B8A8Unorm,
-    };
-    const std::vector<vk::Format> mTextureCubeFormats = {
-        vk::Format::eR32G32B32A32Sfloat, // HDR
-        vk::Format::eR16G16B16A16Sfloat, // HDR
-        vk::Format::eR8G8B8A8Srgb,       // HDR
-        vk::Format::eB8G8R8A8Srgb,       vk::Format::eR8G8B8A8Unorm,
-    };
-    const std::vector<vk::Format> mRenderTargetFormats = {
-        vk::Format::eR32G32B32A32Sfloat, // HDR
-        vk::Format::eR16G16B16A16Sfloat, // HDR
-        vk::Format::eR8G8B8A8Srgb,       // HDR
-        vk::Format::eB8G8R8A8Srgb,       vk::Format::eR8G8B8A8Unorm,
-    };
-    const std::vector<vk::Format> mDepthStencilCandidintFormats = {
-        vk::Format::eD32SfloatS8Uint,
-        vk::Format::eD24UnormS8Uint,
-    };
-    const std::vector<vk::Format> mStorageFormats = {
-        vk::Format::eR32G32B32A32Sfloat, // HDR
-        vk::Format::eR16G16B16A16Sfloat, // HDR
-        vk::Format::eR8G8B8A8Srgb,       // HDR
-        vk::Format::eB8G8R8A8Srgb,       vk::Format::eR8G8B8A8Unorm,
-    };
+    std::vector<vk::Format> mTexture2DFormats;
+    std::vector<vk::Format> mTextureCubeFormats;
+    std::vector<vk::Format> mRenderTargetFormats;
+    std::vector<vk::Format> mDepthStencilCandidintFormats;
+    std::vector<vk::Format> mStorageFormats;
 
     vk::Format mTexture2DFormat;
     vk::Format mTextureCubeFormat;

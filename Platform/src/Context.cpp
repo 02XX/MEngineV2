@@ -136,6 +136,8 @@ void Context::QuerySurfaceInfo()
     auto presentModes = mPhysicalDevice.getSurfacePresentModesKHR(mSurface.get());
     auto capabilities = mPhysicalDevice.getSurfaceCapabilitiesKHR(mSurface.get());
     std::vector<vk::SurfaceFormatKHR> candidatesFormats = {
+        {vk::Format::eR32G32B32A32Sfloat, vk::ColorSpaceKHR::eSrgbNonlinear},
+        {vk::Format::eR16G16B16A16Sfloat, vk::ColorSpaceKHR::eSrgbNonlinear},
         {vk::Format::eR8G8B8A8Srgb, vk::ColorSpaceKHR::eSrgbNonlinear},
         {vk::Format::eB8G8R8A8Srgb, vk::ColorSpaceKHR::eSrgbNonlinear},
         {vk::Format::eR8G8B8A8Unorm, vk::ColorSpaceKHR::eSrgbNonlinear},

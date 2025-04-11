@@ -3,8 +3,8 @@
 namespace MEngine
 {
 RenderPassManager::RenderPassManager(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context,
-                                     std::shared_ptr<ImageManager> imageManager)
-    : mLogger(logger), mContext(context), mImageManager(imageManager)
+                                     std::shared_ptr<ImageFactory> imageFactory)
+    : mLogger(logger), mContext(context), mImageFactory(imageFactory)
 {
     // 创建延迟渲染的GBuffer渲染通道
     // CreateGBufferRenderPass();
@@ -270,54 +270,39 @@ void RenderPassManager::CreateDefferFrameBuffer()
     {
         auto defferFrameResource = DefferFrameResource{};
         // 1. 创建世界空间位置图像和视图
-        auto positionImage = mImageManager->CreateUniqueTexture2D(extent, vk::Format::eR32G32B32A32Sfloat);
-        auto positionImageView = mImageManager->CreateImageView(
-            positionImage->GetImage(), vk::Format::eR32G32B32A32Sfloat, vk::ComponentMapping{},
-            vk::ImageSubresourceRange{vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1});
+        auto positionImage = mImageFactory->CreateImage(ImageType::Texture2D, vk::Extent3D(extent, 1));
+        auto positionImageView = mImageFactory->CreateImageView(positionImage.get());
         defferFrameResource.positionImage = std::move(positionImage);
         defferFrameResource.positionImageView = std::move(positionImageView);
         // 2. 创建法线图像和视图
-        auto normalImage = mImageManager->CreateUniqueTexture2D(extent, vk::Format::eR16G16B16A16Sfloat);
-        auto normalImageView = mImageManager->CreateImageView(
-            normalImage->GetImage(), vk::Format::eR16G16B16A16Sfloat, vk::ComponentMapping{},
-            vk::ImageSubresourceRange{vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1});
+        auto normalImage = mImageFactory->CreateImage(ImageType::Texture2D, vk::Extent3D(extent, 1));
+        auto normalImageView = mImageFactory->CreateImageView(normalImage.get());
         defferFrameResource.normalImage = std::move(normalImage);
         defferFrameResource.normalImageView = std::move(normalImageView);
         // 3. 创建Albedo图像和视图
-        auto albedoImage = mImageManager->CreateUniqueTexture2D(extent, vk::Format::eR8G8B8A8Unorm);
-        auto albedoImageView =
-            mImageManager->CreateImageView(albedoImage->GetImage(), vk::Format::eR8G8B8A8Unorm, vk::ComponentMapping{},
-                                           vk::ImageSubresourceRange{vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1});
+        auto albedoImage = mImageFactory->CreateImage(ImageType::Texture2D, vk::Extent3D(extent, 1));
+        auto albedoImageView = mImageFactory->CreateImageView(albedoImage.get());
         defferFrameResource.albedoImage = std::move(albedoImage);
         defferFrameResource.albedoImageView = std::move(albedoImageView);
         // 4. 创建金属度/粗糙度图像和视图
-        auto metalRoughImage = mImageManager->CreateUniqueTexture2D(extent, vk::Format::eR8G8B8A8Unorm);
-        auto metalRoughImageView = mImageManager->CreateImageView(
-            metalRoughImage->GetImage(), vk::Format::eR8G8B8A8Unorm, vk::ComponentMapping{},
-            vk::ImageSubresourceRange{vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1});
+        auto metalRoughImage = mImageFactory->CreateImage(ImageType::Texture2D, vk::Extent3D(extent, 1));
+        auto metalRoughImageView = mImageFactory->CreateImageView(metalRoughImage.get());
         defferFrameResource.metalRoughImage = std::move(metalRoughImage);
         defferFrameResource.metalRoughImageView = std::move(metalRoughImageView);
         // 5. 创建环境光遮蔽图像和视图
-        auto aoImage = mImageManager->CreateUniqueTexture2D(extent, vk::Format::eR8Unorm);
-        auto aoImageView =
-            mImageManager->CreateImageView(aoImage->GetImage(), vk::Format::eR8Unorm, vk::ComponentMapping{},
-                                           vk::ImageSubresourceRange{vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1});
+        auto aoImage = mImageFactory->CreateImage(ImageType::Texture2D, vk::Extent3D(extent, 1));
+        auto aoImageView = mImageFactory->CreateImageView(aoImage.get());
         defferFrameResource.aoImage = std::move(aoImage);
         defferFrameResource.aoImageView = std::move(aoImageView);
         // 6. 创建深度模板图像和视图
         auto extent = mContext->GetSurfaceInfo().extent;
-        auto depthImage = mImageManager->CreateUniqueDepthStencil(extent);
-        auto depthImageView = mImageManager->CreateImageView(
-            depthImage->GetImage(), vk::Format::eD32SfloatS8Uint, vk::ComponentMapping{},
-            vk::ImageSubresourceRange{vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil, 0, 1, 0, 1});
+        auto depthImage = mImageFactory->CreateImage(ImageType::DepthStencil, vk::Extent3D(extent, 1));
+        auto depthImageView = mImageFactory->CreateImageView(depthImage.get());
         defferFrameResource.depthStencilImage = std::move(depthImage);
         defferFrameResource.depthStencilImageView = std::move(depthImageView);
         // 7. 创建render image和视图
-        auto renderImage =
-            mImageManager->CreateUniqueTexture2D(extent, mContext->GetSurfaceInfo().format.format, 1, nullptr);
-        auto rederImageView = mImageManager->CreateImageView(
-            renderImage->GetImage(), mContext->GetSurfaceInfo().format.format, vk::ComponentMapping{},
-            vk::ImageSubresourceRange{vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1});
+        auto renderImage = mImageFactory->CreateImage(ImageType::RenderTarget, vk::Extent3D(extent, 1));
+        auto rederImageView = mImageFactory->CreateImageView(renderImage.get());
         defferFrameResource.renderImage = std::move(renderImage);
         defferFrameResource.renderImageView = std::move(rederImageView);
 
@@ -367,18 +352,13 @@ void RenderPassManager::CreateTranslucencyFrameBuffer()
     for (size_t i = 0; i < swapchainImageViews.size(); ++i)
     {
         // 创建render image和视图
-        auto renderImage =
-            mImageManager->CreateUniqueTexture2D(extent, mContext->GetSurfaceInfo().format.format, 1, nullptr);
-        auto rederImageView = mImageManager->CreateImageView(
-            renderImage->GetImage(), mContext->GetSurfaceInfo().format.format, vk::ComponentMapping{},
-            vk::ImageSubresourceRange{vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1});
+        auto renderImage = mImageFactory->CreateImage(ImageType::RenderTarget, vk::Extent3D(extent, 1));
+        auto rederImageView = mImageFactory->CreateImageView(renderImage.get());
         mTranslucencyFrameResources[i].renderImage = std::move(renderImage);
         mTranslucencyFrameResources[i].renderImageView = std::move(rederImageView);
         // 创建深度模板图像和视图
-        auto depthImage = mImageManager->CreateUniqueDepthStencil(extent);
-        auto depthImageView = mImageManager->CreateImageView(
-            depthImage->GetImage(), vk::Format::eD32SfloatS8Uint, vk::ComponentMapping{},
-            vk::ImageSubresourceRange{vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil, 0, 1, 0, 1});
+        auto depthImage = mImageFactory->CreateImage(ImageType::DepthStencil, vk::Extent3D(extent, 1));
+        auto depthImageView = mImageFactory->CreateImageView(depthImage.get());
         mTranslucencyFrameResources[i].depthStencilImage = std::move(depthImage);
         mTranslucencyFrameResources[i].depthStencilImageView = std::move(depthImageView);
 

@@ -11,6 +11,29 @@ ImageFactory::ImageFactory(std::shared_ptr<ILogger> logger, std::shared_ptr<Cont
 {
     mFence = mSyncPrimitiveManager->CreateFence();
     mCommandBuffer = mCommandBufferManager->CreatePrimaryCommandBuffer(CommandBufferType::Transfer);
+    mTexture2DFormats = {
+        vk::Format::eR32G32B32A32Sfloat, // HDR
+        vk::Format::eR16G16B16A16Sfloat, // HDR
+        vk::Format::eR8G8B8A8Srgb,       // HDR
+        vk::Format::eB8G8R8A8Srgb,       vk::Format::eR8G8B8A8Unorm,
+    };
+    mTextureCubeFormats = {
+        vk::Format::eR32G32B32A32Sfloat, // HDR
+        vk::Format::eR16G16B16A16Sfloat, // HDR
+        vk::Format::eR8G8B8A8Srgb,       // HDR
+        vk::Format::eB8G8R8A8Srgb,       vk::Format::eR8G8B8A8Unorm,
+    };
+    mRenderTargetFormats = {mContext->GetSurfaceInfo().format.format};
+    mDepthStencilCandidintFormats = {
+        vk::Format::eD32SfloatS8Uint,
+        vk::Format::eD24UnormS8Uint,
+    };
+    mStorageFormats = {
+        vk::Format::eR32G32B32A32Sfloat, // HDR
+        vk::Format::eR16G16B16A16Sfloat, // HDR
+        vk::Format::eR8G8B8A8Srgb,       // HDR
+        vk::Format::eB8G8R8A8Srgb,       vk::Format::eR8G8B8A8Unorm,
+    };
     QueryImageFormat();
 }
 UniqueImage ImageFactory::CreateImage(ImageType type, vk::Extent3D extent, const void *data, uint32_t mipLevels,
