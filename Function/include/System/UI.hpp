@@ -17,6 +17,7 @@
 #include "imgui_internal.h"
 
 #include <cstdint>
+#include <vector>
 
 #include "Componet/CameraComponent.hpp"
 #include "Componet/MaterialComponent.hpp"
@@ -50,6 +51,7 @@ class UI
     bool mIsFirstFrame = true;
     std::filesystem::path mProjectPath = std::filesystem::current_path(); // TODO：添加创建项目的功能，并修改此路径
     std::filesystem::path mAssetsPath = mProjectPath / "Assets";
+    ImFont *mMSYHFont; // 微软雅黑字体
     // ImGUIZmo 相关
     float mGizmoWidth = 10.f;
     float mGizmoHeight = 10.f;
@@ -94,10 +96,12 @@ class UI
     entt::entity mMainCamera;
 
     entt::entity mSelectedEntity = entt::null;
+    entt::entity mHoveredEntity = entt::null;
+    std::vector<entt::entity> mNeedDeleteEntities;
 
   private:
     void SetDefaultWindowLayout();
-
+    void RightClickMenu();
     void DockingSpace();
     void HierarchyWindow();
     void InspectorWindow();
@@ -138,6 +142,14 @@ class UI
     inline void SetImageIndex(uint32_t imageIndex)
     {
         mImageIndex = imageIndex;
+    }
+    inline std::vector<entt::entity> GetNeedDeleteEntities() const
+    {
+        return mNeedDeleteEntities;
+    }
+    inline void ClearNeedDeleteEntities()
+    {
+        mNeedDeleteEntities.clear();
     }
 };
 

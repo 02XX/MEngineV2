@@ -41,7 +41,10 @@ UI::UI(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context, std::s
     ImGui_ImplVulkan_Init(&initInfo);
 
     // Upload Fonts
-
+    mIO->Fonts->AddFontDefault();
+    mMSYHFont = mIO->Fonts->AddFontFromFileTTF((mUIResourcePath / "Font" / "MSYH.TTC").string().c_str(), 16.0f, nullptr,
+                                               mIO->Fonts->GetGlyphRangesChineseSimplifiedCommon());
+    mIO->FontDefault = mMSYHFont;
     // ImGuizmo
     ImGuizmo::SetImGuiContext(ImGui::GetCurrentContext());
     ImGuizmo::Enable(true);
@@ -78,6 +81,7 @@ void UI::CollectEntity()
         }
     }
 }
+
 void UI::LoadUIIcon(const std::filesystem::path &iconPath, vk::DescriptorSet &descriptorSet)
 {
     mIconTransitionCommandBuffer->reset();
@@ -155,11 +159,15 @@ void UI::SetDefaultWindowLayout()
     ImGui::DockBuilderDockWindow("Toolbar", dockTopCenterID);      // 顶部
     ImGui::DockBuilderFinish(mDockSpaceID);
 }
+void UI::RightClickMenu()
+{
+}
 void UI::DockingSpace()
 {
     mMainViewport = ImGui::GetMainViewport();
     mDockSpaceID = ImGui::DockSpaceOverViewport();
 }
+
 void UI::HierarchyWindow()
 {
     ImGui::Begin("Hierarchy", nullptr, ImGuiWindowFlags_None);
@@ -172,6 +180,43 @@ void UI::HierarchyWindow()
         {
             mSelectedEntity = entity;
         }
+        if (ImGui::IsItemHovered())
+        {
+            mHoveredEntity = entity;
+            if (ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+            {
+                mSelectedEntity = entity;
+            }
+        }
+    }
+
+    if (ImGui::IsWindowHovered() && !ImGui::IsAnyItemHovered())
+    {
+        mHoveredEntity = entt::null;
+    }
+    // 右键菜单
+    if (ImGui::IsMouseClicked(ImGuiMouseButton_Right) && ImGui::IsWindowHovered())
+    {
+        ImGui::OpenPopup("HierarchyContextMenu");
+    }
+    if (ImGui::BeginPopupContextWindow("HierarchyContextMenu", ImGuiPopupFlags_MouseButtonRight))
+    {
+        if (ImGui::MenuItem("Create Entity"))
+        {
+            auto entity = mRegistry->create();
+            mRegistry->emplace<TransformComponent>(entity);
+            mSelectedEntity = entity;
+        }
+        if (mHoveredEntity != entt::null)
+        {
+            ImGui::Separator();
+            if (ImGui::MenuItem("Delete Entity"))
+            {
+                mNeedDeleteEntities.push_back(mHoveredEntity);
+                mSelectedEntity = entt::null;
+            }
+        }
+        ImGui::EndPopup();
     }
     ImGui::End();
 }
@@ -290,13 +335,13 @@ void UI::ToolbarWindow()
         ImGui::Text("SceneView Size: %1.f x %1.f", sceneWindow->ContentSize.x, sceneWindow->ContentSize.y);
         ImGui::SameLine();
         ImGui::TextColored(ImVec4(1, 1, 0, 1), "FPS: %1.f", ImGui::GetIO().Framerate);
-        if (ImGui::RadioButton("Translate", mGuizmoOperation == ImGuizmo::TRANSLATE))
+        if (ImGui::RadioButton("Translate", mGuizmoOperation == ImGuizmo::TRANSLATE) || ImGui::IsKeyDown(ImGuiKey_W))
             mGuizmoOperation = ImGuizmo::TRANSLATE;
         ImGui::SameLine();
-        if (ImGui::RadioButton("Rotate", mGuizmoOperation == ImGuizmo::ROTATE))
+        if (ImGui::RadioButton("Rotate", mGuizmoOperation == ImGuizmo::ROTATE) || ImGui::IsKeyDown(ImGuiKey_E))
             mGuizmoOperation = ImGuizmo::ROTATE;
         ImGui::SameLine();
-        if (ImGui::RadioButton("Scale", mGuizmoOperation == ImGuizmo::SCALE))
+        if (ImGui::RadioButton("Scale", mGuizmoOperation == ImGuizmo::SCALE) || ImGui::IsKeyDown(ImGuiKey_R))
             mGuizmoOperation = ImGuizmo::SCALE;
         if (ImGui::RadioButton("Local", mGuizmoMode == ImGuizmo::LOCAL))
             mGuizmoMode = ImGuizmo::LOCAL;
@@ -310,7 +355,6 @@ void UI::ToolbarWindow()
 void UI::SceneViewWindow()
 {
     ImGui::Begin("SceneView", nullptr, ImGuiWindowFlags_None);
-
     ImVec2 windowPos = ImGui::GetWindowPos();
     ImVec2 windowSize = ImGui::GetContentRegionAvail();
     // 尺寸变化检测
@@ -442,6 +486,7 @@ void UI::RecordUICommandBuffer(vk::CommandBuffer commandBuffer)
         SetDefaultWindowLayout();
         mIsFirstFrame = false;
     }
+    RightClickMenu();
     HierarchyWindow();
     InspectorWindow();
     AssetWindow();

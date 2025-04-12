@@ -63,8 +63,17 @@ add_custom_target(
     COMMENT "Copying UI files from source_folder to destination_folder..."
     VERBATIM
 )
-
+# #Font
+# add_custom_target(
+#     font
+#     ALL
+#     COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/bin/Resource/Font
+#     COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/Font ${CMAKE_BINARY_DIR}/bin/Resource/Font
+#     COMMENT "Copying Font files from source_folder to destination_folder..."
+#     VERBATIM
+# )
 add_dependencies(Resource shader)
 add_dependencies(Resource config)
 add_dependencies(Resource material)
 add_dependencies(Resource ui)
+# add_dependencies(Resource font)

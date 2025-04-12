@@ -71,6 +71,12 @@ void RenderSystem::Shutdown()
 
 void RenderSystem::CollectRenderEntities()
 {
+    auto needDeleteEntities = mUI->GetNeedDeleteEntities();
+    for (auto entity : needDeleteEntities)
+    {
+        mRegistry->destroy(entity);
+    }
+    mUI->ClearNeedDeleteEntities();
     mBatchMaterialComponents.clear();
     auto entities = mRegistry->view<MaterialComponent, MeshComponent>();
     for (auto entity : entities)
@@ -153,16 +159,6 @@ void RenderSystem::Prepare()
         // mRenderPassManager->RecreateFrameBuffer(width, height);
     }
     mDescriptorManager->UpdateUniformDescriptorSet({mMVPBuffer.get()}, 0, mCameraDescriptorSets[mFrameIndex].get());
-    // std::array<vk::DescriptorBufferInfo, 1> mvpDescriptorBuffer = {
-    //     vk::DescriptorBufferInfo(mMVPBuffer->GetBuffer(), 0, mMVPBuffer->GetAllocationInfo().size)};
-    // vk::WriteDescriptorSet mvpDescriptorSetWriter;
-    // mvpDescriptorSetWriter.setBufferInfo(mvpDescriptorBuffer)
-    //     .setDescriptorType(vk::DescriptorType::eUniformBuffer)
-    //     .setDescriptorCount(1)
-    //     .setDstSet(mCameraDescriptorSets[mFrameIndex].get())
-    //     .setDstBinding(0)
-    //     .setDstArrayElement(0);
-    // mContext->GetDevice().updateDescriptorSets({mvpDescriptorSetWriter}, {});
 }
 void RenderSystem::RenderShadowDepthPass()
 {
