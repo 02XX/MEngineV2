@@ -21,7 +21,7 @@ class TextureManager final : public NoCopyable
   public:
     TextureManager(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context,
                    std::shared_ptr<ImageFactory> imageFactory, std::shared_ptr<SamplerManager> samplerManager);
-    std::shared_ptr<Texture> CreateTexture(std::filesystem::path path);
+    std::shared_ptr<Texture> CreateTexture(std::filesystem::path path, TextureType type);
     std::shared_ptr<Texture> GetTexture(uint32_t id);
 };
 } // namespace MEngine

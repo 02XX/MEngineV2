@@ -10,17 +10,17 @@ class System : public ISystem
 
   public:
     System() = default;
-    ~System() override = default;
+    virtual ~System() override = default;
 
-    void Init() override {};
-    void Tick(float deltaTime) override {};
-    void Shutdown() override {};
+    virtual void Init() override {};
+    virtual void Tick(float deltaTime) override {};
+    virtual void Shutdown() override {};
 
-    bool IsInit() const
+    virtual bool IsInit() const
     {
         return mIsInit;
     };
-    bool IsShutdown() const
+    virtual bool IsShutdown() const
     {
         return mIsShutdown;
     };

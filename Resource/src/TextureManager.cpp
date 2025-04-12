@@ -8,10 +8,10 @@ TextureManager::TextureManager(std::shared_ptr<ILogger> logger, std::shared_ptr<
     : mLogger(logger), mContext(context), mImageFactory(imageFactory), mSamplerManager(samplerManager)
 {
 }
-std::shared_ptr<Texture> TextureManager::CreateTexture(std::filesystem::path path)
+std::shared_ptr<Texture> TextureManager::CreateTexture(std::filesystem::path path, TextureType type)
 {
 
-    auto texture = std::make_shared<Texture>(mContext, mImageFactory, mSamplerManager, path);
+    auto texture = std::make_shared<Texture>(mContext, mImageFactory, mSamplerManager, type, path);
     auto id = std::hash<std::string>{}(path.string());
     mTextures[id] = texture;
     return texture;

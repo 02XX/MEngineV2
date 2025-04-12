@@ -90,7 +90,7 @@ void RenderSystem::CollectMainCamera()
         {
             mMainCameraEntity = entity;
             // 设置Uniform Buffer
-            mMVPUniform.model = mRotationMatrix;
+            mMVPUniform.model = camera.viewMatrix;
             mMVPUniform.view = camera.viewMatrix;
             mMVPUniform.projection = camera.projectionMatrix;
             memcpy(mMVPBuffer->GetAllocationInfo().pMappedData, &mMVPUniform, sizeof(mMVPUniform));
@@ -98,25 +98,10 @@ void RenderSystem::CollectMainCamera()
         }
     }
 }
-glm::mat4x4 RenderSystem::GetModelMatrix(entt::entity entity)
-{
-    auto &transform = mRegistry->get<TransformComponent>(entity);
-    glm::mat4x4 modelMatrix = glm::mat4(1.0f);
-    modelMatrix = glm::translate(modelMatrix, transform.position);
-    modelMatrix = glm::rotate(modelMatrix, glm::radians(transform.rotation.x), glm::vec3(1.0f, 0.0f, 0.0f));
-    modelMatrix = glm::rotate(modelMatrix, glm::radians(transform.rotation.y), glm::vec3(0.0f, 1.0f, 0.0f));
-    modelMatrix = glm::rotate(modelMatrix, glm::radians(transform.rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
-    modelMatrix = glm::scale(modelMatrix, transform.scale);
-    return modelMatrix;
-}
-void RenderSystem::TickRotationMatrix()
-{
-    mRotationMatrix = glm::rotate(mRotationMatrix, glm::radians(5.0f), glm::vec3(1.0f, 0.0f, 1.0f));
-}
 void RenderSystem::Tick(float deltaTime)
 {
     CollectRenderEntities(); // Collect same material render entities
-    TickRotationMatrix();
+    // TickRotationMatrix();
     CollectMainCamera();
     Prepare(); // Prepare
     // RenderDefferPass();       // Deffer pass
@@ -245,10 +230,10 @@ void RenderSystem::RenderTranslucencyPass()
         {
             auto &material = mRegistry->get<MaterialComponent>(entity);
             auto &mesh = mRegistry->get<MeshComponent>(entity);
-            auto M = GetModelMatrix(entity);
+            auto &transform = mRegistry->get<TransformComponent>(entity);
             // 1. 绑定push constant
             mGraphicCommandBuffers[mFrameIndex]->pushConstants(pipelineLayout, vk::ShaderStageFlagBits::eVertex, 0,
-                                                               sizeof(glm::mat4x4), &M);
+                                                               sizeof(glm::mat4x4), &transform.modelMatrix);
             // 2. 绑定MVP描述符集
             mGraphicCommandBuffers[mFrameIndex]->bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0,
                                                                     mCameraDescriptorSets[mFrameIndex].get(), {});

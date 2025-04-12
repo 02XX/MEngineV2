@@ -93,9 +93,7 @@ class RenderSystem final : public System
     void RenderUIPass(float deltaTime);
     void Present();
 
-    glm::mat4x4 GetModelMatrix(entt::entity entity);
-    glm::mat4x4 mRotationMatrix = glm::mat4(1.0f);
-    void TickRotationMatrix();
+
 
   public:
     RenderSystem(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context,

@@ -1,11 +1,11 @@
 #pragma once
-
 #include "CommandBuffeManager.hpp"
 #include "Context.hpp"
 #include "Image.hpp"
 #include "ImageFactory.hpp"
 #include "Interface/ILogger.hpp"
 #include "Interface/IWindow.hpp"
+#include "MEngine.hpp"
 #include "RenderPassManager.hpp"
 #include "SamplerManager.hpp"
 #include "System/ISystem.hpp"
@@ -16,18 +16,16 @@
 #include "imgui_impl_vulkan.h"
 #include "imgui_internal.h"
 
-#include <glm/gtc/type_ptr.hpp>
+#include <cstdint>
 
 #include "Componet/CameraComponent.hpp"
+#include "Componet/MaterialComponent.hpp"
+#include "Componet/MeshComponent.hpp"
+#include "Componet/TransformComponent.hpp"
 #include "ImGuizmo.h"
 #include "ImageFactory.hpp"
 #include "Math.hpp"
 #include "stb_image.h"
-#include <cstdint>
-#include <filesystem>
-#include <memory>
-#include <vector>
-#include <vulkan/vulkan_handles.hpp>
 
 namespace MEngine
 {
@@ -52,6 +50,11 @@ class UI
     bool mIsFirstFrame = true;
     std::filesystem::path mProjectPath = std::filesystem::current_path(); // TODO：添加创建项目的功能，并修改此路径
     std::filesystem::path mAssetsPath = mProjectPath / "Assets";
+    // ImGUIZmo 相关
+    float mGizmoWidth = 10.f;
+    float mGizmoHeight = 10.f;
+    ImGuizmo::OPERATION mGuizmoOperation = ImGuizmo::TRANSLATE;
+    ImGuizmo::MODE mGuizmoMode = ImGuizmo::LOCAL;
 
   private:
     // Assets View
@@ -67,6 +70,12 @@ class UI
     vk::UniqueFence mIconTransitionFence;
 
   private:
+    // Toolbar View
+    bool mIsPlay = false;
+    bool mIsPause = false;
+    bool mIsStop = true;
+
+  private:
     // Scene View
     bool mIsSceneViewPortChanged = false;
     uint32_t mSceneViewPortWidth = 0;
@@ -77,7 +86,14 @@ class UI
     uint32_t mImageIndex = 0;
 
   private:
+    // Inspector View
+    uint32_t mInspectorImageWidth = 50;
+    uint32_t mInspectorImageHeight = 50;
+
+  private:
     entt::entity mMainCamera;
+
+    entt::entity mSelectedEntity = entt::null;
 
   private:
     void SetDefaultWindowLayout();
@@ -85,6 +101,7 @@ class UI
     void DockingSpace();
     void HierarchyWindow();
     void InspectorWindow();
+    void ToolbarWindow();
     void SceneViewWindow();
     void AssetWindow();
 

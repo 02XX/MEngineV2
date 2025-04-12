@@ -5,6 +5,7 @@
 #include "MEngine.hpp"
 #include "glm/fwd.hpp"
 #include "glm/glm.hpp"
+#include "glm/gtc/quaternion.hpp"
 #include <cstdint>
 #include <memory>
 namespace MEngine
@@ -12,7 +13,9 @@ namespace MEngine
 struct TransformComponent
 {
     glm::vec3 position;
-    glm::vec3 rotation;
+    glm::quat rotation;
     glm::vec3 scale;
+    bool isNeedUpdate = true;
+    glm::mat4x4 modelMatrix;
 };
 } // namespace MEngine

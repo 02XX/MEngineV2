@@ -28,7 +28,10 @@ class Material final : public NoCopyable
              std::shared_ptr<PipelineLayoutManager> pipelineLayoutManager, PipelineType pipelineType,
              PipelineLayoutType pipelineLayoutType);
 
-    void AddTexture(TextureType type, std::shared_ptr<Texture> texture);
+    void AddTexture(std::shared_ptr<Texture> texture);
+    std::vector<std::shared_ptr<Texture>> GetTextures() const;
+    std::shared_ptr<Texture> GetTexture(TextureType type) const;
+
     inline PipelineType GetPipelineType() const
     {
         return mPipelineType;
@@ -40,6 +43,14 @@ class Material final : public NoCopyable
     inline vk::DescriptorSet GetDescriptorSet() const
     {
         return mDescriptorSet.get();
+    }
+    inline void SetPipelineType(PipelineType pipelineType)
+    {
+        mPipelineType = pipelineType;
+    }
+    inline void SetPipelineLayoutType(PipelineLayoutType pipelineLayoutType)
+    {
+        mPipelineLayoutType = pipelineLayoutType;
     }
 };
 } // namespace MEngine

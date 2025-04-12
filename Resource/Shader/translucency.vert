@@ -21,7 +21,6 @@ pushConstant;
 
 void main()
 {
-    gl_Position = transform.projectionMatrix * transform.viewMatrix * pushConstant.modelMatrix * transform.modelMatrix *
-                  vec4(inPosition, 1.0);
+    gl_Position = transform.projectionMatrix * transform.viewMatrix * pushConstant.modelMatrix * vec4(inPosition, 1.0);
     outTexCoords = inTexCoords;
 }

@@ -17,8 +17,8 @@ std::shared_ptr<Material> MaterialManager::CreateTranslucencyMaterial(std::files
 {
     auto material = std::make_shared<Material>(mDescriptorManager, mPipelineManager, mPipelineLayoutManager,
                                                PipelineType::Translucency, PipelineLayoutType::TranslucencyLayout);
-    auto texture = mTextureManager->CreateTexture(baseColorPath);
-    material->AddTexture(TextureType::BaseColor, texture);
+    auto texture = mTextureManager->CreateTexture(baseColorPath, TextureType::BaseColor);
+    material->AddTexture(texture);
     auto id = std::hash<std::string>{}(baseColorPath.string());
     mMaterials[id] = material;
     return material;
@@ -45,8 +45,8 @@ std::shared_ptr<Material> MaterialManager::GetDefaultMaterial()
     // TODO: 改成PBR默认材质
     auto material = std::make_shared<Material>(mDescriptorManager, mPipelineManager, mPipelineLayoutManager,
                                                PipelineType::Translucency, PipelineLayoutType::TranslucencyLayout);
-    auto texture = mTextureManager->CreateTexture(mDefaultAlbedoPath);
-    material->AddTexture(TextureType::BaseColor, texture);
+    auto texture = mTextureManager->CreateTexture(mDefaultAlbedoPath, TextureType::BaseColor);
+    material->AddTexture(texture);
     auto id = std::hash<std::string>{}(mDefaultAlbedoPath.string());
     mMaterials[id] = material;
     return material;

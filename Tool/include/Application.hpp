@@ -25,6 +25,7 @@
 #include "System/CameraSystem.hpp"
 #include "System/ISystem.hpp"
 #include "System/RenderSystem.hpp"
+#include "System/TransformSystem.hpp"
 #include "System/UI.hpp"
 #include "TextureManager.hpp"
 
@@ -60,7 +61,8 @@ class Application final : public NoCopyable
         bind<BasicGeometryFactory>().to<BasicGeometryFactory>().in(singleton),
         bind<BasicGeometryEntityManager>().to<BasicGeometryEntityManager>().in(singleton),
         bind<CameraSystem>().to<CameraSystem>().in(singleton), bind<UI>().to<UI>().in(singleton),
-        bind<RenderSystem>().to<RenderSystem>().in(singleton))) mInjector;
+        bind<RenderSystem>().to<RenderSystem>().in(singleton),
+        bind<TransformSystem>().to<TransformSystem>().in(singleton))) mInjector;
 
     // DI
     std::shared_ptr<ILogger> mLogger;
@@ -85,6 +87,7 @@ class Application final : public NoCopyable
     std::shared_ptr<UI> mUI;
     std::shared_ptr<RenderSystem> mRenderSystem;
     std::shared_ptr<ISystem> mCameraSystem;
+    std::shared_ptr<ISystem> mTransformSystem;
 
     // time
     uint32_t mTargetFPS = 120;

@@ -1,4 +1,5 @@
 #include "System/UI.hpp"
+#include "imgui.h"
 
 namespace MEngine
 {
@@ -51,7 +52,7 @@ UI::UI(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context, std::s
 }
 void UI::ProcessEvent(const SDL_Event *event)
 {
-    ImGui_ImplSDL3_ProcessEvent(static_cast<const SDL_Event *>(event));
+    ImGui_ImplSDL3_ProcessEvent(event);
 }
 void UI::SetSceneViewPort(const std::vector<vk::ImageView> &imageViews)
 {
@@ -143,11 +144,15 @@ void UI::SetDefaultWindowLayout()
     // 3. 剩余部分（70%）拆分为中（60%）和右（40%）
     ImGuiID dockCenterID, dockRightID;
     ImGui::DockBuilderSplitNode(remainingTop, ImGuiDir_Right, 0.4, &dockRightID, &dockCenterID);
+    // 4. 中部拆分上(20%)和下(80%)
+    ImGuiID dockTopCenterID, dockBottomCenterID;
+    ImGui::DockBuilderSplitNode(dockCenterID, ImGuiDir_Up, 0.15, &dockTopCenterID, &dockBottomCenterID);
     // 绑定窗口
-    ImGui::DockBuilderDockWindow("SceneView", dockCenterID); // 中间
-    ImGui::DockBuilderDockWindow("Hierarchy", dockLeftID);   // 左侧
-    ImGui::DockBuilderDockWindow("Inspector", dockRightID);  // 右侧
-    ImGui::DockBuilderDockWindow("Assets", dockBottomID);    // 底部
+    ImGui::DockBuilderDockWindow("SceneView", dockBottomCenterID); // 中间
+    ImGui::DockBuilderDockWindow("Hierarchy", dockLeftID);         // 左侧
+    ImGui::DockBuilderDockWindow("Inspector", dockRightID);        // 右侧
+    ImGui::DockBuilderDockWindow("Assets", dockBottomID);          // 底部
+    ImGui::DockBuilderDockWindow("Toolbar", dockTopCenterID);      // 顶部
     ImGui::DockBuilderFinish(mDockSpaceID);
 }
 void UI::DockingSpace()
@@ -158,18 +163,154 @@ void UI::DockingSpace()
 void UI::HierarchyWindow()
 {
     ImGui::Begin("Hierarchy", nullptr, ImGuiWindowFlags_None);
-
+    // 显示实体列表
+    auto entities = mRegistry->view<TransformComponent>();
+    for (auto entity : entities)
+    {
+        auto entityLabel = std::format("Entity {}", static_cast<uint32_t>(entity));
+        if (ImGui::Selectable(entityLabel.c_str(), mSelectedEntity == entity))
+        {
+            mSelectedEntity = entity;
+        }
+    }
     ImGui::End();
 }
 void UI::InspectorWindow()
 {
     ImGui::Begin("Inspector", nullptr, ImGuiWindowFlags_None);
-    ImGui::Text("Inspector");
+    // 1. 显示选中实体的属性
+    if (mSelectedEntity != entt::null)
+    {
+        auto entityLabel = std::format("Entity {}", static_cast<uint32_t>(mSelectedEntity));
+        ImGui::Text("%s", entityLabel.c_str());
+        // 显示TransomComponent
+        if (mRegistry->any_of<TransformComponent>(mSelectedEntity))
+        {
+            if (ImGui::CollapsingHeader("Transform Component", ImGuiTreeNodeFlags_DefaultOpen))
+            {
+                ImGui::BeginChild("Transform", ImVec2(0, 100), true);
+                auto &transform = mRegistry->get<TransformComponent>(mSelectedEntity);
+                auto modelMatrix = transform.modelMatrix;
+                float matrixTranslation[3], matrixRotation[3], matrixScale[3];
+                ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(modelMatrix), matrixTranslation, matrixRotation,
+                                                      matrixScale);
+                ImGui::DragFloat3("Position", matrixTranslation, 0.1f);
+                ImGui::DragFloat3("Rotation", matrixRotation, 0.1f);
+                ImGui::DragFloat3("Scale", matrixScale, 0.1f);
+                ImGuizmo::RecomposeMatrixFromComponents(matrixTranslation, matrixRotation, matrixScale,
+                                                        glm::value_ptr(modelMatrix));
+                // 分解矩阵
+                glm::vec3 translation, scale, skew;
+                glm::quat rotation;
+                glm::vec4 perspective;
+                if (glm::decompose(modelMatrix, scale, rotation, translation, skew, perspective))
+                {
+                    transform.position = translation;
+                    transform.rotation = rotation;
+                    transform.scale = scale;
+                }
+                ImGui::EndChild();
+            }
+        }
+        // 显示MeshComponent
+        if (mRegistry->any_of<MeshComponent>(mSelectedEntity))
+        {
+        }
+        // 显示MaterialComponent
+        if (mRegistry->any_of<MaterialComponent>(mSelectedEntity))
+        {
+            if (ImGui::CollapsingHeader("Material Component", ImGuiTreeNodeFlags_DefaultOpen))
+            {
+                auto &material = mRegistry->get<MaterialComponent>(mSelectedEntity);
+                auto pipelineTypeNames = magic_enum::enum_names<PipelineType>();
+                if (ImGui::BeginCombo("Pipeline Type",
+                                      magic_enum::enum_name(material.material->GetPipelineType()).data()))
+                {
+                    for (int i = 0; i < pipelineTypeNames.size(); i++)
+                    {
+                        bool isSelected = (i == static_cast<int>(material.material->GetPipelineType()));
+                        if (ImGui::Selectable(pipelineTypeNames[i].data(), isSelected))
+                        {
+                            material.material->SetPipelineType(static_cast<PipelineType>(i));
+                        }
+                    }
+                    ImGui::EndCombo();
+                }
+                // textures
+                auto textures = material.material->GetTextures();
+                for (auto texture : textures)
+                {
+                    if (texture->GetUIDescriptorID() != nullptr)
+                    {
+                        ImGui::Text("%s", magic_enum::enum_name(texture->GetTextureType()).data());
+                        ImGui::Image(
+                            reinterpret_cast<ImTextureID>(static_cast<VkDescriptorSet>(texture->GetUIDescriptorID())),
+                            ImVec2(mInspectorImageWidth, mInspectorImageHeight), ImVec2(0, 1), ImVec2(1, 0));
+                    }
+                    else
+                    {
+                        auto id = ImGui_ImplVulkan_AddTexture(
+                            texture->GetSampler(), texture->GetImageView(),
+                            static_cast<VkImageLayout>(vk::ImageLayout::eShaderReadOnlyOptimal));
+                        texture->SetUIDescriptorID(id);
+                    }
+                }
+            }
+        }
+    }
+    ImGui::End();
+}
+void UI::ToolbarWindow()
+{
+    ImGui::Begin("Toolbar", nullptr, ImGuiWindowFlags_None);
+    // 显示工具栏按钮
+    ImGui::BeginGroup();
+    {
+        if (ImGui::Button("Play"))
+        {
+            mIsPlay = !mIsPlay;
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Pause"))
+        {
+            mIsPause = !mIsPause;
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Stop"))
+        {
+            mIsStop = !mIsStop;
+        }
+    }
+    ImGui::EndGroup();
+    ImGui::SameLine();
+    // 显示窗口标题 FPS 等信息
+    ImGui::BeginGroup();
+    {
+        auto sceneWindow = ImGui::FindWindowByName("SceneView");
+        ImGui::Text("SceneView Size: %1.f x %1.f", sceneWindow->ContentSize.x, sceneWindow->ContentSize.y);
+        ImGui::SameLine();
+        ImGui::TextColored(ImVec4(1, 1, 0, 1), "FPS: %1.f", ImGui::GetIO().Framerate);
+        if (ImGui::RadioButton("Translate", mGuizmoOperation == ImGuizmo::TRANSLATE))
+            mGuizmoOperation = ImGuizmo::TRANSLATE;
+        ImGui::SameLine();
+        if (ImGui::RadioButton("Rotate", mGuizmoOperation == ImGuizmo::ROTATE))
+            mGuizmoOperation = ImGuizmo::ROTATE;
+        ImGui::SameLine();
+        if (ImGui::RadioButton("Scale", mGuizmoOperation == ImGuizmo::SCALE))
+            mGuizmoOperation = ImGuizmo::SCALE;
+        if (ImGui::RadioButton("Local", mGuizmoMode == ImGuizmo::LOCAL))
+            mGuizmoMode = ImGuizmo::LOCAL;
+        ImGui::SameLine();
+        if (ImGui::RadioButton("World", mGuizmoMode == ImGuizmo::WORLD))
+            mGuizmoMode = ImGuizmo::WORLD;
+    }
+    ImGui::EndGroup();
     ImGui::End();
 }
 void UI::SceneViewWindow()
 {
     ImGui::Begin("SceneView", nullptr, ImGuiWindowFlags_None);
+
     ImVec2 windowPos = ImGui::GetWindowPos();
     ImVec2 windowSize = ImGui::GetContentRegionAvail();
     // 尺寸变化检测
@@ -185,28 +326,36 @@ void UI::SceneViewWindow()
         mSceneViewPortHeight = height;
         mIsSceneViewPortChanged = true;
     }
-    // // imGuizmo
-    // const float gizmoLength = 64.0f;                  // Gizmo 视觉大小
-    // const ImVec2 gizmoSize(gizmoLength, gizmoLength); // 显示区域
-    // ImGuizmo::SetRect(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y, windowSize.x, windowSize.y);
-
-    // glm::mat4 view = glm::transpose(camera.viewMatrix);
-    // glm::mat4 proj = glm::transpose(camera.projectionMatrix);
-    // float viewMatrix[16], projMatrix[16];
-    // memcpy(viewMatrix, glm::value_ptr(view), sizeof(float) * 16);
-    // memcpy(projMatrix, glm::value_ptr(proj), sizeof(float) * 16);
-    // float outputMatrix[16] = {0};
-    // // ImGuizmo::ViewManipulate(viewMatrix, projMatrix, ImGuizmo::ROTATE, ImGuizmo::LOCAL, outputMatrix, gizmoLength,
-    // //                          ImVec2(windowPos.x + windowSize.x - gizmoLength, windowPos.y), gizmoSize,
-    // 0x10101010);
-
-    ImGui::Text("SceneView Size: %d x %d", width, height);
-    ImGui::SetCursorPos(ImVec2(windowSize.x - 100, 20));
-    ImGui::TextColored(ImVec4(1, 1, 0, 1), "FPS: %1.f", ImGui::GetIO().Framerate);
-    // ImGui::TextColored(ImVec4(1, 1, 0, 1), "FPS: %1.f", 1.0f / mDeltaTime);
+    // 2. 显示场景视图
     ImTextureID textureId =
         reinterpret_cast<ImTextureID>(static_cast<VkDescriptorSet>(mSceneDescriptorSets[mImageIndex]));
     ImGui::Image(textureId, ImVec2(mSceneViewPortWidth, mSceneViewPortHeight), ImVec2(0, 1), ImVec2(1, 0));
+
+    // 3. imGuizmo
+    ImVec2 imagePos = ImGui::GetItemRectMin();
+    ImVec2 imageSize = ImGui::GetItemRectSize();
+    ImGuizmo::SetRect(imagePos.x, imagePos.y, imageSize.x, imageSize.y);
+    ImGuizmo::SetDrawlist(ImGui::GetCurrentWindow()->DrawList);
+    if (mSelectedEntity != entt::null)
+    {
+        auto &transform = mRegistry->get<TransformComponent>(mSelectedEntity);
+        auto modelMatrix = transform.modelMatrix;
+        ImGuizmo::Manipulate(glm::value_ptr(camera.viewMatrix), glm::value_ptr(camera.projectionMatrix),
+                             mGuizmoOperation, mGuizmoMode, glm::value_ptr(modelMatrix));
+        if (ImGuizmo::IsUsing())
+        {
+            // 分解矩阵
+            glm::vec3 translation, scale, skew;
+            glm::quat rotation;
+            glm::vec4 perspective;
+            if (glm::decompose(modelMatrix, scale, rotation, translation, skew, perspective))
+            {
+                transform.position = translation;
+                transform.rotation = rotation;
+                transform.scale = scale;
+            }
+        }
+    }
     ImGui::End();
 }
 void UI::AssetWindow()
@@ -293,10 +442,11 @@ void UI::RecordUICommandBuffer(vk::CommandBuffer commandBuffer)
         SetDefaultWindowLayout();
         mIsFirstFrame = false;
     }
-    SceneViewWindow();
     HierarchyWindow();
     InspectorWindow();
     AssetWindow();
+    SceneViewWindow();
+    ToolbarWindow();
     ImGui::Render();
     ImDrawData *drawData = ImGui::GetDrawData();
     bool isMinimized = (drawData->DisplaySize.x <= 0.0f || drawData->DisplaySize.y <= 0.0f);

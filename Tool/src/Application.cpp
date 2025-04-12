@@ -1,4 +1,5 @@
 #include "Application.hpp"
+#include "Componet/TransformComponent.hpp"
 
 namespace MEngine
 {
@@ -22,7 +23,8 @@ Application::Application()
                         bind<BasicGeometryFactory>().to<BasicGeometryFactory>().in(singleton),
                         bind<BasicGeometryEntityManager>().to<BasicGeometryEntityManager>().in(singleton),
                         bind<CameraSystem>().to<CameraSystem>().in(singleton), bind<UI>().to<UI>().in(singleton),
-                        bind<RenderSystem>().to<RenderSystem>().in(singleton)))
+                        bind<RenderSystem>().to<RenderSystem>().in(singleton),
+                        bind<TransformSystem>().to<TransformSystem>().in(singleton)))
 {
     // DI
     // mConfigure = mInjector.create<std::shared_ptr<IConfigure>>();
@@ -50,6 +52,7 @@ Application::Application()
 
     mBasicGeometryEntityManager->CreateCube(mRegistry);
     auto camera = mRegistry->create();
+    mRegistry->emplace<TransformComponent>(camera);
     mRegistry->emplace<CameraComponent>(camera).isMainCamera = true;
     InitSystem();
     mStartTime = std::chrono::high_resolution_clock::now();
@@ -63,11 +66,14 @@ void Application::InitSystem()
 {
     mRenderSystem = mInjector.create<std::shared_ptr<RenderSystem>>();
     mCameraSystem = mInjector.create<std::shared_ptr<CameraSystem>>();
+    mTransformSystem = mInjector.create<std::shared_ptr<TransformSystem>>();
     mRenderSystem->Init();
     mCameraSystem->Init();
+    mTransformSystem->Init();
 }
 void Application::ShutdownSystem()
 {
+    mTransformSystem->Shutdown();
     mCameraSystem->Shutdown();
     mRenderSystem->Shutdown();
 }
@@ -88,6 +94,7 @@ void Application::Run()
 
         mWindow->PollEvents();
         mCameraSystem->Tick(mDeltaTime);
+        mTransformSystem->Tick(mDeltaTime);
         mRenderSystem->Tick(mDeltaTime);
 
         if (mDeltaTime < 1.0f / mTargetFPS)

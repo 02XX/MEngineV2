@@ -17,8 +17,9 @@ Material::Material(std::shared_ptr<DescriptorManager> descriptorManager,
     }
 }
 
-void Material::AddTexture(TextureType type, std::shared_ptr<Texture> texture)
+void Material::AddTexture(std::shared_ptr<Texture> texture)
 {
+    auto type = texture->GetTextureType();
     mTextures[type] = texture;
     // 更新描述符集
     switch (type)
@@ -38,13 +39,22 @@ void Material::AddTexture(TextureType type, std::shared_ptr<Texture> texture)
     }
 }
 
-// std::shared_ptr<Texture> Material::GetTexture(TextureType type)
-// {
-//     auto it = mTextures.find(type);
-//     if (it != mTextures.end())
-//     {
-//         return it->second;
-//     }
-//     return nullptr;
-// }
+std::vector<std::shared_ptr<Texture>> Material::GetTextures() const
+{
+    std::vector<std::shared_ptr<Texture>> textures;
+    for (const auto &pair : mTextures)
+    {
+        textures.push_back(pair.second);
+    }
+    return textures;
+}
+std::shared_ptr<Texture> Material::GetTexture(TextureType type) const
+{
+    auto it = mTextures.find(type);
+    if (it != mTextures.end())
+    {
+        return it->second;
+    }
+    return nullptr;
+}
 } // namespace MEngine
