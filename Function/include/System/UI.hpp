@@ -72,9 +72,12 @@ class UI
     uint32_t mSceneViewPortWidth = 0;
     uint32_t mSceneViewPortHeight = 0;
     vk::UniqueSampler mSceneSampler;
+    std::vector<vk::ImageView> mSceneImageViews;
+    std::vector<vk::DescriptorSet> mSceneDescriptorSets;
+    uint32_t mImageIndex = 0;
 
   private:
-    entt::entity mCameraEntity;
+    entt::entity mMainCamera;
 
   private:
     void SetDefaultWindowLayout();
@@ -89,6 +92,8 @@ class UI
 
     void RenderScene();
 
+    void CollectEntity();
+
   public:
     UI(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context, std::shared_ptr<IWindow> window,
        std::shared_ptr<RenderPassManager> renderPassManager, std::shared_ptr<ImageFactory> imageFactory,
@@ -97,8 +102,8 @@ class UI
        std::shared_ptr<entt::registry> registry);
     ~UI();
     void ProcessEvent(const SDL_Event *event);
-    void UpdateSceneDescriptorSet(vk::ImageView imageView, uint32_t imageIndex);
     void RecordUICommandBuffer(vk::CommandBuffer commandBuffer);
+    void SetSceneViewPort(const std::vector<vk::ImageView> &imageViews);
 
   public:
     inline bool IsSceneViewPortChanged() const
@@ -112,6 +117,10 @@ class UI
     inline uint32_t GetSceneHeight() const
     {
         return mSceneViewPortHeight;
+    }
+    inline void SetImageIndex(uint32_t imageIndex)
+    {
+        mImageIndex = imageIndex;
     }
 };
 

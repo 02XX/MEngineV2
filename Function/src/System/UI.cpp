@@ -53,6 +53,30 @@ void UI::ProcessEvent(const SDL_Event *event)
 {
     ImGui_ImplSDL3_ProcessEvent(static_cast<const SDL_Event *>(event));
 }
+void UI::SetSceneViewPort(const std::vector<vk::ImageView> &imageViews)
+{
+    mSceneImageViews = imageViews;
+    for (size_t i = 0; i < mSceneImageViews.size(); ++i)
+    {
+        mSceneDescriptorSets.push_back(
+            ImGui_ImplVulkan_AddTexture(mSceneSampler.get(), mSceneImageViews[i],
+                                        static_cast<VkImageLayout>(vk::ImageLayout::eShaderReadOnlyOptimal)));
+    }
+}
+void UI::CollectEntity()
+{
+    // camera
+    auto entities = mRegistry->view<CameraComponent>();
+    for (auto entity : entities)
+    {
+        auto &camera = entities.get<CameraComponent>(entity);
+        if (camera.isMainCamera)
+        {
+            mMainCamera = entity;
+            break;
+        }
+    }
+}
 void UI::LoadUIIcon(const std::filesystem::path &iconPath, vk::DescriptorSet &descriptorSet)
 {
     mIconTransitionCommandBuffer->reset();
@@ -146,21 +170,21 @@ void UI::InspectorWindow()
 void UI::SceneViewWindow()
 {
     ImGui::Begin("SceneView", nullptr, ImGuiWindowFlags_None);
-    // ImVec2 windowPos = ImGui::GetWindowPos();
-    // ImVec2 windowSize = ImGui::GetContentRegionAvail();
-    // // 尺寸变化检测
-    // uint32_t width = static_cast<uint32_t>(windowSize.x);
-    // uint32_t height = static_cast<uint32_t>(windowSize.y);
-    // mIsSceneViewPortChange = false;
-    // // 获取Camera
-    // auto &camera = mRegistry->get<CameraComponent>(mCameraEntity);
-    // camera.aspectRatio = static_cast<float>(width) / static_cast<float>(height);
-    // if (width != mSceneWidth || height != mSceneHeight)
-    // {
-    //     mSceneWidth = width;
-    //     mSceneHeight = height;
-    //     mIsSceneViewPortChange = true;
-    // }
+    ImVec2 windowPos = ImGui::GetWindowPos();
+    ImVec2 windowSize = ImGui::GetContentRegionAvail();
+    // 尺寸变化检测
+    uint32_t width = static_cast<uint32_t>(windowSize.x);
+    uint32_t height = static_cast<uint32_t>(windowSize.y);
+    mIsSceneViewPortChanged = false;
+    // 获取Camera
+    auto &camera = mRegistry->get<CameraComponent>(mMainCamera);
+    camera.aspectRatio = static_cast<float>(width) / static_cast<float>(height);
+    if (width != mSceneViewPortWidth || height != mSceneViewPortHeight)
+    {
+        mSceneViewPortWidth = width;
+        mSceneViewPortHeight = height;
+        mIsSceneViewPortChanged = true;
+    }
     // // imGuizmo
     // const float gizmoLength = 64.0f;                  // Gizmo 视觉大小
     // const ImVec2 gizmoSize(gizmoLength, gizmoLength); // 显示区域
@@ -176,13 +200,13 @@ void UI::SceneViewWindow()
     // //                          ImVec2(windowPos.x + windowSize.x - gizmoLength, windowPos.y), gizmoSize,
     // 0x10101010);
 
-    // ImGui::Text("SceneView Size: %d x %d", width, height);
-    // ImGui::SetCursorPos(ImVec2(windowSize.x - 100, 20));
-    // ImGui::TextColored(ImVec4(1, 1, 0, 1), "FPS: %1.f", ImGui::GetIO().Framerate);
-    // // ImGui::TextColored(ImVec4(1, 1, 0, 1), "FPS: %1.f", 1.0f / mDeltaTime);
-    // ImTextureID textureId =
-    //     reinterpret_cast<ImTextureID>(static_cast<VkDescriptorSet>(mSceneDescriptorSets[mCurrentFrame].get()));
-    // ImGui::Image(textureId, ImVec2(mSceneWidth, mSceneHeight), ImVec2(0, 1), ImVec2(1, 0));
+    ImGui::Text("SceneView Size: %d x %d", width, height);
+    ImGui::SetCursorPos(ImVec2(windowSize.x - 100, 20));
+    ImGui::TextColored(ImVec4(1, 1, 0, 1), "FPS: %1.f", ImGui::GetIO().Framerate);
+    // ImGui::TextColored(ImVec4(1, 1, 0, 1), "FPS: %1.f", 1.0f / mDeltaTime);
+    ImTextureID textureId =
+        reinterpret_cast<ImTextureID>(static_cast<VkDescriptorSet>(mSceneDescriptorSets[mImageIndex]));
+    ImGui::Image(textureId, ImVec2(mSceneViewPortWidth, mSceneViewPortHeight), ImVec2(0, 1), ImVec2(1, 0));
     ImGui::End();
 }
 void UI::AssetWindow()
@@ -258,6 +282,7 @@ void UI::AssetWindow()
 }
 void UI::RecordUICommandBuffer(vk::CommandBuffer commandBuffer)
 {
+    CollectEntity();
     ImGui_ImplSDL3_NewFrame();
     ImGui_ImplVulkan_NewFrame();
     ImGui::NewFrame();

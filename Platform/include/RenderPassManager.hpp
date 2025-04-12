@@ -13,6 +13,7 @@
 #include <unordered_map>
 #include <vector>
 #include <vulkan/vulkan.hpp>
+#include <vulkan/vulkan_handles.hpp>
 
 namespace MEngine
 {
@@ -79,9 +80,9 @@ class RenderPassManager final : public NoCopyable
   private:
     std::unordered_map<RenderPassType, vk::UniqueRenderPass> mRenderPasses;
     std::unordered_map<RenderPassType, std::vector<vk::UniqueFramebuffer>> mFrameBuffers;
-    std::vector<DefferFrameResource> mDefferFrameResources;
-    std::vector<UIFrameResource> mUIFrameResources;
-    std::vector<TranslucencyFrameResource> mTranslucencyFrameResources;
+    std::vector<std::shared_ptr<DefferFrameResource>> mDefferFrameResources;
+    std::vector<std::shared_ptr<UIFrameResource>> mUIFrameResources;
+    std::vector<std::shared_ptr<TranslucencyFrameResource>> mTranslucencyFrameResources;
 
     uint32_t mWidth = 800;
     uint32_t mHeight = 600;
@@ -107,18 +108,19 @@ class RenderPassManager final : public NoCopyable
     RenderPassManager(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context,
                       std::shared_ptr<ImageFactory> imageFactory);
     vk::RenderPass GetRenderPass(RenderPassType type) const;
-    vk::Framebuffer GetFrameBuffer(RenderPassType type, uint32_t index) const;
-    const DefferFrameResource &GetDefferFrameResource(uint32_t index) const
+    std::vector<vk::Framebuffer> GetFrameBuffer(RenderPassType type) const;
+
+    inline const std::vector<std::shared_ptr<DefferFrameResource>> &GetDefferFrameResource() const
     {
-        return mDefferFrameResources[index];
+        return mDefferFrameResources;
     }
-    const UIFrameResource &GetUIFrameResource(uint32_t index) const
+    inline const std::vector<std::shared_ptr<UIFrameResource>> &GetUIFrameResource() const
     {
-        return mUIFrameResources[index];
+        return mUIFrameResources;
     }
-    const TranslucencyFrameResource &GetTranslucencyFrameResource(uint32_t index) const
+    inline const std::vector<std::shared_ptr<TranslucencyFrameResource>> &GetTranslucencyFrameResource() const
     {
-        return mTranslucencyFrameResources[index];
+        return mTranslucencyFrameResources;
     }
     void RecreateFrameBuffer(uint32_t width, uint32_t height);
     vk::Extent2D GetExtent() const

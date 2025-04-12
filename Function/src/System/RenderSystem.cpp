@@ -44,6 +44,13 @@ void RenderSystem::Init()
         mCameraDescriptorSets.push_back(std::move(sets[0]));
     }
     mWindow->SetEventCallback([this](const void *event) { mUI->ProcessEvent(static_cast<const SDL_Event *>(event)); });
+    // UI Scene View
+    std::vector<vk::ImageView> imageViews;
+    for (auto imageView : mRenderPassManager->GetTranslucencyFrameResource())
+    {
+        imageViews.push_back(imageView->renderImageView.get());
+    }
+    mUI->SetSceneViewPort(imageViews);
     mIsInit = true;
     mLogger->Info("RenderSystem Initialized");
 }
@@ -187,8 +194,9 @@ void RenderSystem::RenderDefferPass()
     clearValues[4].color = vk::ClearColorValue(std::array<float, 4>{0.0f, 0.0f, 0.0f, 1.0f}); // 附件4: AO
     clearValues[5].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);                        // 附件5: 深度
     clearValues[6].color = vk::ClearColorValue(std::array<float, 4>{0.0f, 0.0f, 0.0f, 1.0f}); // 附件6: Swapchain
+    auto defferFrameBuffers = mRenderPassManager->GetFrameBuffer(RenderPassType::Deffer);
     renderPassBeginInfo.setRenderPass(mRenderPassManager->GetRenderPass(RenderPassType::Deffer))
-        .setFramebuffer(mRenderPassManager->GetFrameBuffer(RenderPassType::Deffer, mImageIndex))
+        .setFramebuffer(defferFrameBuffers[mImageIndex])
         .setRenderArea(vk::Rect2D({0, 0}, extent))
         .setClearValues(clearValues);
     mGraphicCommandBuffers[mFrameIndex]->beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);
@@ -205,14 +213,14 @@ void RenderSystem::RenderTranslucencyPass()
     auto pipelineLayout = mPipelineLayoutManager->GetPipelineLayout(PipelineLayoutType::TranslucencyLayout);
     auto pipeline = mPipelineManager->GetPipeline(PipelineType::Translucency);
     auto renderPass = mRenderPassManager->GetRenderPass(RenderPassType::Translucency);
-    auto frameBuffer = mRenderPassManager->GetFrameBuffer(RenderPassType::Translucency, mImageIndex);
+    auto translucencyFrameBuffers = mRenderPassManager->GetFrameBuffer(RenderPassType::Translucency);
     vk::RenderPassBeginInfo renderPassBeginInfo;
     std::array<vk::ClearValue, 2> clearValues{
         vk::ClearValue(std::array<float, 4>{0.1f, 0.1f, 0.1f, 1.0f}), // 附件0: 颜色
         vk::ClearDepthStencilValue(1.0f, 0)                           // 附件1: depth
     };
     renderPassBeginInfo.setRenderPass(renderPass)
-        .setFramebuffer(frameBuffer)
+        .setFramebuffer(translucencyFrameBuffers[mImageIndex])
         .setRenderArea(vk::Rect2D({0, 0}, extent))
         .setClearValues(clearValues);
     mGraphicCommandBuffers[mFrameIndex]->beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);
@@ -268,17 +276,17 @@ void RenderSystem::RenderSkyPass()
 }
 void RenderSystem::RenderUIPass(float deltaTime)
 {
-    auto &translucencyFrameResource = mRenderPassManager->GetTranslucencyFrameResource(mImageIndex);
+    mUI->SetImageIndex(mImageIndex);
     auto queueFamilyIndices = mContext->GetQueueFamilyIndicates();
     vk::ClearValue clearValue(std::array<float, 4>{0.1f, 0.1f, 0.1f, 1.0f});
     vk::RenderPassBeginInfo renderPassBeginInfo;
-    auto frameBuffer = mRenderPassManager->GetFrameBuffer(RenderPassType::UI, mImageIndex);
+    auto uiframeBuffers = mRenderPassManager->GetFrameBuffer(RenderPassType::UI);
     auto renderPass = mRenderPassManager->GetRenderPass(RenderPassType::UI);
-    auto uiFrameResource = mRenderPassManager->GetUIFrameResource(mImageIndex);
+    auto &uiFrameResources = mRenderPassManager->GetUIFrameResource();
 
-    // --- 1. 渲染前的布局转换
+    // 渲染前的布局转换
     vk::ImageMemoryBarrier preRenderBarrier;
-    preRenderBarrier.setImage(uiFrameResource.swapchainImage)
+    preRenderBarrier.setImage(uiFrameResources[mImageIndex]->swapchainImage)
         .setOldLayout(vk::ImageLayout::eUndefined)
         .setNewLayout(vk::ImageLayout::eColorAttachmentOptimal)
         .setSrcQueueFamilyIndex(queueFamilyIndices.graphicsFamily.value())
@@ -291,28 +299,15 @@ void RenderSystem::RenderUIPass(float deltaTime)
                                                          vk::PipelineStageFlagBits::eColorAttachmentOutput, {}, {}, {},
                                                          preRenderBarrier);
 
-    // --- 2. 开始渲染 ---
+    // 开始渲染
     renderPassBeginInfo.setRenderPass(renderPass)
-        .setFramebuffer(frameBuffer)
+        .setFramebuffer(uiframeBuffers[mImageIndex])
         .setRenderArea(vk::Rect2D({0, 0}, mContext->GetSurfaceInfo().extent))
         .setClearValues(clearValue);
 
     mGraphicCommandBuffers[mFrameIndex]->beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);
     mUI->RecordUICommandBuffer(mGraphicCommandBuffers[mFrameIndex].get());
     mGraphicCommandBuffers[mFrameIndex]->endRenderPass();
-
-    // // --- 3. 渲染后的布局转换
-    // vk::ImageMemoryBarrier postRenderBarrier;
-    // postRenderBarrier.setImage(uiFrameResource.swapchainImage)
-    //     .setOldLayout(vk::ImageLayout::eColorAttachmentOptimal)
-    //     .setNewLayout(vk::ImageLayout::ePresentSrcKHR)
-    //     .setSrcAccessMask(vk::AccessFlagBits::eColorAttachmentWrite)
-    //     .setDstAccessMask(vk::AccessFlagBits::eMemoryRead)
-    //     .setSubresourceRange(vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1));
-
-    // mGraphicCommandBuffers[mFrameIndex]->pipelineBarrier(vk::PipelineStageFlagBits::eColorAttachmentOutput,
-    //                                                      vk::PipelineStageFlagBits::eColorAttachmentOutput, {}, {},
-    //                                                      {}, postRenderBarrier);
 }
 void RenderSystem::Present()
 {

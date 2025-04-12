@@ -1,4 +1,6 @@
 #include "RenderPassManager.hpp"
+#include <memory>
+#include <vector>
 
 namespace MEngine
 {
@@ -268,54 +270,54 @@ void RenderPassManager::CreateDefferFrameBuffer()
     auto extent = vk::Extent2D{mWidth, mHeight};
     for (size_t i = 0; i < swapchainImageViews.size(); ++i)
     {
-        auto defferFrameResource = DefferFrameResource{};
+        auto defferFrameResource = std::make_shared<DefferFrameResource>();
         // 1. 创建世界空间位置图像和视图
         auto positionImage = mImageFactory->CreateImage(ImageType::Texture2D, vk::Extent3D(extent, 1));
         auto positionImageView = mImageFactory->CreateImageView(positionImage.get());
-        defferFrameResource.positionImage = std::move(positionImage);
-        defferFrameResource.positionImageView = std::move(positionImageView);
+        defferFrameResource->positionImage = std::move(positionImage);
+        defferFrameResource->positionImageView = std::move(positionImageView);
         // 2. 创建法线图像和视图
         auto normalImage = mImageFactory->CreateImage(ImageType::Texture2D, vk::Extent3D(extent, 1));
         auto normalImageView = mImageFactory->CreateImageView(normalImage.get());
-        defferFrameResource.normalImage = std::move(normalImage);
-        defferFrameResource.normalImageView = std::move(normalImageView);
+        defferFrameResource->normalImage = std::move(normalImage);
+        defferFrameResource->normalImageView = std::move(normalImageView);
         // 3. 创建Albedo图像和视图
         auto albedoImage = mImageFactory->CreateImage(ImageType::Texture2D, vk::Extent3D(extent, 1));
         auto albedoImageView = mImageFactory->CreateImageView(albedoImage.get());
-        defferFrameResource.albedoImage = std::move(albedoImage);
-        defferFrameResource.albedoImageView = std::move(albedoImageView);
+        defferFrameResource->albedoImage = std::move(albedoImage);
+        defferFrameResource->albedoImageView = std::move(albedoImageView);
         // 4. 创建金属度/粗糙度图像和视图
         auto metalRoughImage = mImageFactory->CreateImage(ImageType::Texture2D, vk::Extent3D(extent, 1));
         auto metalRoughImageView = mImageFactory->CreateImageView(metalRoughImage.get());
-        defferFrameResource.metalRoughImage = std::move(metalRoughImage);
-        defferFrameResource.metalRoughImageView = std::move(metalRoughImageView);
+        defferFrameResource->metalRoughImage = std::move(metalRoughImage);
+        defferFrameResource->metalRoughImageView = std::move(metalRoughImageView);
         // 5. 创建环境光遮蔽图像和视图
         auto aoImage = mImageFactory->CreateImage(ImageType::Texture2D, vk::Extent3D(extent, 1));
         auto aoImageView = mImageFactory->CreateImageView(aoImage.get());
-        defferFrameResource.aoImage = std::move(aoImage);
-        defferFrameResource.aoImageView = std::move(aoImageView);
+        defferFrameResource->aoImage = std::move(aoImage);
+        defferFrameResource->aoImageView = std::move(aoImageView);
         // 6. 创建深度模板图像和视图
         auto extent = mContext->GetSurfaceInfo().extent;
         auto depthImage = mImageFactory->CreateImage(ImageType::DepthStencil, vk::Extent3D(extent, 1));
         auto depthImageView = mImageFactory->CreateImageView(depthImage.get());
-        defferFrameResource.depthStencilImage = std::move(depthImage);
-        defferFrameResource.depthStencilImageView = std::move(depthImageView);
+        defferFrameResource->depthStencilImage = std::move(depthImage);
+        defferFrameResource->depthStencilImageView = std::move(depthImageView);
         // 7. 创建render image和视图
         auto renderImage = mImageFactory->CreateImage(ImageType::RenderTarget, vk::Extent3D(extent, 1));
         auto rederImageView = mImageFactory->CreateImageView(renderImage.get());
-        defferFrameResource.renderImage = std::move(renderImage);
-        defferFrameResource.renderImageView = std::move(rederImageView);
+        defferFrameResource->renderImage = std::move(renderImage);
+        defferFrameResource->renderImageView = std::move(rederImageView);
 
         // 保存资源
-        mDefferFrameResources.push_back(std::move(defferFrameResource));
+        mDefferFrameResources.push_back(defferFrameResource);
         // 创建帧缓冲
-        std::array<vk::ImageView, 7> attachments = {mDefferFrameResources.back().positionImageView.get(),
-                                                    mDefferFrameResources.back().normalImageView.get(),
-                                                    mDefferFrameResources.back().albedoImageView.get(),
-                                                    mDefferFrameResources.back().metalRoughImageView.get(),
-                                                    mDefferFrameResources.back().aoImageView.get(),
-                                                    mDefferFrameResources.back().depthStencilImageView.get(),
-                                                    mDefferFrameResources.back().renderImageView.get()};
+        std::array<vk::ImageView, 7> attachments = {mDefferFrameResources.back()->positionImageView.get(),
+                                                    mDefferFrameResources.back()->normalImageView.get(),
+                                                    mDefferFrameResources.back()->albedoImageView.get(),
+                                                    mDefferFrameResources.back()->metalRoughImageView.get(),
+                                                    mDefferFrameResources.back()->aoImageView.get(),
+                                                    mDefferFrameResources.back()->depthStencilImageView.get(),
+                                                    mDefferFrameResources.back()->renderImageView.get()};
         vk::FramebufferCreateInfo framebufferCreateInfo;
         framebufferCreateInfo.setRenderPass(mRenderPasses[RenderPassType::Deffer].get())
             .setAttachments(attachments)
@@ -348,24 +350,25 @@ void RenderPassManager::CreateTranslucencyFrameBuffer()
     auto extent = vk::Extent2D{mWidth, mHeight};
     auto renderPass = mRenderPasses[RenderPassType::Translucency].get();
 
-    mTranslucencyFrameResources.resize(swapchainImageViews.size());
     for (size_t i = 0; i < swapchainImageViews.size(); ++i)
     {
+        auto translucencyFrameResource = std::make_shared<TranslucencyFrameResource>();
         // 创建render image和视图
         auto renderImage = mImageFactory->CreateImage(ImageType::RenderTarget, vk::Extent3D(extent, 1));
-        auto rederImageView = mImageFactory->CreateImageView(renderImage.get());
-        mTranslucencyFrameResources[i].renderImage = std::move(renderImage);
-        mTranslucencyFrameResources[i].renderImageView = std::move(rederImageView);
+        auto renderImageView = mImageFactory->CreateImageView(renderImage.get());
+        translucencyFrameResource->renderImage = std::move(renderImage);
+        translucencyFrameResource->renderImageView = std::move(renderImageView);
         // 创建深度模板图像和视图
         auto depthImage = mImageFactory->CreateImage(ImageType::DepthStencil, vk::Extent3D(extent, 1));
         auto depthImageView = mImageFactory->CreateImageView(depthImage.get());
-        mTranslucencyFrameResources[i].depthStencilImage = std::move(depthImage);
-        mTranslucencyFrameResources[i].depthStencilImageView = std::move(depthImageView);
+        translucencyFrameResource->depthStencilImage = std::move(depthImage);
+        translucencyFrameResource->depthStencilImageView = std::move(depthImageView);
 
         auto attachments = std::array<vk::ImageView, 2>{
-            mTranslucencyFrameResources[i].renderImageView.get(),       // Swapchain图像视图
-            mTranslucencyFrameResources[i].depthStencilImageView.get(), // 深度模板图像视图
+            translucencyFrameResource->renderImageView.get(),       // Swapchain图像视图
+            translucencyFrameResource->depthStencilImageView.get(), // 深度模板图像视图
         };
+        mTranslucencyFrameResources.push_back(translucencyFrameResource);
         vk::FramebufferCreateInfo framebufferCreateInfo;
         framebufferCreateInfo.setRenderPass(renderPass)
             .setAttachments(attachments)
@@ -398,16 +401,16 @@ void RenderPassManager::CreateUIFrameBuffer()
     auto extent = mContext->GetSurfaceInfo().extent;
     for (size_t i = 0; i < swapchainImageViews.size(); ++i)
     {
-        auto uiFrameResource = UIFrameResource{};
+        auto uiFrameResource = std::make_shared<UIFrameResource>();
         // 1. 创建Swapchain图像和视图
         auto swapchainImageView = swapchainImageViews[i];
         auto swapchainImage = swapchainImages[i];
-        uiFrameResource.swapchainImage = swapchainImage;
-        uiFrameResource.swapchainImageView = swapchainImageView;
+        uiFrameResource->swapchainImage = swapchainImage;
+        uiFrameResource->swapchainImageView = swapchainImageView;
         // 保存资源
-        mUIFrameResources.push_back(std::move(uiFrameResource));
+        mUIFrameResources.push_back(uiFrameResource);
         // 创建帧缓冲
-        std::array<vk::ImageView, 1> attachments = {mUIFrameResources.back().swapchainImageView};
+        std::array<vk::ImageView, 1> attachments = {mUIFrameResources.back()->swapchainImageView};
         vk::FramebufferCreateInfo framebufferCreateInfo;
         framebufferCreateInfo.setRenderPass(mRenderPasses[RenderPassType::UI].get())
             .setAttachments(attachments)
@@ -438,18 +441,24 @@ vk::RenderPass RenderPassManager::GetRenderPass(RenderPassType type) const
         return nullptr;
     }
 }
-vk::Framebuffer RenderPassManager::GetFrameBuffer(RenderPassType type, uint32_t index) const
+std::vector<vk::Framebuffer> RenderPassManager::GetFrameBuffer(RenderPassType type) const
 {
+    std::vector<vk::Framebuffer> framebuffers;
     auto it = mFrameBuffers.find(type);
-    if (it != mFrameBuffers.end() && index < it->second.size())
+    if (it != mFrameBuffers.end())
     {
-        return it->second[index].get();
+        for (const auto &framebuffer : it->second)
+        {
+            framebuffers.push_back(framebuffer.get());
+        }
     }
     else
     {
-        mLogger->Error("Framebuffer not found for type {} and index {}", magic_enum::enum_name(type), index);
-        return nullptr;
+        mLogger->Error("Frame buffer not found for type {}", magic_enum::enum_name(type));
+        throw std::runtime_error(std::string("Frame buffer not found for type ") +
+                                 std::string(magic_enum::enum_name(type)));
     }
+    return framebuffers;
 }
 void RenderPassManager::RecreateFrameBuffer(uint32_t width, uint32_t height)
 {
