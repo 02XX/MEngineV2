@@ -27,6 +27,8 @@
 #include "System/RenderSystem.hpp"
 #include "System/UI.hpp"
 #include "TextureManager.hpp"
+
+#define BOOST_DI_CFG_CTOR_LIMIT_SIZE 30 // 定义构造函数参数的最大数量
 #include "boost/di.hpp"
 #include "entt/entt.hpp"
 #include <cstdint>
@@ -62,23 +64,23 @@ class Application final : public NoCopyable
 
     // DI
     std::shared_ptr<ILogger> mLogger;
-    std::shared_ptr<IConfigure> mConfigure;
+    // std::shared_ptr<IConfigure> mConfigure;
     std::shared_ptr<IWindow> mWindow;
     std::shared_ptr<Context> mContext;
     std::shared_ptr<entt::registry> mRegistry;
-    std::shared_ptr<PipelineManager> mPipelineManager;
-    std::shared_ptr<PipelineLayoutManager> mPipelineLayoutManager;
-    std::shared_ptr<RenderPassManager> mRenderPassManager;
-    std::shared_ptr<ShaderManager> mShaderManager;
-    std::shared_ptr<CommandBufferManager> mCommandBufferManager;
-    std::shared_ptr<SyncPrimitiveManager> mSyncPrimitiveManager;
-    std::shared_ptr<ImageFactory> mImageFactory;
-    std::shared_ptr<DescriptorManager> mDescriptorManager;
-    std::shared_ptr<SamplerManager> mSamplerManager;
-    std::shared_ptr<BufferFactory> mBufferFactory;
-    std::shared_ptr<TextureManager> mTextureManager;
-    std::shared_ptr<MaterialManager> mMaterialManager;
-    std::shared_ptr<BasicGeometryFactory> mBasicGeometryFactory;
+    // std::shared_ptr<PipelineManager> mPipelineManager;
+    // std::shared_ptr<PipelineLayoutManager> mPipelineLayoutManager;
+    // std::shared_ptr<RenderPassManager> mRenderPassManager;
+    // std::shared_ptr<ShaderManager> mShaderManager;
+    // std::shared_ptr<CommandBufferManager> mCommandBufferManager;
+    // std::shared_ptr<SyncPrimitiveManager> mSyncPrimitiveManager;
+    // std::shared_ptr<ImageFactory> mImageFactory;
+    // std::shared_ptr<DescriptorManager> mDescriptorManager;
+    // std::shared_ptr<SamplerManager> mSamplerManager;
+    // std::shared_ptr<BufferFactory> mBufferFactory;
+    // std::shared_ptr<TextureManager> mTextureManager;
+    // std::shared_ptr<MaterialManager> mMaterialManager;
+    // std::shared_ptr<BasicGeometryFactory> mBasicGeometryFactory;
     std::shared_ptr<BasicGeometryEntityManager> mBasicGeometryEntityManager;
     std::shared_ptr<UI> mUI;
     std::shared_ptr<RenderSystem> mRenderSystem;

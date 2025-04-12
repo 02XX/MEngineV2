@@ -25,26 +25,26 @@ Application::Application()
                         bind<RenderSystem>().to<RenderSystem>().in(singleton)))
 {
     // DI
-    mConfigure = mInjector.create<std::shared_ptr<IConfigure>>();
+    // mConfigure = mInjector.create<std::shared_ptr<IConfigure>>();
     mLogger = mInjector.create<std::shared_ptr<ILogger>>();
     mLogger->Info("Application Started");
     mWindow = mInjector.create<std::shared_ptr<IWindow>>();
     mContext = mInjector.create<std::shared_ptr<Context>>();
     mRegistry = mInjector.create<std::shared_ptr<entt::registry>>();
-    mCommandBufferManager = mInjector.create<std::shared_ptr<CommandBufferManager>>();
-    mSyncPrimitiveManager = mInjector.create<std::shared_ptr<SyncPrimitiveManager>>();
-    mPipelineLayoutManager = mInjector.create<std::shared_ptr<PipelineLayoutManager>>();
-    mShaderManager = mInjector.create<std::shared_ptr<ShaderManager>>();
-    mDescriptorManager = mInjector.create<std::shared_ptr<DescriptorManager>>();
-    mSamplerManager = mInjector.create<std::shared_ptr<SamplerManager>>();
-    mBufferFactory = mInjector.create<std::shared_ptr<BufferFactory>>();
-    mDescriptorManager = mInjector.create<std::shared_ptr<DescriptorManager>>();
-    mImageFactory = mInjector.create<std::shared_ptr<ImageFactory>>();
-    mRenderPassManager = mInjector.create<std::shared_ptr<RenderPassManager>>();
-    mPipelineManager = mInjector.create<std::shared_ptr<PipelineManager>>();
-    mTextureManager = mInjector.create<std::shared_ptr<TextureManager>>();
-    mMaterialManager = mInjector.create<std::shared_ptr<MaterialManager>>();
-    mBasicGeometryFactory = mInjector.create<std::shared_ptr<BasicGeometryFactory>>();
+    // mCommandBufferManager = mInjector.create<std::shared_ptr<CommandBufferManager>>();
+    // mSyncPrimitiveManager = mInjector.create<std::shared_ptr<SyncPrimitiveManager>>();
+    // mPipelineLayoutManager = mInjector.create<std::shared_ptr<PipelineLayoutManager>>();
+    // mShaderManager = mInjector.create<std::shared_ptr<ShaderManager>>();
+    // mDescriptorManager = mInjector.create<std::shared_ptr<DescriptorManager>>();
+    // mSamplerManager = mInjector.create<std::shared_ptr<SamplerManager>>();
+    // mBufferFactory = mInjector.create<std::shared_ptr<BufferFactory>>();
+    // mDescriptorManager = mInjector.create<std::shared_ptr<DescriptorManager>>();
+    // mImageFactory = mInjector.create<std::shared_ptr<ImageFactory>>();
+    // mRenderPassManager = mInjector.create<std::shared_ptr<RenderPassManager>>();
+    // mPipelineManager = mInjector.create<std::shared_ptr<PipelineManager>>();
+    // mTextureManager = mInjector.create<std::shared_ptr<TextureManager>>();
+    // mMaterialManager = mInjector.create<std::shared_ptr<MaterialManager>>();
+    // mBasicGeometryFactory = mInjector.create<std::shared_ptr<BasicGeometryFactory>>();
     mBasicGeometryEntityManager = mInjector.create<std::shared_ptr<BasicGeometryEntityManager>>();
     mUI = mInjector.create<std::shared_ptr<UI>>();
 
@@ -61,11 +61,8 @@ Application::~Application()
 }
 void Application::InitSystem()
 {
-    mRenderSystem = std::make_shared<RenderSystem>(mLogger, mContext, mRegistry, mRenderPassManager,
-                                                   mPipelineLayoutManager, mPipelineManager, mCommandBufferManager,
-                                                   mSyncPrimitiveManager, mDescriptorManager, mSamplerManager,
-                                                   mBufferFactory, mImageFactory, mWindow, mUI);
-    mCameraSystem = std::make_shared<CameraSystem>(mLogger, mRegistry);
+    mRenderSystem = mInjector.create<std::shared_ptr<RenderSystem>>();
+    mCameraSystem = mInjector.create<std::shared_ptr<CameraSystem>>();
     mRenderSystem->Init();
     mCameraSystem->Init();
 }
