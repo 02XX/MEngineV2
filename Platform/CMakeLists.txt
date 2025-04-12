@@ -20,11 +20,10 @@ target_link_libraries(
     Platform
     PUBLIC
     SDL3::SDL3
-    spdlog::spdlog_header_only
+    spdlog::spdlog
     GPUOpen::VulkanMemoryAllocator
     glm::glm-header-only
     magic_enum::magic_enum
-    fmt::fmt-header-only
     Boost.DI
     nlohmann_json::nlohmann_json
 )

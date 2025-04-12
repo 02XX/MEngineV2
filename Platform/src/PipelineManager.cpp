@@ -31,8 +31,8 @@ void PipelineManager::CreateGBufferPipeline()
 {
     // mConfig = vk::GraphicsPipelineCreateInfo{};
     // // ========== 3. 着色器阶段 ==========
-    // mShaderManager->LoadShaderModule("GBufferVertexShader", "Shaders/gbuffer.vert.spv");
-    // mShaderManager->LoadShaderModule("GBufferFragmentShader", "Shaders/gbuffer.frag.spv");
+    // mShaderManager->LoadShaderModule("GBufferVertexShader", "gbuffer.vert.spv");
+    // mShaderManager->LoadShaderModule("GBufferFragmentShader", "gbuffer.frag.spv");
     // auto vertexShader = mShaderManager->GetShaderModule("GBufferVertexShader");
     // auto fragmentShader = mShaderManager->GetShaderModule("GBufferFragmentShader");
     // std::array<vk::PipelineShaderStageCreateInfo, 2> shaderStages = {vk::PipelineShaderStageCreateInfo()
@@ -87,8 +87,8 @@ void PipelineManager::CreateShadowDepthPipeline()
     // mConfig = vk::GraphicsPipelineCreateInfo{};
 
     // // ========== 3. 着色器阶段 ==========
-    // mShaderManager->LoadShaderModule("ShadowDepthVertexShader", "Shaders/shadowdepth.vert.spv");
-    // mShaderManager->LoadShaderModule("ShadowDepthFragmentShader", "Shaders/shadowdepth.frag.spv");
+    // mShaderManager->LoadShaderModule("ShadowDepthVertexShader", "shadowdepth.vert.spv");
+    // mShaderManager->LoadShaderModule("ShadowDepthFragmentShader", "shadowdepth.frag.spv");
     // auto vertexShader = mShaderManager->GetShaderModule("ShadowDepthVertexShader");
     // auto fragmentShader = mShaderManager->GetShaderModule("ShadowDepthFragmentShader");
     // std::array<vk::PipelineShaderStageCreateInfo, 2> shaderStages = {vk::PipelineShaderStageCreateInfo()
@@ -116,8 +116,8 @@ void PipelineManager::CreateLightingPipeline()
 {
     // mConfig = vk::GraphicsPipelineCreateInfo{};
     // // ========== 3. 着色器阶段 ==========
-    // mShaderManager->LoadShaderModule("LightingVertexShader", "Shaders/lighting.vert.spv");
-    // mShaderManager->LoadShaderModule("LightingFragmentShader", "Shaders/lighting.frag.spv");
+    // mShaderManager->LoadShaderModule("LightingVertexShader", "lighting.vert.spv");
+    // mShaderManager->LoadShaderModule("LightingFragmentShader", "lighting.frag.spv");
     // auto vertexShader = mShaderManager->GetShaderModule("LightingVertexShader");
     // auto fragmentShader = mShaderManager->GetShaderModule("LightingFragmentShader");
     // std::array<vk::PipelineShaderStageCreateInfo, 2> shaderStages = {vk::PipelineShaderStageCreateInfo()
@@ -154,8 +154,8 @@ void PipelineManager::CreateTranslucencyPipeline()
     vk::PipelineInputAssemblyStateCreateInfo inputAssemblyInfo{};
     inputAssemblyInfo.setTopology(vk::PrimitiveTopology::eTriangleList).setPrimitiveRestartEnable(vk::False);
     // ========== 3. 着色器阶段 ==========
-    mShaderManager->LoadShaderModule("TranslucencyVertexShader", "Shaders/translucency.vert.spv");
-    mShaderManager->LoadShaderModule("TranslucencyFragmentShader", "Shaders/translucency.frag.spv");
+    mShaderManager->LoadShaderModule("TranslucencyVertexShader", "translucency.vert.spv");
+    mShaderManager->LoadShaderModule("TranslucencyFragmentShader", "translucency.frag.spv");
     auto vertexShader = mShaderManager->GetShaderModule("TranslucencyVertexShader");
     auto fragmentShader = mShaderManager->GetShaderModule("TranslucencyFragmentShader");
     std::array<vk::PipelineShaderStageCreateInfo, 2> shaderStages = {vk::PipelineShaderStageCreateInfo()
@@ -236,10 +236,10 @@ void PipelineManager::CreateTranslucencyPipeline()
             .setColorWriteMask(vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
                                vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA) // 写入掩码
             .setSrcColorBlendFactor(vk::BlendFactor::eOne)                                      // 源颜色混合因子
-            .setDstColorBlendFactor(vk::BlendFactor::eZero) // 目标颜色混合因子
-            .setColorBlendOp(vk::BlendOp::eAdd)             // 混合操作
-            .setSrcAlphaBlendFactor(vk::BlendFactor::eOne)  // 源Alpha混合因子
-            .setDstAlphaBlendFactor(vk::BlendFactor::eZero) // 目标Alpha混合因子
+            .setDstColorBlendFactor(vk::BlendFactor::eZero)                                     // 目标颜色混合因子
+            .setColorBlendOp(vk::BlendOp::eAdd)                                                 // 混合操作
+            .setSrcAlphaBlendFactor(vk::BlendFactor::eOne)                                      // 源Alpha混合因子
+            .setDstAlphaBlendFactor(vk::BlendFactor::eZero)                                     // 目标Alpha混合因子
             .setAlphaBlendOp(vk::BlendOp::eAdd)};
     auto blendConstants = std::array<float, 4>{0.0f, 0.0f, 0.0f, 0.0f}; // 混合常量
     vk::PipelineColorBlendStateCreateInfo colorBlendInfo{};
@@ -278,8 +278,8 @@ void PipelineManager::CreatePostProcessPipeline()
     // mConfig = vk::GraphicsPipelineCreateInfo{};
 
     // // ========== 3. 着色器阶段 ==========
-    // mShaderManager->LoadShaderModule("PostProcessVertexShader", "Shaders/postprocess.vert.spv");
-    // mShaderManager->LoadShaderModule("PostProcessFragmentShader", "Shaders/postprocess.frag.spv");
+    // mShaderManager->LoadShaderModule("PostProcessVertexShader", "postprocess.vert.spv");
+    // mShaderManager->LoadShaderModule("PostProcessFragmentShader", "postprocess.frag.spv");
     // auto vertexShader = mShaderManager->GetShaderModule("PostProcessVertexShader");
     // auto fragmentShader = mShaderManager->GetShaderModule("PostProcessFragmentShader");
     // std::array<vk::PipelineShaderStageCreateInfo, 2> shaderStages = {vk::PipelineShaderStageCreateInfo()
@@ -307,8 +307,8 @@ void PipelineManager::CreateSkyPipeline()
     // mConfig = vk::GraphicsPipelineCreateInfo{};
 
     // // ========== 3. 着色器阶段 ==========
-    // mShaderManager->LoadShaderModule("SkyVertexShader", "Shaders/sky.vert.spv");
-    // mShaderManager->LoadShaderModule("SkyFragmentShader", "Shaders/sky.frag.spv");
+    // mShaderManager->LoadShaderModule("SkyVertexShader", "sky.vert.spv");
+    // mShaderManager->LoadShaderModule("SkyFragmentShader", "sky.frag.spv");
     // auto vertexShader = mShaderManager->GetShaderModule("SkyVertexShader");
     // auto fragmentShader = mShaderManager->GetShaderModule("SkyFragmentShader");
     // std::array<vk::PipelineShaderStageCreateInfo, 2> shaderStages = {vk::PipelineShaderStageCreateInfo()
@@ -336,8 +336,8 @@ void PipelineManager::CreateUIPipeline()
     // mConfig = vk::GraphicsPipelineCreateInfo{};
 
     // // ========== 3. 着色器阶段 ==========
-    // mShaderManager->LoadShaderModule("UIVertexShader", "Shaders/ui.vert.spv");
-    // mShaderManager->LoadShaderModule("UIFragmentShader", "Shaders/ui.frag.spv");
+    // mShaderManager->LoadShaderModule("UIVertexShader", "ui.vert.spv");
+    // mShaderManager->LoadShaderModule("UIFragmentShader", "ui.frag.spv");
     // auto vertexShader = mShaderManager->GetShaderModule("UIVertexShader");
     // auto fragmentShader = mShaderManager->GetShaderModule("UIFragmentShader");
     // std::array<vk::PipelineShaderStageCreateInfo, 2> shaderStages = {vk::PipelineShaderStageCreateInfo()

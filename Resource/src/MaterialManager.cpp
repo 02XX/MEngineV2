@@ -45,10 +45,9 @@ std::shared_ptr<Material> MaterialManager::GetDefaultMaterial()
     // TODO: 改成PBR默认材质
     auto material = std::make_shared<Material>(mDescriptorManager, mPipelineManager, mPipelineLayoutManager,
                                                PipelineType::Translucency, PipelineLayoutType::TranslucencyLayout);
-    auto defaultImagePath = "Assets/DefaultImage.png";
-    auto texture = mTextureManager->CreateTexture(defaultImagePath);
+    auto texture = mTextureManager->CreateTexture(mDefaultAlbedoPath);
     material->AddTexture(TextureType::BaseColor, texture);
-    auto id = std::hash<std::string>{}(defaultImagePath);
+    auto id = std::hash<std::string>{}(mDefaultAlbedoPath.string());
     mMaterials[id] = material;
     return material;
 }

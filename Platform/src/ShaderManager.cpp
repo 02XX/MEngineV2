@@ -13,12 +13,13 @@ ShaderManager::ShaderManager(std::shared_ptr<ILogger> logger, std::shared_ptr<Co
     // LoadShaderModule("sky", "assets/shaders/sky.spv");
     // LoadShaderModule("ui", "assets/shaders/ui.spv");
 }
-void ShaderManager::LoadShaderModule(std::string name, const std::string &path)
+void ShaderManager::LoadShaderModule(std::string name, const std::filesystem::path &path)
 {
-    std::ifstream file(path, std::ios::in | std::ios::binary);
+    std::filesystem::path shaderPath = mShaderPath / path;
+    std::ifstream file(shaderPath.string().c_str(), std::ios::in | std::ios::binary);
     if (!file.is_open())
     {
-        mLogger->Error("Failed to open file: {}", path);
+        mLogger->Error("Failed to open file: {}", shaderPath.string());
         throw std::runtime_error("Failed to open file");
     }
     file.seekg(0, std::ios::end);
@@ -30,8 +31,13 @@ void ShaderManager::LoadShaderModule(std::string name, const std::string &path)
     vk::ShaderModuleCreateInfo shaderModuleCreateInfo{};
     shaderModuleCreateInfo.setCodeSize(buffer.size()).setPCode(reinterpret_cast<const uint32_t *>(buffer.data()));
     auto shaderModule = mContext->GetDevice().createShaderModuleUnique(shaderModuleCreateInfo);
+    if (!shaderModule)
+    {
+        mLogger->Error("Failed to create shader module: {}", shaderPath.string());
+        throw std::runtime_error("Failed to create shader module");
+    }
     mShaderModules.emplace(std::move(name), std::move(shaderModule));
-    mLogger->Debug("Shader Module Created.");
+    mLogger->Debug("Shader Module loaded: {}", shaderPath.string());
 }
 vk::ShaderModule ShaderManager::GetShaderModule(std::string name)
 {

@@ -82,8 +82,6 @@ void RenderSystem::CollectMainCamera()
         if (camera.isMainCamera)
         {
             mMainCameraEntity = entity;
-            // 设置UISystem
-            mUI->SetCamera(entity);
             // 设置Uniform Buffer
             mMVPUniform.model = mRotationMatrix;
             mMVPUniform.view = camera.viewMatrix;
@@ -271,7 +269,6 @@ void RenderSystem::RenderSkyPass()
 void RenderSystem::RenderUIPass(float deltaTime)
 {
     auto &translucencyFrameResource = mRenderPassManager->GetTranslucencyFrameResource(mImageIndex);
-    mUI->UpdateSceneDescriptorSet(translucencyFrameResource.renderImageView.get(), mImageIndex);
     auto queueFamilyIndices = mContext->GetQueueFamilyIndicates();
     vk::ClearValue clearValue(std::array<float, 4>{0.1f, 0.1f, 0.1f, 1.0f});
     vk::RenderPassBeginInfo renderPassBeginInfo;
@@ -301,7 +298,6 @@ void RenderSystem::RenderUIPass(float deltaTime)
         .setClearValues(clearValue);
 
     mGraphicCommandBuffers[mFrameIndex]->beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);
-    mUI->SetDeltaTime(deltaTime);
     mUI->RecordUICommandBuffer(mGraphicCommandBuffers[mFrameIndex].get());
     mGraphicCommandBuffers[mFrameIndex]->endRenderPass();
 

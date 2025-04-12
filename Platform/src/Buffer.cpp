@@ -34,7 +34,8 @@ Buffer::Buffer(std::shared_ptr<Context> context, vk::DeviceSize size, vk::Buffer
 }
 Buffer::Buffer(Buffer &&other) noexcept
     : mBuffer(std::exchange(other.mBuffer, nullptr)), mAllocation(std::exchange(other.mAllocation, nullptr)),
-      mAllocationInfo(std::exchange(other.mAllocationInfo, {}))
+      mAllocationInfo(std::exchange(other.mAllocationInfo, {})), mBufferSize(std::exchange(other.mBufferSize, 0)),
+      mBufferUsageFlags(std::exchange(other.mBufferUsageFlags, {})), mContext(std::exchange(other.mContext, nullptr))
 {
 }
 Buffer &Buffer::operator=(Buffer &&other) noexcept
@@ -45,6 +46,9 @@ Buffer &Buffer::operator=(Buffer &&other) noexcept
         mBuffer = std::exchange(other.mBuffer, nullptr);
         mAllocation = std::exchange(other.mAllocation, nullptr);
         mAllocationInfo = std::exchange(other.mAllocationInfo, {});
+        mBufferSize = std::exchange(other.mBufferSize, 0);
+        mBufferUsageFlags = std::exchange(other.mBufferUsageFlags, {});
+        mContext = std::exchange(other.mContext, nullptr);
     }
     return *this;
 }

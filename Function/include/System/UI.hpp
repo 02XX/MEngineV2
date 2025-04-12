@@ -45,51 +45,47 @@ class UI
     std::shared_ptr<entt::registry> mRegistry;
 
   private:
-    vk::UniqueDescriptorPool mUIDescriptorPool;
+    // ImGUI 相关
     ImGuiIO *mIO;
-
-    uint32_t mCurrentFrame = 0;
-    bool mFirstRun = true;
-
-    uint32_t mSceneWidth;
-    uint32_t mSceneHeight;
-    vk::UniqueDescriptorSetLayout mSceneDescriptorSetLayout;
-    std::vector<vk::UniqueDescriptorSet> mSceneDescriptorSets;
-    vk::UniqueSampler mSceneSampler;
-    vk::UniqueCommandBuffer mImageTransitionCommandBuffer;
-    vk::UniqueFence mImageTransitionFence;
-
-    bool mIsSceneViewPortChange = false;
-
-    std::filesystem::path mCurrentAssetDir = std::filesystem::current_path();
-    float mThumbnailSize = 64.0f; // 可调整的图标大小
-
-    std::filesystem::path mAssetsPath = std::filesystem::current_path() / "Assets";
-    UniqueImage mFileImage;
-    vk::UniqueImageView mFileImageView;
-    UniqueImage mFolderImage;
-    vk::UniqueImageView mFolderImageView;
-    vk::UniqueSampler mAssetSampler;
-    vk::DescriptorSet mFileTexture;
-    vk::DescriptorSet mFolderTexture;
-
-    entt::entity mCameraEntity;
-
-    float mDeltaTime = 0.0f;
+    ImGuiViewport *mMainViewport;
+    ImGuiID mDockSpaceID;
+    bool mIsFirstFrame = true;
+    std::filesystem::path mProjectPath = std::filesystem::current_path(); // TODO：添加创建项目的功能，并修改此路径
+    std::filesystem::path mAssetsPath = mProjectPath / "Assets";
 
   private:
+    // Assets View
+    std::filesystem::path mCurrentPath = mProjectPath;
+    std::filesystem::path mUIResourcePath = std::filesystem::current_path() / "Resource" / "UI";
+    float mIconSize = 64.0f; // 可调整的图标大小
+    std::vector<UniqueImage> mIconImages;
+    std::vector<vk::UniqueImageView> mIconImageViews;
+    vk::DescriptorSet mFileIcon;
+    vk::DescriptorSet mFolderIcon;
+    vk::UniqueSampler mIconSampler;
+    vk::UniqueCommandBuffer mIconTransitionCommandBuffer;
+    vk::UniqueFence mIconTransitionFence;
+
+  private:
+    // Scene View
+    bool mIsSceneViewPortChanged = false;
+    uint32_t mSceneViewPortWidth = 0;
+    uint32_t mSceneViewPortHeight = 0;
+    vk::UniqueSampler mSceneSampler;
+
+  private:
+    entt::entity mCameraEntity;
+
+  private:
+    void SetDefaultWindowLayout();
+
     void DockingSpace();
     void HierarchyWindow();
     void InspectorWindow();
     void SceneViewWindow();
     void AssetWindow();
 
-    void CreateDescriptorPool();
-    void CreateSceneDescriptorSetLayout();
-    void CreateSceneDescriptorSet();
-    void CreateSampler();
-
-    void LoadAsset();
+    void LoadUIIcon(const std::filesystem::path &iconPath, vk::DescriptorSet &descriptorSet);
 
     void RenderScene();
 
@@ -100,30 +96,23 @@ class UI
        std::shared_ptr<SyncPrimitiveManager> syncPrimitiveManager, std::shared_ptr<SamplerManager> samplerManager,
        std::shared_ptr<entt::registry> registry);
     ~UI();
-
-    bool IsSceneViewPortChanged() const
-    {
-        return mIsSceneViewPortChange;
-    }
-    uint32_t GetSceneWidth() const
-    {
-        return mSceneWidth;
-    }
-    uint32_t GetSceneHeight() const
-    {
-        return mSceneHeight;
-    }
-    void SetCamera(entt::entity cameraEntity)
-    {
-        mCameraEntity = cameraEntity;
-    }
-    void SetDeltaTime(float deltaTime)
-    {
-        mDeltaTime = deltaTime;
-    }
     void ProcessEvent(const SDL_Event *event);
     void UpdateSceneDescriptorSet(vk::ImageView imageView, uint32_t imageIndex);
     void RecordUICommandBuffer(vk::CommandBuffer commandBuffer);
+
+  public:
+    inline bool IsSceneViewPortChanged() const
+    {
+        return mIsSceneViewPortChanged;
+    }
+    inline uint32_t GetSceneWidth() const
+    {
+        return mSceneViewPortWidth;
+    }
+    inline uint32_t GetSceneHeight() const
+    {
+        return mSceneViewPortHeight;
+    }
 };
 
 } // namespace MEngine
