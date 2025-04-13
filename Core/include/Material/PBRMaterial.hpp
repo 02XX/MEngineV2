@@ -104,7 +104,8 @@ template <> struct adl_serializer<MEngine::PBRMaterial>
 {
     static void to_json(json &j, const MEngine::PBRMaterial &m)
     {
-        j["pipelineType"] = magic_enum::enum_name(m.GetPipelineType());
+        auto pipelineTypeStr = magic_enum::enum_name(m.GetPipelineType());
+        j["pipelineType"] = pipelineTypeStr;
         auto materialParams = m.GetMaterialParams();
         j["parameters"]["albedo"] = {materialParams.parameters.albedo.x, materialParams.parameters.albedo.y,
                                      materialParams.parameters.albedo.z};

@@ -24,9 +24,12 @@ entt::entity BasicGeometryEntityManager::CreateCube(std::shared_ptr<entt::regist
     auto geometry = mBasicGeometryFactory->GetGeometry(PrimitiveType::Cube);
 
     // 2. 创建材质
-    auto materialID = mMaterialManager->CreateMaterial(std::filesystem::current_path() / "CubeMaterial.json");
+    std::filesystem::path materialPath =
+        std::filesystem::current_path() / "Resource" / "Material" / "CubeMaterial.json";
+    auto materialID = mMaterialManager->CreateMaterial(materialPath);
     auto material = mMaterialManager->GetMaterial(materialID);
     material->SetPipelineType(PipelineType::ForwardTransparent);
+    mMaterialManager->SaveMaterial(materialPath, material);
     material->Update();
     // 3. 创建网格
     auto mesh = std::make_shared<Mesh>(mBufferFactory, geometry.vertices, geometry.indices);
