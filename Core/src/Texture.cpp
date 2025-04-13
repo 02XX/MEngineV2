@@ -3,8 +3,8 @@
 namespace MEngine
 {
 Texture::Texture(std::shared_ptr<Context> context, std::shared_ptr<ImageFactory> imageFactory,
-                 std::shared_ptr<SamplerManager> samplerManager, TextureType type, const std::filesystem::path &path)
-    : mContext(context), mPath(path), mImageFactory(imageFactory), mSamplerManager(samplerManager), mTextureType(type)
+                 std::shared_ptr<SamplerManager> samplerManager, const std::filesystem::path &path)
+    : mContext(context), mPath(path), mImageFactory(imageFactory), mSamplerManager(samplerManager)
 {
     LoadTexture(path);
 }

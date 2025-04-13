@@ -282,25 +282,25 @@ void UI::InspectorWindow()
                     }
                     ImGui::EndCombo();
                 }
-                // textures
-                auto textures = material.material->GetTextures();
-                for (auto texture : textures)
-                {
-                    if (texture->GetUIDescriptorID() != nullptr)
-                    {
-                        ImGui::Text("%s", magic_enum::enum_name(texture->GetTextureType()).data());
-                        ImGui::Image(
-                            reinterpret_cast<ImTextureID>(static_cast<VkDescriptorSet>(texture->GetUIDescriptorID())),
-                            ImVec2(mInspectorImageWidth, mInspectorImageHeight), ImVec2(0, 1), ImVec2(1, 0));
-                    }
-                    else
-                    {
-                        auto id = ImGui_ImplVulkan_AddTexture(
-                            texture->GetSampler(), texture->GetImageView(),
-                            static_cast<VkImageLayout>(vk::ImageLayout::eShaderReadOnlyOptimal));
-                        texture->SetUIDescriptorID(id);
-                    }
-                }
+                // // textures
+                // auto textures = material.material->GetTextures();
+                // for (auto texture : textures)
+                // {
+                //     if (texture->GetUIDescriptorID() != nullptr)
+                //     {
+                //         ImGui::Text("%s", magic_enum::enum_name(texture->GetTextureType()).data());
+                //         ImGui::Image(
+                //             reinterpret_cast<ImTextureID>(static_cast<VkDescriptorSet>(texture->GetUIDescriptorID())),
+                //             ImVec2(mInspectorImageWidth, mInspectorImageHeight), ImVec2(0, 1), ImVec2(1, 0));
+                //     }
+                //     else
+                //     {
+                //         auto id = ImGui_ImplVulkan_AddTexture(
+                //             texture->GetSampler(), texture->GetImageView(),
+                //             static_cast<VkImageLayout>(vk::ImageLayout::eShaderReadOnlyOptimal));
+                //         texture->SetUIDescriptorID(id);
+                //     }
+                // }
             }
         }
     }

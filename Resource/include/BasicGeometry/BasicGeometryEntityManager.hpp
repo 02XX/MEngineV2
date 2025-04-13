@@ -11,6 +11,7 @@
 #include "PipelineLayoutManager.hpp"
 #include "PipelineManager.hpp"
 #include "Texture.hpp"
+#include "TextureManager.hpp"
 #include "entt/entt.hpp"
 #include <memory>
 
@@ -31,6 +32,7 @@ class BasicGeometryEntityManager : public NoCopyable
     std::shared_ptr<ImageFactory> mImageFactory;
     std::shared_ptr<BufferFactory> mBufferFactory;
     std::shared_ptr<BasicGeometryFactory> mBasicGeometryFactory;
+    std::shared_ptr<TextureManager> mTextureManager;
 
   private:
   public:
@@ -41,7 +43,8 @@ class BasicGeometryEntityManager : public NoCopyable
                                std::shared_ptr<SamplerManager> samplerManager,
                                std::shared_ptr<MaterialManager> materialManager,
                                std::shared_ptr<ImageFactory> imageFactory, std::shared_ptr<BufferFactory> bufferFactory,
-                               std::shared_ptr<BasicGeometryFactory> basicGeometryFactory);
+                               std::shared_ptr<BasicGeometryFactory> basicGeometryFactory,
+                               std::shared_ptr<TextureManager> textureManager);
     entt::entity CreateCube(std::shared_ptr<entt::registry> registry);
     entt::entity CreateCylinder(std::shared_ptr<entt::registry> registry);
     entt::entity CreateSphere(std::shared_ptr<entt::registry> registry);

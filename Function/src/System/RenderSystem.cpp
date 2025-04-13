@@ -36,19 +36,19 @@ void RenderSystem::Init()
         mInFlightFences.push_back(std::move(inFlightFence));
     }
     // Uniform Buffer
-    mMVPBuffer = mBufferFactory->CreateBuffer(BufferType::Uniform, sizeof(MVPUniform));
-    auto MVPDescriptorSetLayout = mPipelineLayoutManager->GetMVPDescriptorSetLayout();
+    mVPUBO = mBufferFactory->CreateBuffer(BufferType::Uniform, sizeof(VPUniform));
+    auto globalDescriptorSetLayout = mPipelineLayoutManager->GetGlobalDescriptorSetLayout();
     for (uint32_t i = 0; i < mFrameCount; ++i)
     {
-        auto sets = mDescriptorManager->AllocateUniqueDescriptorSet({MVPDescriptorSetLayout});
-        mCameraDescriptorSets.push_back(std::move(sets[0]));
+        auto sets = mDescriptorManager->AllocateUniqueDescriptorSet({globalDescriptorSetLayout});
+        mGlobalDescriptorSets.push_back(std::move(sets[0]));
     }
     mWindow->SetEventCallback([this](const void *event) { mUI->ProcessEvent(static_cast<const SDL_Event *>(event)); });
     // UI Scene View
     std::vector<vk::ImageView> imageViews;
-    for (auto imageView : mRenderPassManager->GetTranslucencyFrameResource())
+    for (auto imageView : mRenderPassManager->GetTransparentFrameResource())
     {
-        imageViews.push_back(imageView->renderImageView.get());
+        imageViews.push_back(imageView->renderTargetImageView.get());
     }
     mUI->SetSceneViewPort(imageViews);
     mIsInit = true;
@@ -96,10 +96,9 @@ void RenderSystem::CollectMainCamera()
         {
             mMainCameraEntity = entity;
             // 设置Uniform Buffer
-            mMVPUniform.model = camera.viewMatrix;
-            mMVPUniform.view = camera.viewMatrix;
-            mMVPUniform.projection = camera.projectionMatrix;
-            memcpy(mMVPBuffer->GetAllocationInfo().pMappedData, &mMVPUniform, sizeof(mMVPUniform));
+            mVPUniform.view = camera.viewMatrix;
+            mVPUniform.projection = camera.projectionMatrix;
+            memcpy(mVPUBO->GetAllocationInfo().pMappedData, &mVPUniform, sizeof(mVPUniform));
             break;
         }
     }
@@ -110,11 +109,11 @@ void RenderSystem::Tick(float deltaTime)
     // TickRotationMatrix();
     CollectMainCamera();
     Prepare(); // Prepare
-    // RenderDefferPass();       // Deffer pass
     // RenderShadowDepthPass();  // Shadow pass
+    // RenderMainPass();       // Deffer pass
+    // RenderSkyPass();          // Sky pass
     RenderTranslucencyPass(); // Translucency pass
     // RenderPostProcessPass();  // Post process pass
-    // RenderSkyPass();          // Sky pass
     RenderUIPass(deltaTime); // UI pass
     Present();               // Present
 }
@@ -158,12 +157,12 @@ void RenderSystem::Prepare()
         auto height = mUI->GetSceneHeight();
         // mRenderPassManager->RecreateFrameBuffer(width, height);
     }
-    mDescriptorManager->UpdateUniformDescriptorSet({mMVPBuffer.get()}, 0, mCameraDescriptorSets[mFrameIndex].get());
+    mDescriptorManager->UpdateUniformDescriptorSet({mVPUBO.get()}, 0, mGlobalDescriptorSets[mFrameIndex].get());
 }
 void RenderSystem::RenderShadowDepthPass()
 {
 }
-void RenderSystem::RenderDefferPass()
+void RenderSystem::RenderMainPass()
 {
     auto extent = mRenderPassManager->GetExtent();
     vk::RenderPassBeginInfo renderPassBeginInfo;
@@ -175,8 +174,8 @@ void RenderSystem::RenderDefferPass()
     clearValues[4].color = vk::ClearColorValue(std::array<float, 4>{0.0f, 0.0f, 0.0f, 1.0f}); // 附件4: AO
     clearValues[5].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);                        // 附件5: 深度
     clearValues[6].color = vk::ClearColorValue(std::array<float, 4>{0.0f, 0.0f, 0.0f, 1.0f}); // 附件6: Swapchain
-    auto defferFrameBuffers = mRenderPassManager->GetFrameBuffer(RenderPassType::Deffer);
-    renderPassBeginInfo.setRenderPass(mRenderPassManager->GetRenderPass(RenderPassType::Deffer))
+    auto defferFrameBuffers = mRenderPassManager->GetFrameBuffer(RenderPassType::MainPass);
+    renderPassBeginInfo.setRenderPass(mRenderPassManager->GetRenderPass(RenderPassType::MainPass))
         .setFramebuffer(defferFrameBuffers[mImageIndex])
         .setRenderArea(vk::Rect2D({0, 0}, extent))
         .setClearValues(clearValues);
@@ -187,21 +186,20 @@ void RenderSystem::RenderDefferPass()
 }
 void RenderSystem::RenderTranslucencyPass()
 {
-
     auto extent = mRenderPassManager->GetExtent();
     // Translucency entities
-    auto entities = mBatchMaterialComponents[PipelineType::Translucency];
-    auto pipelineLayout = mPipelineLayoutManager->GetPipelineLayout(PipelineLayoutType::TranslucencyLayout);
-    auto pipeline = mPipelineManager->GetPipeline(PipelineType::Translucency);
-    auto renderPass = mRenderPassManager->GetRenderPass(RenderPassType::Translucency);
-    auto translucencyFrameBuffers = mRenderPassManager->GetFrameBuffer(RenderPassType::Translucency);
+    auto entities = mBatchMaterialComponents[PipelineType::ForwardTransparent];
+    auto pipelineLayout = mPipelineLayoutManager->GetPipelineLayout(PipelineLayoutType::Transparent);
+    auto pipeline = mPipelineManager->GetPipeline(PipelineType::ForwardTransparent);
+    auto renderPass = mRenderPassManager->GetRenderPass(RenderPassType::Transparent);
+    auto transparentFrameBuffers = mRenderPassManager->GetFrameBuffer(RenderPassType::Transparent);
     vk::RenderPassBeginInfo renderPassBeginInfo;
     std::array<vk::ClearValue, 2> clearValues{
-        vk::ClearValue(std::array<float, 4>{0.1f, 0.1f, 0.1f, 1.0f}), // 附件0: 颜色
-        vk::ClearDepthStencilValue(1.0f, 0)                           // 附件1: depth
+        vk::ClearValue(std::array<float, 4>{0.1f, 0.1f, 0.1f, 1.0f}), // 附件0: Render Target
+        vk::ClearDepthStencilValue(1.0f, 0)                           // 附件1: Depth Stencil
     };
     renderPassBeginInfo.setRenderPass(renderPass)
-        .setFramebuffer(translucencyFrameBuffers[mImageIndex])
+        .setFramebuffer(transparentFrameBuffers[mImageIndex])
         .setRenderArea(vk::Rect2D({0, 0}, extent))
         .setClearValues(clearValues);
     mGraphicCommandBuffers[mFrameIndex]->beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);
@@ -230,20 +228,20 @@ void RenderSystem::RenderTranslucencyPass()
             // 1. 绑定push constant
             mGraphicCommandBuffers[mFrameIndex]->pushConstants(pipelineLayout, vk::ShaderStageFlagBits::eVertex, 0,
                                                                sizeof(glm::mat4x4), &transform.modelMatrix);
-            // 2. 绑定MVP描述符集
+            // 2. 绑定Global描述符集
             mGraphicCommandBuffers[mFrameIndex]->bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0,
-                                                                    mCameraDescriptorSets[mFrameIndex].get(), {});
-            // 绑定材质描述符集
-            auto materialDescriptorSet = material.material->GetDescriptorSet();
+                                                                    mGlobalDescriptorSets[mFrameIndex].get(), {});
+            // 3. 绑定材质描述符集
+            auto materialDescriptorSet = material.material->GetMaterialDescriptorSet();
             mGraphicCommandBuffers[mFrameIndex]->bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 1,
                                                                     materialDescriptorSet, {});
-            //  3. 绑定顶点缓冲区
+            //  4. 绑定顶点缓冲区
             auto vertexBuffer = mesh.mesh->GetVertexBuffer();
             mGraphicCommandBuffers[mFrameIndex]->bindVertexBuffers(0, vertexBuffer, {0});
-            // 4. 绑定索引缓冲区
+            // 5. 绑定索引缓冲区
             auto indexBuffer = mesh.mesh->GetIndexBuffer();
             mGraphicCommandBuffers[mFrameIndex]->bindIndexBuffer(indexBuffer, 0, vk::IndexType::eUint32);
-            // 5. 绘制
+            // 6. 绘制
             mGraphicCommandBuffers[mFrameIndex]->drawIndexed(mesh.mesh->GetIndexCount(), 1, 0, 0, 0);
         }
     }
@@ -267,7 +265,7 @@ void RenderSystem::RenderUIPass(float deltaTime)
 
     // 渲染前的布局转换
     vk::ImageMemoryBarrier preRenderBarrier;
-    preRenderBarrier.setImage(uiFrameResources[mImageIndex]->swapchainImage)
+    preRenderBarrier.setImage(uiFrameResources[mImageIndex]->renderTargetImage)
         .setOldLayout(vk::ImageLayout::eUndefined)
         .setNewLayout(vk::ImageLayout::eColorAttachmentOptimal)
         .setSrcQueueFamilyIndex(queueFamilyIndices.graphicsFamily.value())

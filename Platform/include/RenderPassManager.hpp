@@ -14,60 +14,36 @@
 #include <vector>
 #include <vulkan/vulkan.hpp>
 #include <vulkan/vulkan_handles.hpp>
+#include <vulkan/vulkan_structs.hpp>
 
 namespace MEngine
 {
 enum class RenderPassType
 {
-    Forward,      // 前向渲染
-    Deffer,       // 延迟渲染
-    ShadowDepth,  // 阴影深度图渲染
-    Translucency, // 半透明物体渲染
-    PostProcess,  // 后处理特效
-    Sky,          // 天空盒/大气渲染
-    UI            // 界面渲染
+    ShadowDepth, // 生成所有光源的阴影贴图subpass0: 生成阴影贴图
+    MainPass,    // Deferred, 延迟渲染Subpass0: GBuffer, Subpass1: Lighting
+    Sky,         // 天空盒渲染subpass0: 天空盒渲染
+    Transparent, // Forward 透明物体渲染subpass0: 透明物体渲染
+    PostProcess, // 后处理渲染subpass0: 后处理渲染
+    UI,          // UI渲染subpass0: UI渲染
 };
-struct DefferFrameResource
+struct TransparentFrameResource
 {
-    // 1. world space position
-    UniqueImage positionImage;
-    vk::UniqueImageView positionImageView;
-    // 2. normal
-    UniqueImage normalImage;
-    vk::UniqueImageView normalImageView;
-    // 3. albedo
-    UniqueImage albedoImage;
-    vk::UniqueImageView albedoImageView;
-    // 4. metal rough
-    UniqueImage metalRoughImage;
-    vk::UniqueImageView metalRoughImageView;
-    // 5. ao
-    UniqueImage aoImage;
-    vk::UniqueImageView aoImageView;
-    // 6. depth stencil
-    UniqueImage depthStencilImage;
+    // Render Target
+    vk::UniqueImageView renderTargetImageView;
+    UniqueImage renderTargetImage;
+    // Depth Stencil
     vk::UniqueImageView depthStencilImageView;
-    // // 7. swapchain image
-    // vk::Image swapchainImage;
-    // vk::ImageView swapchainImageView;
-    // 7. colour attachment
-    UniqueImage renderImage;
-    vk::UniqueImageView renderImageView;
+    UniqueImage depthStencilImage;
 };
 struct UIFrameResource
 {
-    // 1. swapchain image
-    vk::Image swapchainImage;
-    vk::ImageView swapchainImageView;
-};
-struct TranslucencyFrameResource
-{
-    // 1. colour attachment
-    UniqueImage renderImage;
-    vk::UniqueImageView renderImageView;
-    // 2. depth stencil
-    UniqueImage depthStencilImage;
+    // Render Target
+    vk::ImageView renderTargetImageView; // Swapchain Image View
+    vk::Image renderTargetImage;         // Swapchain Image
+    // Depth Stencil
     vk::UniqueImageView depthStencilImageView;
+    UniqueImage depthStencilImage;
 };
 class RenderPassManager final : public NoCopyable
 {
@@ -80,28 +56,26 @@ class RenderPassManager final : public NoCopyable
   private:
     std::unordered_map<RenderPassType, vk::UniqueRenderPass> mRenderPasses;
     std::unordered_map<RenderPassType, std::vector<vk::UniqueFramebuffer>> mFrameBuffers;
-    std::vector<std::shared_ptr<DefferFrameResource>> mDefferFrameResources;
-    std::vector<std::shared_ptr<UIFrameResource>> mUIFrameResources;
-    std::vector<std::shared_ptr<TranslucencyFrameResource>> mTranslucencyFrameResources;
-
     uint32_t mWidth = 800;
     uint32_t mHeight = 600;
 
   private:
-    void CreateGBufferRenderPass();
+    std::vector<std::shared_ptr<TransparentFrameResource>> mTransparentFrameResources;
+    std::vector<std::shared_ptr<UIFrameResource>> mUIFrameResources;
+
+  private:
     void CreateShadowDepthRenderPass();
-    void CreateLightingRenderPass();
-    void CreateTranslucencyRenderPass();
-    void CreatePostProcessRenderPass();
+    void CreateMainRenderPass();
     void CreateSkyRenderPass();
+    void CreateTransparentRenderPass();
+    void CreatePostProcessRenderPass();
     void CreateUIRenderPass();
 
-    void CreateDefferFrameBuffer();
     void CreateShadowDepthFrameBuffer();
-    void CreateLightingFrameBuffer();
-    void CreateTranslucencyFrameBuffer();
-    void CreatePostProcessFrameBuffer();
+    void CreateMainFrameBuffer();
     void CreateSkyFrameBuffer();
+    void CreateTransparentFrameBuffer();
+    void CreatePostProcessFrameBuffer();
     void CreateUIFrameBuffer();
 
   public:
@@ -110,22 +84,20 @@ class RenderPassManager final : public NoCopyable
     vk::RenderPass GetRenderPass(RenderPassType type) const;
     std::vector<vk::Framebuffer> GetFrameBuffer(RenderPassType type) const;
 
-    inline const std::vector<std::shared_ptr<DefferFrameResource>> &GetDefferFrameResource() const
-    {
-        return mDefferFrameResources;
-    }
-    inline const std::vector<std::shared_ptr<UIFrameResource>> &GetUIFrameResource() const
-    {
-        return mUIFrameResources;
-    }
-    inline const std::vector<std::shared_ptr<TranslucencyFrameResource>> &GetTranslucencyFrameResource() const
-    {
-        return mTranslucencyFrameResources;
-    }
     void RecreateFrameBuffer(uint32_t width, uint32_t height);
     vk::Extent2D GetExtent() const
     {
         return vk::Extent2D(mWidth, mHeight);
+    }
+
+  public:
+    inline std::vector<std::shared_ptr<TransparentFrameResource>> &GetTransparentFrameResource()
+    {
+        return mTransparentFrameResources;
+    }
+    inline std::vector<std::shared_ptr<UIFrameResource>> &GetUIFrameResource()
+    {
+        return mUIFrameResources;
     }
 };
 

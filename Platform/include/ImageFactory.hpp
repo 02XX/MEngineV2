@@ -76,5 +76,27 @@ class ImageFactory final : public NoCopyable
                            const std::vector<vk::Semaphore> &waitSemaphores,
                            const std::vector<vk::Semaphore> &signalSemaphores,
                            const std::vector<vk::PipelineStageFlags> &waitDstStageMask, vk::Fence fences);
+
+  public:
+    inline vk::Format GetTexture2DFormat() const
+    {
+        return mTexture2DFormat;
+    }
+    inline vk::Format GetTextureCubeFormat() const
+    {
+        return mTextureCubeFormat;
+    }
+    inline vk::Format GetRenderTargetFormat() const
+    {
+        return mRenderTargetFormat;
+    }
+    inline vk::Format GetDepthStencilFormat() const
+    {
+        return mDepthStencilFormat;
+    }
+    inline vk::Format GetStorageFormat() const
+    {
+        return mStorageFormat;
+    }
 };
 } // namespace MEngine

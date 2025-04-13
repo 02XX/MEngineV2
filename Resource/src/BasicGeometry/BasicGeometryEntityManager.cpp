@@ -1,4 +1,6 @@
 #include "BasicGeometry/BasicGeometryEntityManager.hpp"
+#include <filesystem>
+#include <memory>
 namespace MEngine
 {
 BasicGeometryEntityManager::BasicGeometryEntityManager(
@@ -6,11 +8,12 @@ BasicGeometryEntityManager::BasicGeometryEntityManager(
     std::shared_ptr<PipelineManager> pipelineManager, std::shared_ptr<PipelineLayoutManager> pipelineLayoutManager,
     std::shared_ptr<DescriptorManager> descriptorManager, std::shared_ptr<SamplerManager> samplerManager,
     std::shared_ptr<MaterialManager> materialManager, std::shared_ptr<ImageFactory> imageFactory,
-    std::shared_ptr<BufferFactory> bufferFactory, std::shared_ptr<BasicGeometryFactory> basicGeometryFactory)
+    std::shared_ptr<BufferFactory> bufferFactory, std::shared_ptr<BasicGeometryFactory> basicGeometryFactory,
+    std::shared_ptr<TextureManager> textureManager)
     : mLogger(mLogger), mContext(context), mPipelineManager(pipelineManager),
       mPipelineLayoutManager(pipelineLayoutManager), mDescriptorManager(descriptorManager),
       mSamplerManager(samplerManager), mImageFactory(imageFactory), mBufferFactory(bufferFactory),
-      mBasicGeometryFactory(basicGeometryFactory), mMaterialManager(materialManager)
+      mBasicGeometryFactory(basicGeometryFactory), mMaterialManager(materialManager), mTextureManager(textureManager)
 
 {
 }
@@ -20,8 +23,7 @@ entt::entity BasicGeometryEntityManager::CreateCube(std::shared_ptr<entt::regist
     auto geometry = mBasicGeometryFactory->GetGeometry(PrimitiveType::Cube);
 
     // 2. 创建材质
-    auto material = mMaterialManager->GetDefaultMaterial();
-
+    auto materialID = mMaterialManager->CreateMaterial(std::filesystem::current_path() / "CubeMaterial.json");
     // 3. 创建网格
     auto mesh = std::make_shared<Mesh>(mBufferFactory, geometry.vertices, geometry.indices);
     // 4. 创建组件对象
@@ -33,7 +35,7 @@ entt::entity BasicGeometryEntityManager::CreateCube(std::shared_ptr<entt::regist
     // 5. 创建网格组件
     MeshComponent meshComponent{mesh};
     // 6. 创建材质组件
-    MaterialComponent materialComponent{material};
+    MaterialComponent materialComponent{mMaterialManager->GetMaterial(materialID)};
 
     // 5. 创建实体并添加组件
     entt::entity entity = registry->create();

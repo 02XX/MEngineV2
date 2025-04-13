@@ -1,6 +1,4 @@
 #include "PipelineManager.hpp"
-#include <vulkan/vulkan.hpp>
-#include <vulkan/vulkan_structs.hpp>
 
 namespace MEngine
 {
@@ -11,136 +9,40 @@ PipelineManager::PipelineManager(std::shared_ptr<ILogger> logger, std::shared_pt
     : mLogger(logger), mContext(context), mShaderManager(shaderManager), mPipelineLayoutManager(pipelineLayoutManager),
       mRenderPassManager(renderPassManager)
 {
-    // 创建延迟渲染管线
-    // CreateGBufferPipeline();
-    // // 创建阴影深度图管线
-    // CreateShadowDepthPipeline();
-    // // 创建光照管线
-    // CreateLightingPipeline();
-    // 创建半透明物体管线
-    CreateTranslucencyPipeline();
-    // // 创建后处理管线
-    // CreatePostProcessPipeline();
-    // // 创建天空盒管线
-    // CreateSkyPipeline();
-    // // 创建UI管线
-    // CreateUIPipeline();
+    CreateShadowMapPipeline();
+    CreateForwardOpaquePipeline();
+    CreateForwardTransparentPipeline();
+    CreateDeferredGBufferPipeline();
+    CreateDeferredLightingPipeline();
+    CreateScreenSpaceEffectSSAOPipeline();
+    CreateScreenSpaceEffectSSRPipeline();
+    CreateSkinnedMeshPipeline();
+    CreateMorphTargetPipeline();
+    CreateParticleCPUPipeline();
+    CreateParticleGPUPipeline();
+    CreateDecalPipeline();
+    CreatePostProcessToneMappingPipeline();
+    CreatePostProcessBloomPipeline();
+    CreatePostProcessDOFPipeline();
+    CreatePostProcessMotionBlurPipeline();
+    CreatePostProcessFXAAPipeline();
+    CreatePostProcessSMAAPipeline();
+    CreatePostProcessVignettePipeline();
+    CreatePostProcessChromaticAberrationPipeline();
+    CreatePostProcessFilmGrainPipeline();
+    CreatePostProcessColorGradingPipeline();
+    CreateUISpritePipeline();
+    CreateUITextPipeline();
+    CreateToonPipeline();
+    CreateWireframePipeline();
 }
-
-void PipelineManager::CreateGBufferPipeline()
+void PipelineManager::CreateShadowMapPipeline()
 {
-    // mConfig = vk::GraphicsPipelineCreateInfo{};
-    // // ========== 3. 着色器阶段 ==========
-    // mShaderManager->LoadShaderModule("GBufferVertexShader", "gbuffer.vert.spv");
-    // mShaderManager->LoadShaderModule("GBufferFragmentShader", "gbuffer.frag.spv");
-    // auto vertexShader = mShaderManager->GetShaderModule("GBufferVertexShader");
-    // auto fragmentShader = mShaderManager->GetShaderModule("GBufferFragmentShader");
-    // std::array<vk::PipelineShaderStageCreateInfo, 2> shaderStages = {vk::PipelineShaderStageCreateInfo()
-    //                                                                      .setStage(vk::ShaderStageFlagBits::eVertex)
-    //                                                                      .setModule(vertexShader)
-    //                                                                      .setPName("main"),
-    //                                                                  vk::PipelineShaderStageCreateInfo()
-    //                                                                      .setStage(vk::ShaderStageFlagBits::eFragment)
-    //                                                                      .setModule(fragmentShader)
-    //                                                                      .setPName("main")};
-    // std::array<vk::PipelineColorBlendAttachmentState, 5> colorBlendAttachments;
-    // // 1.1 位置附件
-    // colorBlendAttachments[0].setBlendEnable(vk::False).setColorWriteMask(
-    //     vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB |
-    //     vk::ColorComponentFlagBits::eA);
-    // // 1.2 法线附件
-    // colorBlendAttachments[1].setBlendEnable(vk::False).setColorWriteMask(
-    //     vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB |
-    //     vk::ColorComponentFlagBits::eA);
-    // // 1.3 Albedo附件
-    // colorBlendAttachments[2].setBlendEnable(vk::False).setColorWriteMask(
-    //     vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB |
-    //     vk::ColorComponentFlagBits::eA);
-    // // 1.4 金属度/粗糙度附件
-    // colorBlendAttachments[3].setBlendEnable(vk::False).setColorWriteMask(
-    //     vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB |
-    //     vk::ColorComponentFlagBits::eA);
-    // // 1.5 环境光遮蔽附件
-    // colorBlendAttachments[4].setBlendEnable(vk::False).setColorWriteMask(
-    //     vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB |
-    //     vk::ColorComponentFlagBits::eA);
-
-    // auto blendConstants = std::array<float, 4>{0.0f, 0.0f, 0.0f, 0.0f}; // 混合常量
-    // mColorBlendInfo.setLogicOpEnable(vk::False)
-    //     .setAttachments(colorBlendAttachments)
-    //     .setLogicOp(vk::LogicOp::eCopy)
-    //     .setBlendConstants(blendConstants);
-    // mConfig.setStages(shaderStages)
-    //     .setLayout(mPipelineLayoutManager->GetPipelineLayout(PipelineLayoutType::DefferLayout))
-    //     .setRenderPass(mRenderPassManager->GetRenderPass(RenderPassType::Deffer))
-    //     .setSubpass(0);
-    // auto pipline = mContext->GetDevice().createGraphicsPipelineUnique(nullptr, mConfig);
-    // if (pipline.result != vk::Result::eSuccess)
-    // {
-    //     mLogger->Error("Failed to create GBuffer pipeline");
-    // }
-    // mPipelines[PipelineType::DefferGBuffer] = std::move(pipline.value);
-    // mLogger->Debug("Create GBuffer pipeline success");
 }
-void PipelineManager::CreateShadowDepthPipeline()
+void PipelineManager::CreateForwardOpaquePipeline()
 {
-    // mConfig = vk::GraphicsPipelineCreateInfo{};
-
-    // // ========== 3. 着色器阶段 ==========
-    // mShaderManager->LoadShaderModule("ShadowDepthVertexShader", "shadowdepth.vert.spv");
-    // mShaderManager->LoadShaderModule("ShadowDepthFragmentShader", "shadowdepth.frag.spv");
-    // auto vertexShader = mShaderManager->GetShaderModule("ShadowDepthVertexShader");
-    // auto fragmentShader = mShaderManager->GetShaderModule("ShadowDepthFragmentShader");
-    // std::array<vk::PipelineShaderStageCreateInfo, 2> shaderStages = {vk::PipelineShaderStageCreateInfo()
-    //                                                                      .setStage(vk::ShaderStageFlagBits::eVertex)
-    //                                                                      .setModule(vertexShader)
-    //                                                                      .setPName("main"),
-    //                                                                  vk::PipelineShaderStageCreateInfo()
-    //                                                                      .setStage(vk::ShaderStageFlagBits::eFragment)
-    //                                                                      .setModule(fragmentShader)
-    //                                                                      .setPName("main")};
-
-    // mConfig.setStages(shaderStages)
-    //     .setLayout(mPipelineLayoutManager->GetPipelineLayout(PipelineLayoutType::ShadowDepthLayout))
-    //     .setRenderPass(mRenderPassManager->GetRenderPass(RenderPassType::ShadowDepth))
-    //     .setSubpass(0);
-    // auto pipeline = mContext->GetDevice().createGraphicsPipelineUnique(nullptr, mConfig);
-    // if (pipeline.result != vk::Result::eSuccess)
-    // {
-    //     mLogger->Error("Failed to create ShadowDepth pipeline");
-    // }
-    // mPipelines[PipelineType::ShadowDepth] = std::move(pipeline.value);
-    // mLogger->Debug("Create ShadowDepth pipeline success");
 }
-void PipelineManager::CreateLightingPipeline()
-{
-    // mConfig = vk::GraphicsPipelineCreateInfo{};
-    // // ========== 3. 着色器阶段 ==========
-    // mShaderManager->LoadShaderModule("LightingVertexShader", "lighting.vert.spv");
-    // mShaderManager->LoadShaderModule("LightingFragmentShader", "lighting.frag.spv");
-    // auto vertexShader = mShaderManager->GetShaderModule("LightingVertexShader");
-    // auto fragmentShader = mShaderManager->GetShaderModule("LightingFragmentShader");
-    // std::array<vk::PipelineShaderStageCreateInfo, 2> shaderStages = {vk::PipelineShaderStageCreateInfo()
-    //                                                                      .setStage(vk::ShaderStageFlagBits::eVertex)
-    //                                                                      .setModule(vertexShader)
-    //                                                                      .setPName("main"),
-    //                                                                  vk::PipelineShaderStageCreateInfo()
-    //                                                                      .setStage(vk::ShaderStageFlagBits::eFragment)
-    //                                                                      .setModule(fragmentShader)
-    //                                                                      .setPName("main")};
-    // mConfig.setStages(shaderStages)
-    //     .setLayout(mPipelineLayoutManager->GetPipelineLayout(PipelineLayoutType::DefferLayout))
-    //     .setRenderPass(mRenderPassManager->GetRenderPass(RenderPassType::Deffer))
-    //     .setSubpass(1);
-    // auto pipeline = mContext->GetDevice().createGraphicsPipelineUnique(nullptr, mConfig);
-    // if (pipeline.result != vk::Result::eSuccess)
-    // {
-    //     mLogger->Error("Failed to create Lighting pipeline");
-    // }
-    // mPipelines[PipelineType::DefferLighting] = std::move(pipeline.value);
-    // mLogger->Debug("Create Lighting pipeline success");
-}
-void PipelineManager::CreateTranslucencyPipeline()
+void PipelineManager::CreateForwardTransparentPipeline()
 {
     // ========== 1. 顶点输入状态 ==========
     auto vertexBindingDescription = Vertex::GetVertexInputBindingDescription();
@@ -257,8 +159,8 @@ void PipelineManager::CreateTranslucencyPipeline()
         .setPInputAssemblyState(&inputAssemblyInfo)
         .setPVertexInputState(&vertexInputInfo)
         .setStages(shaderStages)
-        .setLayout(mPipelineLayoutManager->GetPipelineLayout(PipelineLayoutType::TranslucencyLayout))
-        .setRenderPass(mRenderPassManager->GetRenderPass(RenderPassType::Translucency))
+        .setLayout(mPipelineLayoutManager->GetPipelineLayout(PipelineLayoutType::Transparent))
+        .setRenderPass(mRenderPassManager->GetRenderPass(RenderPassType::Transparent))
         .setSubpass(0)
         .setPRasterizationState(&rasterizationInfo)
         .setPMultisampleState(&multisampleInfo)
@@ -270,96 +172,79 @@ void PipelineManager::CreateTranslucencyPipeline()
     {
         mLogger->Error("Failed to create Translucency pipeline");
     }
-    mPipelines[PipelineType::Translucency] = std::move(pipeline.value);
-    mLogger->Debug("Create Translucency pipeline success");
+    mPipelines[PipelineType::ForwardTransparent] = std::move(pipeline.value);
+    mLogger->Info("Create Translucency pipeline success");
 }
-void PipelineManager::CreatePostProcessPipeline()
+void PipelineManager::CreateDeferredGBufferPipeline()
 {
-    // mConfig = vk::GraphicsPipelineCreateInfo{};
-
-    // // ========== 3. 着色器阶段 ==========
-    // mShaderManager->LoadShaderModule("PostProcessVertexShader", "postprocess.vert.spv");
-    // mShaderManager->LoadShaderModule("PostProcessFragmentShader", "postprocess.frag.spv");
-    // auto vertexShader = mShaderManager->GetShaderModule("PostProcessVertexShader");
-    // auto fragmentShader = mShaderManager->GetShaderModule("PostProcessFragmentShader");
-    // std::array<vk::PipelineShaderStageCreateInfo, 2> shaderStages = {vk::PipelineShaderStageCreateInfo()
-    //                                                                      .setStage(vk::ShaderStageFlagBits::eVertex)
-    //                                                                      .setModule(vertexShader)
-    //                                                                      .setPName("main"),
-    //                                                                  vk::PipelineShaderStageCreateInfo()
-    //                                                                      .setStage(vk::ShaderStageFlagBits::eFragment)
-    //                                                                      .setModule(fragmentShader)
-    //                                                                      .setPName("main")};
-    // mConfig.setStages(shaderStages)
-    //     .setLayout(mPipelineLayoutManager->GetPipelineLayout(PipelineLayoutType::PostProcessLayout))
-    //     .setRenderPass(mRenderPassManager->GetRenderPass(RenderPassType::PostProcess))
-    //     .setSubpass(0);
-    // auto pipeline = mContext->GetDevice().createGraphicsPipelineUnique(nullptr, mConfig);
-    // if (pipeline.result != vk::Result::eSuccess)
-    // {
-    //     mLogger->Error("Failed to create PostProcess pipeline");
-    // }
-    // mPipelines[PipelineType::PostProcess] = std::move(pipeline.value);
-    // mLogger->Debug("Create PostProcess pipeline success");
 }
-void PipelineManager::CreateSkyPipeline()
+void PipelineManager::CreateDeferredLightingPipeline()
 {
-    // mConfig = vk::GraphicsPipelineCreateInfo{};
-
-    // // ========== 3. 着色器阶段 ==========
-    // mShaderManager->LoadShaderModule("SkyVertexShader", "sky.vert.spv");
-    // mShaderManager->LoadShaderModule("SkyFragmentShader", "sky.frag.spv");
-    // auto vertexShader = mShaderManager->GetShaderModule("SkyVertexShader");
-    // auto fragmentShader = mShaderManager->GetShaderModule("SkyFragmentShader");
-    // std::array<vk::PipelineShaderStageCreateInfo, 2> shaderStages = {vk::PipelineShaderStageCreateInfo()
-    //                                                                      .setStage(vk::ShaderStageFlagBits::eVertex)
-    //                                                                      .setModule(vertexShader)
-    //                                                                      .setPName("main"),
-    //                                                                  vk::PipelineShaderStageCreateInfo()
-    //                                                                      .setStage(vk::ShaderStageFlagBits::eFragment)
-    //                                                                      .setModule(fragmentShader)
-    //                                                                      .setPName("main")};
-    // mConfig.setStages(shaderStages)
-    //     .setLayout(mPipelineLayoutManager->GetPipelineLayout(PipelineLayoutType::SkyLayout))
-    //     .setRenderPass(mRenderPassManager->GetRenderPass(RenderPassType::Sky))
-    //     .setSubpass(0);
-    // auto pipeline = mContext->GetDevice().createGraphicsPipelineUnique(nullptr, mConfig);
-    // if (pipeline.result != vk::Result::eSuccess)
-    // {
-    //     mLogger->Error("Failed to create Sky pipeline");
-    // }
-    // mPipelines[PipelineType::Sky] = std::move(pipeline.value);
-    // mLogger->Debug("Create Sky pipeline success");
 }
-void PipelineManager::CreateUIPipeline()
+void PipelineManager::CreateScreenSpaceEffectSSAOPipeline()
 {
-    // mConfig = vk::GraphicsPipelineCreateInfo{};
-
-    // // ========== 3. 着色器阶段 ==========
-    // mShaderManager->LoadShaderModule("UIVertexShader", "ui.vert.spv");
-    // mShaderManager->LoadShaderModule("UIFragmentShader", "ui.frag.spv");
-    // auto vertexShader = mShaderManager->GetShaderModule("UIVertexShader");
-    // auto fragmentShader = mShaderManager->GetShaderModule("UIFragmentShader");
-    // std::array<vk::PipelineShaderStageCreateInfo, 2> shaderStages = {vk::PipelineShaderStageCreateInfo()
-    //                                                                      .setStage(vk::ShaderStageFlagBits::eVertex)
-    //                                                                      .setModule(vertexShader)
-    //                                                                      .setPName("main"),
-    //                                                                  vk::PipelineShaderStageCreateInfo()
-    //                                                                      .setStage(vk::ShaderStageFlagBits::eFragment)
-    //                                                                      .setModule(fragmentShader)
-    //                                                                      .setPName("main")};
-    // mConfig.setStages(shaderStages)
-    //     .setLayout(mPipelineLayoutManager->GetPipelineLayout(PipelineLayoutType::UILayout))
-    //     .setRenderPass(mRenderPassManager->GetRenderPass(RenderPassType::UI))
-    //     .setSubpass(0);
-    // auto pipeline = mContext->GetDevice().createGraphicsPipelineUnique(nullptr, mConfig);
-    // if (pipeline.result != vk::Result::eSuccess)
-    // {
-    //     mLogger->Error("Failed to create UI pipeline");
-    // }
-    // mPipelines[PipelineType::UI] = std::move(pipeline.value);
-    // mLogger->Debug("Create UI pipeline success");
 }
+void PipelineManager::CreateScreenSpaceEffectSSRPipeline()
+{
+}
+void PipelineManager::CreateSkinnedMeshPipeline()
+{
+}
+void PipelineManager::CreateMorphTargetPipeline()
+{
+}
+void PipelineManager::CreateParticleCPUPipeline()
+{
+}
+void PipelineManager::CreateParticleGPUPipeline()
+{
+}
+void PipelineManager::CreateDecalPipeline()
+{
+}
+void PipelineManager::CreatePostProcessToneMappingPipeline()
+{
+}
+void PipelineManager::CreatePostProcessBloomPipeline()
+{
+}
+void PipelineManager::CreatePostProcessDOFPipeline()
+{
+}
+void PipelineManager::CreatePostProcessMotionBlurPipeline()
+{
+}
+void PipelineManager::CreatePostProcessFXAAPipeline()
+{
+}
+void PipelineManager::CreatePostProcessSMAAPipeline()
+{
+}
+void PipelineManager::CreatePostProcessVignettePipeline()
+{
+}
+void PipelineManager::CreatePostProcessChromaticAberrationPipeline()
+{
+}
+void PipelineManager::CreatePostProcessFilmGrainPipeline()
+{
+}
+void PipelineManager::CreatePostProcessColorGradingPipeline()
+{
+}
+void PipelineManager::CreateUISpritePipeline()
+{
+}
+void PipelineManager::CreateUITextPipeline()
+{
+}
+void PipelineManager::CreateToonPipeline()
+{
+}
+void PipelineManager::CreateWireframePipeline()
+{
+}
+
 vk::Pipeline PipelineManager::GetPipeline(PipelineType type) const
 {
     auto it = mPipelines.find(type);

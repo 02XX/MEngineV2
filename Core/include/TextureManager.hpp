@@ -4,6 +4,7 @@
 #include "NoCopyable.hpp"
 #include "Texture.hpp"
 #include <cstdint>
+#include <memory>
 #include <unordered_map>
 namespace MEngine
 {
@@ -17,11 +18,10 @@ class TextureManager final : public NoCopyable
     std::shared_ptr<SamplerManager> mSamplerManager;
 
   private:
-    std::unordered_map<uint32_t, std::weak_ptr<Texture>> mTextures; // 纹理
+    std::unordered_map<std::filesystem::path, std::shared_ptr<Texture>> mTextures; // 纹理
   public:
     TextureManager(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context,
                    std::shared_ptr<ImageFactory> imageFactory, std::shared_ptr<SamplerManager> samplerManager);
-    std::shared_ptr<Texture> CreateTexture(std::filesystem::path path, TextureType type);
-    std::shared_ptr<Texture> GetTexture(uint32_t id);
+    std::shared_ptr<Texture> GetTexture(std::filesystem::path path);
 };
 } // namespace MEngine

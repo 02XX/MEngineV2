@@ -27,7 +27,6 @@
 #include "Vertex.hpp"
 #include "entt/entity/fwd.hpp"
 #include "entt/entt.hpp"
-#include "glm/ext/matrix_float4x4.hpp"
 #include <cstdint>
 #include <memory>
 #include <vector>
@@ -70,30 +69,28 @@ class RenderSystem final : public System
     std::vector<std::vector<vk::UniqueCommandBuffer>> mSecondaryCommandBuffers;
     std::vector<vk::UniqueCommandBuffer> mGraphicCommandBuffers;
 
+    // Global DescriptorSet
+    std::vector<vk::UniqueDescriptorSet> mGlobalDescriptorSets;
     // main camera
     entt::entity mMainCameraEntity;
-    UniqueBuffer mMVPBuffer;
-    struct MVPUniform
+    UniqueBuffer mVPUBO;
+    struct VPUniform
     {
-        glm::mat4 model;
         glm::mat4 view;
         glm::mat4 projection;
-    } mMVPUniform;
-    std::vector<vk::UniqueDescriptorSet> mCameraDescriptorSets;
+    } mVPUniform;
 
   private:
     void CollectRenderEntities();
     void CollectMainCamera();
     void Prepare();
     void RenderShadowDepthPass();
-    void RenderDefferPass();
+    void RenderMainPass();
+    void RenderSkyPass();
     void RenderTranslucencyPass();
     void RenderPostProcessPass();
-    void RenderSkyPass();
     void RenderUIPass(float deltaTime);
     void Present();
-
-
 
   public:
     RenderSystem(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context,
