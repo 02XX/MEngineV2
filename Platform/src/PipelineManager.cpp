@@ -170,10 +170,10 @@ void PipelineManager::CreateForwardTransparentPipeline()
     auto pipeline = mContext->GetDevice().createGraphicsPipelineUnique(nullptr, graphicsPipelineCreateInfo);
     if (pipeline.result != vk::Result::eSuccess)
     {
-        mLogger->Error("Failed to create Translucency pipeline");
+        mLogger->Error("Failed to create ForwardTransparent pipeline");
     }
     mPipelines[PipelineType::ForwardTransparent] = std::move(pipeline.value);
-    mLogger->Info("Create Translucency pipeline success");
+    mLogger->Info("Create ForwardTransparent pipeline success");
 }
 void PipelineManager::CreateDeferredGBufferPipeline()
 {

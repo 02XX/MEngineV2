@@ -116,7 +116,7 @@ void RenderPassManager::CreateTransparentRenderPass()
             .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
             .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
             .setInitialLayout(vk::ImageLayout::eUndefined)
-            .setFinalLayout(vk::ImageLayout::ePresentSrcKHR),
+            .setFinalLayout(vk::ImageLayout::eShaderReadOnlyOptimal),
         // Depth Stencil
         vk::AttachmentDescription()
             .setFormat(mImageFactory->GetDepthStencilFormat())
@@ -165,7 +165,7 @@ void RenderPassManager::CreateUIRenderPass()
             .setStoreOp(vk::AttachmentStoreOp::eStore)
             .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
             .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
-            .setInitialLayout(vk::ImageLayout::eUndefined)
+            .setInitialLayout(vk::ImageLayout::eColorAttachmentOptimal)
             .setFinalLayout(vk::ImageLayout::ePresentSrcKHR),
     };
     std::vector<vk::AttachmentReference> colorRefs = {
@@ -315,7 +315,7 @@ void RenderPassManager::RecreateFrameBuffer(uint32_t width, uint32_t height)
     CreateSkyFrameBuffer();
     CreateTransparentFrameBuffer();
     CreatePostProcessFrameBuffer();
-    CreateUIFrameBuffer();
+    // CreateUIFrameBuffer();
     mLogger->Info("Frame buffers recreated with {}x{} successfully", width, height);
 }
 } // namespace MEngine

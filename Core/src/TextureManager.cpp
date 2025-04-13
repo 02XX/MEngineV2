@@ -34,4 +34,14 @@ std::shared_ptr<Texture> TextureManager::GetTexture(std::filesystem::path path)
     mTextures[path] = texture;
     return mTextures[path];
 }
+std::shared_ptr<Texture> TextureManager::GetDefaultTexture()
+{
+    if (defaultTexture == nullptr)
+    {
+        defaultTexture =
+            std::make_shared<Texture>(mContext, mImageFactory, mSamplerManager,
+                                      std::filesystem::current_path() / "Resource" / "Material" / "DefaultAlbedo.png");
+    }
+    return defaultTexture;
+}
 } // namespace MEngine

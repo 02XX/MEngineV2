@@ -156,6 +156,12 @@ void RenderSystem::Prepare()
         auto width = mUI->GetSceneWidth();
         auto height = mUI->GetSceneHeight();
         // mRenderPassManager->RecreateFrameBuffer(width, height);
+        // std::vector<vk::ImageView> imageViews;
+        // for (auto imageView : mRenderPassManager->GetTransparentFrameResource())
+        // {
+        //     imageViews.push_back(imageView->renderTargetImageView.get());
+        // }
+        // mUI->SetSceneViewPort(imageViews);
     }
     mDescriptorManager->UpdateUniformDescriptorSet({mVPUBO.get()}, 0, mGlobalDescriptorSets[mFrameIndex].get());
 }

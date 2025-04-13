@@ -1,4 +1,5 @@
 #include "BasicGeometry/BasicGeometryEntityManager.hpp"
+#include "PipelineManager.hpp"
 #include <filesystem>
 #include <memory>
 namespace MEngine
@@ -24,6 +25,9 @@ entt::entity BasicGeometryEntityManager::CreateCube(std::shared_ptr<entt::regist
 
     // 2. 创建材质
     auto materialID = mMaterialManager->CreateMaterial(std::filesystem::current_path() / "CubeMaterial.json");
+    auto material = mMaterialManager->GetMaterial(materialID);
+    material->SetPipelineType(PipelineType::ForwardTransparent);
+    material->Update();
     // 3. 创建网格
     auto mesh = std::make_shared<Mesh>(mBufferFactory, geometry.vertices, geometry.indices);
     // 4. 创建组件对象
@@ -35,7 +39,7 @@ entt::entity BasicGeometryEntityManager::CreateCube(std::shared_ptr<entt::regist
     // 5. 创建网格组件
     MeshComponent meshComponent{mesh};
     // 6. 创建材质组件
-    MaterialComponent materialComponent{mMaterialManager->GetMaterial(materialID)};
+    MaterialComponent materialComponent{material};
 
     // 5. 创建实体并添加组件
     entt::entity entity = registry->create();

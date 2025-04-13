@@ -12,6 +12,13 @@ PBRMaterial::PBRMaterial(std::shared_ptr<Context> context, std::shared_ptr<Textu
     mMaterialParamsUBO = mBufferFactory->CreateBuffer(BufferType::Uniform, sizeof(PBRMaterialParams));
     auto pbrDescriptorLayout = mPipelineLayoutManager->GetPBRDescriptorSetLayout();
     mMaterialDescriptorSet = std::move(mDescriptorManager->AllocateUniqueDescriptorSet({pbrDescriptorLayout})[0]);
+
+    // 占位纹理
+    mMaterialTextures.albedoMap = mTextureManager->GetDefaultTexture();
+    mMaterialTextures.normalMap = mTextureManager->GetDefaultTexture();
+    mMaterialTextures.metallicRoughnessMap = mTextureManager->GetDefaultTexture();
+    mMaterialTextures.aoMap = mTextureManager->GetDefaultTexture();
+    mMaterialTextures.emissiveMap = mTextureManager->GetDefaultTexture();
 }
 PipelineType PBRMaterial::GetPipelineType() const
 {
@@ -96,7 +103,7 @@ void PBRMaterial::Update()
     vk::DescriptorBufferInfo bufferInfo;
     bufferInfo.setBuffer(mMaterialParamsUBO->GetHandle()).setOffset(0).setRange(sizeof(PBRMaterialParams));
     writer.setDstSet(mMaterialDescriptorSet.get())
-        .setDescriptorType(vk::DescriptorType::eStorageBuffer)
+        .setDescriptorType(vk::DescriptorType::eUniformBuffer)
         .setBufferInfo({bufferInfo})
         .setDstBinding(pbrDescriptorLayoutBindings.mParameterBinding.binding)
         .setDstArrayElement(0);
@@ -104,80 +111,68 @@ void PBRMaterial::Update()
     std::vector<vk::WriteDescriptorSet> writers;
     // 更新描述符集
     // Albedo Map
-    if (mMaterialParams.textureFlag.useAlbedoMap)
-    {
-        vk::DescriptorImageInfo AlbedoImageInfo;
-        AlbedoImageInfo.setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
-            .setImageView(mMaterialTextures.albedoMap->GetImageView())
-            .setSampler(mMaterialTextures.albedoMap->GetSampler());
-        vk::WriteDescriptorSet AlbedoWriter;
-        AlbedoWriter.setDstSet(mMaterialDescriptorSet.get())
-            .setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
-            .setImageInfo({AlbedoImageInfo})
-            .setDstBinding(pbrDescriptorLayoutBindings.mBaseColorBinding.binding)
-            .setDstArrayElement(0);
-        writers.push_back(AlbedoWriter);
-    }
+    vk::DescriptorImageInfo AlbedoImageInfo;
+    AlbedoImageInfo.setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
+        .setImageView(mMaterialTextures.albedoMap->GetImageView())
+        .setSampler(mMaterialTextures.albedoMap->GetSampler());
+    vk::WriteDescriptorSet AlbedoWriter;
+    AlbedoWriter.setDstSet(mMaterialDescriptorSet.get())
+        .setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
+        .setImageInfo({AlbedoImageInfo})
+        .setDstBinding(pbrDescriptorLayoutBindings.mBaseColorBinding.binding)
+        .setDstArrayElement(0);
+    writers.push_back(AlbedoWriter);
+
     // Normal Map
-    if (mMaterialParams.textureFlag.useNormalMap)
-    {
-        vk::DescriptorImageInfo NormalImageInfo;
-        NormalImageInfo.setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
-            .setImageView(mMaterialTextures.normalMap->GetImageView())
-            .setSampler(mMaterialTextures.normalMap->GetSampler());
-        vk::WriteDescriptorSet NormalWriter;
-        NormalWriter.setDstSet(mMaterialDescriptorSet.get())
-            .setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
-            .setImageInfo({NormalImageInfo})
-            .setDstBinding(pbrDescriptorLayoutBindings.mNormalMapBinding.binding)
-            .setDstArrayElement(0);
-        writers.push_back(NormalWriter);
-    }
+    vk::DescriptorImageInfo NormalImageInfo;
+    NormalImageInfo.setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
+        .setImageView(mMaterialTextures.normalMap->GetImageView())
+        .setSampler(mMaterialTextures.normalMap->GetSampler());
+    vk::WriteDescriptorSet NormalWriter;
+    NormalWriter.setDstSet(mMaterialDescriptorSet.get())
+        .setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
+        .setImageInfo({NormalImageInfo})
+        .setDstBinding(pbrDescriptorLayoutBindings.mNormalMapBinding.binding)
+        .setDstArrayElement(0);
+    writers.push_back(NormalWriter);
+
     // MetallicRoughness Map
-    if (mMaterialParams.textureFlag.useMetallicRoughnessMap)
-    {
-        vk::DescriptorImageInfo MetallicRoughnessImageInfo;
-        MetallicRoughnessImageInfo.setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
-            .setImageView(mMaterialTextures.metallicRoughnessMap->GetImageView())
-            .setSampler(mMaterialTextures.metallicRoughnessMap->GetSampler());
-        vk::WriteDescriptorSet MetallicRoughnessWriter;
-        MetallicRoughnessWriter.setDstSet(mMaterialDescriptorSet.get())
-            .setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
-            .setImageInfo({MetallicRoughnessImageInfo})
-            .setDstBinding(pbrDescriptorLayoutBindings.mMetallicRoughnessBinding.binding)
-            .setDstArrayElement(0);
-        writers.push_back(MetallicRoughnessWriter);
-    }
+    vk::DescriptorImageInfo MetallicRoughnessImageInfo;
+    MetallicRoughnessImageInfo.setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
+        .setImageView(mMaterialTextures.metallicRoughnessMap->GetImageView())
+        .setSampler(mMaterialTextures.metallicRoughnessMap->GetSampler());
+    vk::WriteDescriptorSet MetallicRoughnessWriter;
+    MetallicRoughnessWriter.setDstSet(mMaterialDescriptorSet.get())
+        .setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
+        .setImageInfo({MetallicRoughnessImageInfo})
+        .setDstBinding(pbrDescriptorLayoutBindings.mMetallicRoughnessBinding.binding)
+        .setDstArrayElement(0);
+    writers.push_back(MetallicRoughnessWriter);
     // AO Map
-    if (mMaterialParams.textureFlag.useAOMap)
-    {
-        vk::DescriptorImageInfo AOImageInfo;
-        AOImageInfo.setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
-            .setImageView(mMaterialTextures.aoMap->GetImageView())
-            .setSampler(mMaterialTextures.aoMap->GetSampler());
-        vk::WriteDescriptorSet AOWriter;
-        AOWriter.setDstSet(mMaterialDescriptorSet.get())
-            .setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
-            .setImageInfo({AOImageInfo})
-            .setDstBinding(pbrDescriptorLayoutBindings.mAmbientOcclusionBinding.binding)
-            .setDstArrayElement(0);
-        writers.push_back(AOWriter);
-    }
+    vk::DescriptorImageInfo AOImageInfo;
+    AOImageInfo.setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
+        .setImageView(mMaterialTextures.aoMap->GetImageView())
+        .setSampler(mMaterialTextures.aoMap->GetSampler());
+    vk::WriteDescriptorSet AOWriter;
+    AOWriter.setDstSet(mMaterialDescriptorSet.get())
+        .setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
+        .setImageInfo({AOImageInfo})
+        .setDstBinding(pbrDescriptorLayoutBindings.mAmbientOcclusionBinding.binding)
+        .setDstArrayElement(0);
+    writers.push_back(AOWriter);
     // Emissive Map
-    if (mMaterialParams.textureFlag.useEmissiveMap)
-    {
-        vk::DescriptorImageInfo EmissiveImageInfo;
-        EmissiveImageInfo.setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
-            .setImageView(mMaterialTextures.emissiveMap->GetImageView())
-            .setSampler(mMaterialTextures.emissiveMap->GetSampler());
-        vk::WriteDescriptorSet EmissiveWriter;
-        EmissiveWriter.setDstSet(mMaterialDescriptorSet.get())
-            .setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
-            .setImageInfo({EmissiveImageInfo})
-            .setDstBinding(pbrDescriptorLayoutBindings.mEmissiveBinding.binding)
-            .setDstArrayElement(0);
-        writers.push_back(EmissiveWriter);
-    }
+    vk::DescriptorImageInfo EmissiveImageInfo;
+    EmissiveImageInfo.setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
+        .setImageView(mMaterialTextures.emissiveMap->GetImageView())
+        .setSampler(mMaterialTextures.emissiveMap->GetSampler());
+    vk::WriteDescriptorSet EmissiveWriter;
+    EmissiveWriter.setDstSet(mMaterialDescriptorSet.get())
+        .setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
+        .setImageInfo({EmissiveImageInfo})
+        .setDstBinding(pbrDescriptorLayoutBindings.mEmissiveBinding.binding)
+        .setDstArrayElement(0);
+    writers.push_back(EmissiveWriter);
+
     mContext->GetDevice().updateDescriptorSets(writers, {});
 }
 } // namespace MEngine
