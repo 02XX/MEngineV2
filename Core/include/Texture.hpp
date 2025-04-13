@@ -61,5 +61,9 @@ class Texture final : public NoCopyable
     {
         return mTextureType;
     }
+    inline const std::filesystem::path &GetPath() const
+    {
+        return mPath;
+    }
 };
 } // namespace MEngine

@@ -25,6 +25,7 @@
 #include "Componet/TransformComponent.hpp"
 #include "ImGuizmo.h"
 #include "ImageFactory.hpp"
+#include "MaterialManager.hpp"
 #include "Math.hpp"
 #include "stb_image.h"
 
@@ -42,6 +43,7 @@ class UI
     std::shared_ptr<SyncPrimitiveManager> mSyncPrimitiveManager;
     std::shared_ptr<SamplerManager> mSamplerManager;
     std::shared_ptr<entt::registry> mRegistry;
+    std::shared_ptr<MaterialManager> mMaterialManager;
 
   private:
     // ImGUI 相关
@@ -120,7 +122,7 @@ class UI
        std::shared_ptr<RenderPassManager> renderPassManager, std::shared_ptr<ImageFactory> imageFactory,
        std::shared_ptr<CommandBufferManager> commandBufferManager,
        std::shared_ptr<SyncPrimitiveManager> syncPrimitiveManager, std::shared_ptr<SamplerManager> samplerManager,
-       std::shared_ptr<entt::registry> registry);
+       std::shared_ptr<entt::registry> registry, std::shared_ptr<MaterialManager> materialManager);
     ~UI();
     void ProcessEvent(const SDL_Event *event);
     void RecordUICommandBuffer(vk::CommandBuffer commandBuffer);

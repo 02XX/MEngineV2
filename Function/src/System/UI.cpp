@@ -7,10 +7,11 @@ UI::UI(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context, std::s
        std::shared_ptr<RenderPassManager> renderPassManager, std::shared_ptr<ImageFactory> imageFactory,
        std::shared_ptr<CommandBufferManager> commandBufferManager,
        std::shared_ptr<SyncPrimitiveManager> syncPrimitiveManager, std::shared_ptr<SamplerManager> samplerManager,
-       std::shared_ptr<entt::registry> registry)
+       std::shared_ptr<entt::registry> registry, std::shared_ptr<MaterialManager> materialManager)
     : mLogger(logger), mContext(context), mWindow(window), mRenderPassManager(renderPassManager),
       mImageFactory(imageFactory), mCommandBufferManager(commandBufferManager),
-      mSyncPrimitiveManager(syncPrimitiveManager), mSamplerManager(samplerManager), mRegistry(registry)
+      mSyncPrimitiveManager(syncPrimitiveManager), mSamplerManager(samplerManager), mRegistry(registry),
+      mMaterialManager(materialManager)
 {
     mIconTransitionCommandBuffer = mCommandBufferManager->CreatePrimaryCommandBuffer(CommandBufferType::Graphic);
     mIconSampler = mSamplerManager->CreateUniqueSampler(vk::Filter::eLinear, vk::Filter::eLinear);
@@ -471,6 +472,27 @@ void UI::AssetWindow()
         ImGui::TextColored(ImVec4(1, 0, 0, 1), "Error: %s", e.what());
     }
     ImGui::Columns(1);
+    // 4. 右键菜单
+    if (ImGui::IsMouseClicked(ImGuiMouseButton_Right) && ImGui::IsWindowHovered())
+    {
+        ImGui::OpenPopup("AssetContextMenu");
+    }
+    if (ImGui::BeginPopupContextWindow("AssetContextMenu", ImGuiPopupFlags_MouseButtonRight))
+    {
+        if (ImGui::MenuItem("Create Folder"))
+        {
+            std::string folderName = "NewFolder";
+            std::filesystem::path newFolderPath = mCurrentPath / folderName;
+            std::filesystem::create_directory(newFolderPath);
+        }
+        if (ImGui::MenuItem("Create Material"))
+        {
+            std::string materialName = "NewMaterial.json";
+            std::filesystem::path newMaterialPath = mCurrentPath / materialName;
+            mMaterialManager->CreateMaterial(newMaterialPath);
+        }
+        ImGui::EndPopup();
+    }
     ImGui::End();
 }
 void UI::RecordUICommandBuffer(vk::CommandBuffer commandBuffer)
