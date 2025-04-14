@@ -19,20 +19,20 @@ namespace MEngine
 
 struct PBRParameters
 {
-    glm::vec3 albedo = {1.0f, 1.0f, 1.0f}; // 16字节
+    glm::vec3 albedo = {1.0f, 1.0f, 1.0f};
     float metallic = 0.0f;
     float roughness = 0.5f;
     float ao = 1.0f;
     float emissive = 0.0f;
     // TODO: 添加更多参数
 };
-struct PBRTextureFlag // 4 字节对齐 对应 GLSL的bool类型（占4字节）
+struct PBRTextureFlag
 {
-    alignas(16) bool useAlbedoMap = false;            // 4字节
-    alignas(16) bool useNormalMap = false;            // 4字节
-    alignas(16) bool useMetallicRoughnessMap = false; // 4字节
-    alignas(16) bool useAOMap = false;                // 4字节
-    alignas(16) bool useEmissiveMap = false;          // 4字节
+    alignas(4) bool useAlbedoMap = false;
+    alignas(4) bool useNormalMap = false;
+    alignas(4) bool useMetallicRoughnessMap = false;
+    alignas(4) bool useAOMap = false;
+    alignas(4) bool useEmissiveMap = false;
 };
 struct PBRMaterialParams
 {

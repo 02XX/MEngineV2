@@ -1,7 +1,7 @@
 #version 450
 struct PBRParameters
 {
-    vec3 albedo; // 16字节
+    vec3 albedo; //sizeof(vec3) = 12 alignof(vec3) = 16
     float metallic;
     float roughness;
     float ao;
@@ -10,7 +10,7 @@ struct PBRParameters
 
 struct PBRTextureFlag
 {
-    bool useAlbedoMap; // GLSL 中 bool 占 4 字节
+    bool useAlbedoMap; //sizeof(bool) = 4 alignof(bool) = 4
     bool useNormalMap;
     bool useMetallicRoughnessMap;
     bool useAOMap;
