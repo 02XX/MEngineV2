@@ -217,8 +217,19 @@ void Context::QuerySurfaceInfo()
     mLogger->Debug("Current Image Count: {}", mSurfaceInfo.imageCount);
     mLogger->Debug("Current Image Array Layer: {}", mSurfaceInfo.imageArrayLayer);
 }
-
-void Context::CreateSwapchain()
+void Context::RecreateSwapchain()
+{
+    mDevice->waitIdle();
+    QuerySurfaceInfo();
+    auto oldSwapchain = std::move(mSwapchain);
+    CreateSwapchain(oldSwapchain.get());
+    mSwapchainImageViews.clear();
+    mSwapchainImages.clear();
+    CreateSwapchainImages();
+    CreateSwapchainImageViews();
+    mLogger->Debug("Swapchain Recreated");
+}
+void Context::CreateSwapchain(vk::SwapchainKHR oldSwapchain)
 {
     vk::SwapchainCreateInfoKHR swapchainCreateInfo;
     auto queueFamilyIndicates = mQueueFamilyIndicates;
@@ -234,7 +245,7 @@ void Context::CreateSwapchain()
         .setPresentMode(mSurfaceInfo.presentMode)
         .setPreTransform(vk::SurfaceTransformFlagBitsKHR::eIdentity)
         .setMinImageCount(mSurfaceInfo.imageCount)
-        .setOldSwapchain(nullptr);
+        .setOldSwapchain(oldSwapchain);
     if (queueFamilyIndicates.graphicsFamily == queueFamilyIndicates.presentFamily)
     {
         swapchainCreateInfo.setImageSharingMode(vk::SharingMode::eExclusive)

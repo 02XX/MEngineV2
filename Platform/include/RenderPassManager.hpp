@@ -91,7 +91,7 @@ class RenderPassManager final : public NoCopyable
                       std::shared_ptr<ImageFactory> imageFactory);
     vk::RenderPass GetRenderPass(RenderPassType type) const;
     std::vector<vk::Framebuffer> GetFrameBuffer(RenderPassType type) const;
-
+    void RecreateUIFrameBuffer();
     void RecreateFrameBuffer(uint32_t width, uint32_t height);
     vk::Extent2D GetExtent() const
     {

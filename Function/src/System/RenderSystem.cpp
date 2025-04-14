@@ -129,8 +129,8 @@ void RenderSystem::Prepare()
     {
 
         mContext->GetDevice().waitIdle();
-        // TODO:Recreate
-        // ReCreate();
+        mContext->RecreateSwapchain();
+        mRenderPassManager->RecreateUIFrameBuffer();
     }
     else if (resultValue.result != vk::Result::eSuccess && resultValue.result != vk::Result::eSuboptimalKHR)
     {
@@ -306,7 +306,8 @@ void RenderSystem::Present()
     catch (vk::OutOfDateKHRError &)
     {
         mContext->GetDevice().waitIdle();
-        // ReCreate();
+        mContext->RecreateSwapchain();
+        mRenderPassManager->RecreateUIFrameBuffer();
     }
     mFrameIndex = (mFrameIndex + 1) % mFrameCount;
 }

@@ -319,4 +319,9 @@ void RenderPassManager::RecreateFrameBuffer(uint32_t width, uint32_t height)
     // CreateUIFrameBuffer();
     mLogger->Info("Frame buffers recreated with {}x{} successfully", width, height);
 }
+void RenderPassManager::RecreateUIFrameBuffer()
+{
+    CreateUIFrameBuffer();
+    mLogger->Info("UI Frame buffer recreated successfully");
+}
 } // namespace MEngine

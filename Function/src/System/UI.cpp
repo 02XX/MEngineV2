@@ -568,7 +568,12 @@ void UI::AssetWindow()
         if (ImGui::MenuItem("Create Material"))
         {
             std::string materialName = "NewMaterial.json";
+            int count = 0;
             std::filesystem::path newMaterialPath = mCurrentPath / materialName;
+            while (std::filesystem::exists(newMaterialPath))
+            {
+                
+            }
             mMaterialManager->CreateMaterial(newMaterialPath);
         }
         ImGui::EndPopup();
