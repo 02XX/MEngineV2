@@ -1,5 +1,4 @@
 #include "System/RenderSystem.hpp"
-#include <vulkan/vulkan.hpp>
 
 namespace MEngine
 {
@@ -66,12 +65,6 @@ void RenderSystem::Shutdown()
 
 void RenderSystem::CollectRenderEntities()
 {
-    auto needDeleteEntities = mUI->GetNeedDeleteEntities();
-    for (auto entity : needDeleteEntities)
-    {
-        mRegistry->destroy(entity);
-    }
-    mUI->ClearNeedDeleteEntities();
     mBatchMaterialComponents.clear();
     auto entities = mRegistry->view<MaterialComponent, MeshComponent>();
     for (auto entity : entities)
@@ -100,10 +93,11 @@ void RenderSystem::CollectMainCamera()
 }
 void RenderSystem::Tick(float deltaTime)
 {
-    CollectRenderEntities(); // Collect same material render entities
     // TickRotationMatrix();
-    CollectMainCamera();
     Prepare(); // Prepare
+    mUI->RenderUI();
+    CollectRenderEntities(); // Collect same material render entities
+    CollectMainCamera();
     // RenderShadowDepthPass();  // Shadow pass
     // RenderMainPass();       // Deffer pass
     // RenderSkyPass();          // Sky pass
@@ -145,9 +139,6 @@ void RenderSystem::Prepare()
 
     // }
     mDescriptorManager->UpdateUniformDescriptorSet({mVPUBO.get()}, 0, mGlobalDescriptorSets[mFrameIndex].get());
-
-    mUI->RenderUI();
-
     vk::CommandBufferBeginInfo beginInfo;
     beginInfo.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
     mGraphicCommandBuffers[mFrameIndex]->begin(beginInfo);

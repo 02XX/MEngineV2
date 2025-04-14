@@ -1,5 +1,5 @@
 #include "System/UI.hpp"
-#include "imgui.h"
+#include "Componet/AssestComponent.hpp"
 
 namespace MEngine
 {
@@ -47,10 +47,14 @@ UI::UI(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context, std::s
     mMSYHFont = mIO->Fonts->AddFontFromFileTTF((mUIResourcePath / "Font" / "MSYH.TTC").string().c_str(), 16.0f, nullptr,
                                                mIO->Fonts->GetGlyphRangesChineseSimplifiedCommon());
     mIO->FontDefault = mMSYHFont;
+    mAssetRegistry = std::make_shared<entt::registry>();
     // ImGuizmo
     ImGuizmo::SetImGuiContext(ImGui::GetCurrentContext());
     ImGuizmo::Enable(true);
-
+    EntryFolder(mProjectPath);
+    mAssetRegistry->on_construct<AssetsComponent>().connect<&UI::OnAssetCreated>(this);
+    mAssetRegistry->on_update<AssetsComponent>().connect<&UI::OnAssetUpdated>(this);
+    mAssetRegistry->on_destroy<AssetsComponent>().connect<&UI::OnAssetDestroyed>(this);
     // Icons
     LoadUIIcon(mUIResourcePath / "Icon" / "folder.png", mFolderIcon);
     LoadUIIcon(mUIResourcePath / "Icon" / "file.png", mFileIcon);
@@ -190,12 +194,13 @@ void UI::HierarchyWindow()
     auto entities = mRegistry->view<TransformComponent>();
     for (auto entity : entities)
     {
-        auto entityLabel = std::format("Entity {}", static_cast<uint32_t>(entity));
+        ImGui::PushID(static_cast<int>(entt::to_integral(entity)));
+        auto entityLabel = std::format("Entity {}", entt::to_integral(entity));
         if (ImGui::Selectable(entityLabel.c_str(), mSelectedEntity == entity))
         {
             mSelectedEntity = entity;
         }
-        if (ImGui::IsItemHovered())
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup))
         {
             mHoveredEntity = entity;
             if (ImGui::IsMouseClicked(ImGuiMouseButton_Right))
@@ -203,8 +208,8 @@ void UI::HierarchyWindow()
                 mSelectedEntity = entity;
             }
         }
+        ImGui::PopID();
     }
-
     if (ImGui::IsWindowHovered() && !ImGui::IsAnyItemHovered())
     {
         mHoveredEntity = entt::null;
@@ -227,8 +232,10 @@ void UI::HierarchyWindow()
             ImGui::Separator();
             if (ImGui::MenuItem("Delete Entity"))
             {
-                mNeedDeleteEntities.push_back(mHoveredEntity);
+                mContext->GetDevice().waitIdle();
+                mRegistry->destroy(mSelectedEntity);
                 mSelectedEntity = entt::null;
+                mHoveredEntity = entt::null;
             }
         }
         ImGui::EndPopup();
@@ -493,7 +500,7 @@ void UI::AssetWindow()
         {
             if (mCurrentPath != mProjectPath)
             {
-                mCurrentPath = mCurrentPath.parent_path();
+                EntryFolder(mCurrentPath.parent_path());
             }
         }
         ImGui::SameLine();
@@ -501,57 +508,7 @@ void UI::AssetWindow()
         ImGui::EndMenuBar();
     }
     ImGui::Separator();
-    // 2. 检查目录是否存在
-    if (!std::filesystem::exists(mCurrentPath))
-    {
-        ImGui::TextColored(ImVec4(1, 0, 0, 1), "Directory not exists!");
-        ImGui::End();
-        return;
-    }
-    // 3. 设置列数
-    const int columns = std::max(1, static_cast<int>(ImGui::GetContentRegionAvail().x / mIconSize));
-    ImGui::Columns(columns, "AssetColumns", false); // false = 不显示边框
-    try
-    {
-        for (const auto &entry : std::filesystem::directory_iterator(mCurrentPath))
-        {
-            if (!entry.is_directory())
-                continue;
-
-            ImGui::Image(reinterpret_cast<ImTextureID>(static_cast<VkDescriptorSet>(mFolderIcon)),
-                         ImVec2(mIconSize, mIconSize), ImVec2(0, 1), ImVec2(1, 0));
-            ImGui::TextWrapped("%s", entry.path().filename().string().c_str());
-
-            // 双击进入文件夹
-            if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0))
-            {
-                mCurrentPath = entry.path();
-            }
-            // 移动到下一列
-            ImGui::NextColumn();
-        }
-        for (const auto &entry : std::filesystem::directory_iterator(mCurrentPath))
-        {
-            if (entry.is_directory())
-                continue;
-
-            ImGui::Image(reinterpret_cast<ImTextureID>(static_cast<VkDescriptorSet>(mFileIcon)),
-                         ImVec2(mIconSize, mIconSize), ImVec2(0, 1), ImVec2(1, 0));
-            ImGui::TextWrapped("%s", entry.path().filename().string().c_str());
-
-            // 双击文件
-            if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0))
-            {
-            }
-            // 移动到下一列
-            ImGui::NextColumn();
-        }
-    }
-    catch (const std::exception &e)
-    {
-        ImGui::TextColored(ImVec4(1, 0, 0, 1), "Error: %s", e.what());
-    }
-    ImGui::Columns(1);
+    DisplayAssetEntity();
     // 4. 右键菜单
     if (ImGui::IsMouseClicked(ImGuiMouseButton_Right) && ImGui::IsWindowHovered())
     {
@@ -563,6 +520,12 @@ void UI::AssetWindow()
         {
             std::string folderName = "NewFolder";
             std::filesystem::path newFolderPath = mCurrentPath / folderName;
+            int count = 0;
+            while (std::filesystem::exists(newFolderPath))
+            {
+                folderName = std::format("NewFolder{}", ++count);
+                newFolderPath = mCurrentPath / folderName;
+            }
             std::filesystem::create_directory(newFolderPath);
         }
         if (ImGui::MenuItem("Create Material"))
@@ -572,13 +535,89 @@ void UI::AssetWindow()
             std::filesystem::path newMaterialPath = mCurrentPath / materialName;
             while (std::filesystem::exists(newMaterialPath))
             {
-                
+                materialName = std::format("NewMaterial{}.json", ++count);
+                newMaterialPath = mCurrentPath / materialName;
             }
             mMaterialManager->CreateMaterial(newMaterialPath);
+        }
+        if (ImGui::MenuItem("Delete"))
+        {
         }
         ImGui::EndPopup();
     }
     ImGui::End();
+}
+void UI::DisplayAssetEntity()
+{
+    // 检查目录是否存在
+    if (!std::filesystem::exists(mCurrentPath))
+    {
+        ImGui::TextColored(ImVec4(1, 0, 0, 1), "Directory not exists!");
+        ImGui::End();
+        return;
+    }
+    try
+    {
+        ImGuiListClipper clipper;
+        clipper.Begin(mProcessedAssets.size());
+        while (clipper.Step())
+        {
+            for (int i = clipper.DisplayStart; i < clipper.DisplayEnd; ++i)
+            {
+                auto entity = mProcessedAssets[i];
+                auto &asset = mAssetRegistry->get<AssetsComponent>(entity);
+                // 绘制图标+文字
+                ImGui::PushID(static_cast<int>(entt::to_integral(entity)));
+                // 图标按钮（带悬停/选中效果）
+                const bool isSelected = (mSelectedEntity == entity);
+                if (ImGui::ImageButton(
+                        asset.name.c_str(),
+                        reinterpret_cast<ImTextureID>(static_cast<VkDescriptorSet>(asset.iconDescriptorSet)),
+                        ImVec2(mIconSize, mIconSize), ImVec2(0, 1), ImVec2(1, 0),
+                        isSelected ? ImVec4(0.5f, 0.5f, 0.5f, 1.0f) : ImVec4(1.0f, 1.0f, 1.0f, 1.0f)))
+                {
+                    mSelectedEntity = entity;
+                }
+                // 处理悬停事件
+                if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup))
+                {
+                    mHoveredEntity = entity;
+                    if (ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+                    {
+                        mSelectedEntity = entity;
+                    }
+                }
+                // 处理双击事件
+                if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0))
+                {
+                    switch (asset.type)
+                    {
+                    case AssetType::Folder:
+                        EntryFolder(mCurrentPath / asset.name);
+                        break;
+                    case AssetType::File:
+                        break;
+                    }
+                }
+                ImGui::TextWrapped("%s", asset.name.c_str());
+                if (ImGui::BeginDragDropSource())
+                {
+                    ImGui::SetDragDropPayload("ASSET_ITEM", &entity, sizeof(entity));
+                    ImGui::Image(reinterpret_cast<ImTextureID>(static_cast<VkDescriptorSet>(asset.iconDescriptorSet)),
+                                 ImVec2(mIconSize, mIconSize), ImVec2(0, 1), ImVec2(1, 0));
+                    ImGui::EndDragDropSource();
+                }
+
+                ImGui::PopID();
+                ImGui::NextColumn();
+            }
+        }
+        clipper.End();
+    }
+    catch (const std::exception &e)
+    {
+        ImGui::TextColored(ImVec4(1, 0, 0, 1), "Error: %s", e.what());
+    }
 }
 void UI::RenderUI()
 {
@@ -612,9 +651,66 @@ void UI::RecordUICommandBuffer(vk::CommandBuffer commandBuffer)
 }
 UI::~UI()
 {
+    mIO->Fonts->Clear();
+    mIO->Fonts->ClearInputData();
+    mIO->Fonts->ClearTexData();
     ImGui_ImplVulkan_Shutdown();
     ImGui_ImplSDL3_Shutdown();
     ImGui::DestroyContext();
     mLogger->Info("UI System Shutdown");
+}
+
+void UI::OnAssetCreated(entt::registry &, entt::entity entity)
+{
+    mProcessedAssets.push_back(entity);
+    ProcessAssets();
+}
+void UI::OnAssetUpdated(entt::registry &, entt::entity)
+{
+}
+void UI::OnAssetDestroyed(entt::registry &, entt::entity entity)
+{
+    auto it = std::remove(mProcessedAssets.begin(), mProcessedAssets.end(), entity);
+    if (it != mProcessedAssets.end())
+    {
+        mProcessedAssets.erase(it, mProcessedAssets.end());
+    }
+}
+void UI::ProcessAssets()
+{
+    std::sort(mProcessedAssets.begin(), mProcessedAssets.end(), [this](entt::entity a, entt::entity b) {
+        auto &compA = mAssetRegistry->get<AssetsComponent>(a);
+        auto &compB = mAssetRegistry->get<AssetsComponent>(b);
+        return (compA.type == AssetType::Folder) > (compB.type == AssetType::Folder) ||
+               (compA.type == compB.type && compA.name < compB.name);
+    });
+}
+void UI::EntryFolder(const std::filesystem::path &path)
+{
+    mCurrentPath = path;
+    if (std::filesystem::exists(path))
+    {
+        mCurrentPath = path;
+        mAssetRegistry->clear();
+        for (const auto &entry : std::filesystem::directory_iterator(path))
+        {
+            if (entry.is_directory())
+            {
+                auto entity = mAssetRegistry->create();
+                mAssetRegistry->emplace<AssetsComponent>(entity, entry.path(), entry.path().filename().string(),
+                                                         AssetType::Folder, mFolderIcon);
+            }
+            else
+            {
+                auto entity = mAssetRegistry->create();
+                mAssetRegistry->emplace<AssetsComponent>(entity, entry.path(), entry.path().filename().string(),
+                                                         AssetType::File, mFileIcon);
+            }
+        }
+    }
+    else
+    {
+        mLogger->Error("Path does not exist: {}", path.string());
+    }
 }
 } // namespace MEngine

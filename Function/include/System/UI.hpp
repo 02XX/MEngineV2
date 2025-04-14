@@ -22,6 +22,7 @@
 #include <memory>
 #include <vector>
 
+#include "Componet/AssestComponent.hpp"
 #include "Componet/CameraComponent.hpp"
 #include "Componet/MaterialComponent.hpp"
 #include "Componet/MeshComponent.hpp"
@@ -66,6 +67,8 @@ class UI
 
   private:
     // Assets View
+    std::shared_ptr<entt::registry> mAssetRegistry;
+    std::vector<entt::entity> mProcessedAssets;
     std::filesystem::path mCurrentPath = mProjectPath;
     std::filesystem::path mUIResourcePath = std::filesystem::current_path() / "Resource" / "UI";
     float mIconSize = 64.0f; // 可调整的图标大小
@@ -103,7 +106,6 @@ class UI
 
     entt::entity mSelectedEntity = entt::null;
     entt::entity mHoveredEntity = entt::null;
-    std::vector<entt::entity> mNeedDeleteEntities;
 
   private:
     void SetDefaultWindowLayout();
@@ -114,10 +116,13 @@ class UI
     void ToolbarWindow();
     void SceneViewWindow();
     void AssetWindow();
-
+    void EntryFolder(const std::filesystem::path &path);
+    void OnAssetCreated(entt::registry &, entt::entity entity);
+    void OnAssetUpdated(entt::registry &, entt::entity);
+    void OnAssetDestroyed(entt::registry &, entt::entity entity);
+    void ProcessAssets();
+    void DisplayAssetEntity();
     void LoadUIIcon(const std::filesystem::path &iconPath, vk::DescriptorSet &descriptorSet);
-
-    void RenderScene();
 
     void CollectEntity();
 
@@ -153,14 +158,6 @@ class UI
     inline void SetImageIndex(uint32_t imageIndex)
     {
         mImageIndex = imageIndex;
-    }
-    inline std::vector<entt::entity> GetNeedDeleteEntities() const
-    {
-        return mNeedDeleteEntities;
-    }
-    inline void ClearNeedDeleteEntities()
-    {
-        mNeedDeleteEntities.clear();
     }
 };
 
