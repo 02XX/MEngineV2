@@ -51,6 +51,7 @@ class MaterialManager : public NoCopyable
     std::shared_ptr<IMaterial> GetMaterial(uint32_t id);
     std::shared_ptr<IMaterial> GetMaterial(std::filesystem::path materialPath);
     uint32_t CreateMaterial(std::filesystem::path materialPath);
+    uint32_t LoadMaterialFromFile(std::filesystem::path materialPath);
     void SaveMaterial(std::filesystem::path materialPath, std::shared_ptr<IMaterial> material);
     std::vector<std::shared_ptr<IMaterial>> GetAllMaterials() const;
 };

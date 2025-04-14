@@ -277,7 +277,7 @@ void UI::ShowTexture(const std::string &name, std::shared_ptr<Texture> texture, 
 }
 void UI::InspectorMaterial(MaterialComponent &materialComponent)
 {
-    if (ImGui::CollapsingHeader("Material", ImGuiTreeNodeFlags_DefaultOpen))
+    if (ImGui::CollapsingHeader("Material Attribute", ImGuiTreeNodeFlags_DefaultOpen))
     {
         auto &material = materialComponent.material;
         auto pipelineTypeNames = magic_enum::enum_names<PipelineType>();
@@ -289,6 +289,7 @@ void UI::InspectorMaterial(MaterialComponent &materialComponent)
                 if (ImGui::Selectable(pipelineTypeNames[i].data(), isSelected))
                 {
                     material->SetPipelineType(static_cast<PipelineType>(i));
+                    mMaterialManager->SaveMaterial(material->GetMaterialPath(), material);
                 }
             }
             ImGui::EndCombo();
@@ -309,6 +310,7 @@ void UI::InspectorMaterial(MaterialComponent &materialComponent)
                 pbrMaterial->SetPBRParameters(pbrMaterialParams.parameters);
                 mContext->GetDevice().waitIdle();
                 pbrMaterial->Update();
+                mMaterialManager->SaveMaterial(pbrMaterial->GetMaterialPath(), pbrMaterial);
             }
             ImGui::Dummy(ImVec2(0, 5));
             ShowTexture("Albedo Map", pbrTextureFlag.useAlbedoMap ? pbrMaterialTextures.albedoMap : nullptr);
@@ -402,6 +404,7 @@ void UI::InspectorWindow()
                 {
                     for (int i = 0; i < materials.size(); i++)
                     {
+                        ImGui::PushID(i);
                         std::string materialName =
                             materials[i]->GetMaterialName() + "@" + std::to_string(materials[i]->GetMaterialID());
                         bool isSelected = (materials[i]->GetMaterialID() == material.material->GetMaterialID());
@@ -409,6 +412,7 @@ void UI::InspectorWindow()
                         {
                             material.material = materials[i];
                         }
+                        ImGui::PopID();
                     }
                     ImGui::EndCombo();
                 }
@@ -772,7 +776,8 @@ void UI::UpdateAssetsView()
                 {
                     mAssetRegistry->emplace<AssetsComponent>(entity, entry.path(), entry.path().filename().string(),
                                                              AssetType::Material, mFileIcon);
-                    auto material = mMaterialManager->GetMaterial(entry.path());
+                    auto materialID = mMaterialManager->LoadMaterialFromFile(entry.path().string());
+                    auto material = mMaterialManager->GetMaterial(materialID);
                     mAssetRegistry->emplace<MaterialComponent>(entity, material);
                 }
                 else if (entry.path().extension() == ".tex")

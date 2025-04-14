@@ -13,7 +13,7 @@
 #include "magic_enum/magic_enum.hpp"
 #include <filesystem>
 #include <memory>
-
+#include <utility>
 namespace MEngine
 {
 
@@ -34,7 +34,7 @@ struct PBRTextureFlag
     alignas(4) bool useAOMap = false;
     alignas(4) bool useEmissiveMap = false;
 };
-struct PBRMaterialParams
+struct PBRParams
 {
     PBRParameters parameters;
     PBRTextureFlag textureFlag;
@@ -46,6 +46,20 @@ struct PBRMaterialTextures
     std::shared_ptr<Texture> metallicRoughnessMap = nullptr;
     std::shared_ptr<Texture> aoMap = nullptr;
     std::shared_ptr<Texture> emissiveMap = nullptr;
+};
+class PBRMaterialParams : public IMaterialParams
+{
+  public:
+    glm::vec3 albedo = {1.0f, 1.0f, 1.0f};
+    float metallic = 0.0f;
+    float roughness = 0.5f;
+    float ao = 1.0f;
+    float emissive = 0.0f;
+    std::optional<std::filesystem::path> albedoMapPath = std::nullopt;
+    std::optional<std::filesystem::path> normalMapPath = std::nullopt;
+    std::optional<std::filesystem::path> metallicRoughnessMapPath = std::nullopt;
+    std::optional<std::filesystem::path> aoMapPath = std::nullopt;
+    std::optional<std::filesystem::path> emissiveMapPath = std::nullopt;
 };
 class PBRMaterial final : public IMaterial
 {
@@ -60,7 +74,8 @@ class PBRMaterial final : public IMaterial
   private:
     std::string mMaterialName = "PBRMaterial";
     uint32_t mMaterialID = 0;
-    PBRMaterialParams mMaterialParams{};
+    std::filesystem::path mMaterialPath;
+    PBRParams mMaterialParams{};
     PBRMaterialTextures mMaterialTextures{};
     PipelineType mPipelineType = PipelineType::ForwardOpaque;
 
@@ -72,12 +87,21 @@ class PBRMaterial final : public IMaterial
     PBRMaterial(std::shared_ptr<Context> context, std::shared_ptr<TextureManager> textureManager,
                 std::shared_ptr<BufferFactory> bufferFactory,
                 std::shared_ptr<PipelineLayoutManager> pipelineLayoutManager,
-                std::shared_ptr<DescriptorManager> descriptorManager, std::string name, uint32_t id);
+                std::shared_ptr<DescriptorManager> descriptorManager, const std::string &name, uint32_t id,
+                const std::filesystem::path &materialPath);
+    PBRMaterial(std::shared_ptr<Context> context, std::shared_ptr<TextureManager> textureManager,
+                std::shared_ptr<BufferFactory> bufferFactory,
+                std::shared_ptr<PipelineLayoutManager> pipelineLayoutManager,
+                std::shared_ptr<DescriptorManager> descriptorManager, const PBRMaterialParams &params);
 
   public:
     PipelineType GetPipelineType() const override;
     vk::DescriptorSet GetMaterialDescriptorSet() const override;
-    inline const PBRMaterialParams &GetMaterialParams() const
+    inline virtual std::filesystem::path GetMaterialPath() const override
+    {
+        return mMaterialPath;
+    }
+    inline const PBRParams &GetMaterialParams() const
     {
         return mMaterialParams;
     }
@@ -93,6 +117,14 @@ class PBRMaterial final : public IMaterial
     {
         mPipelineType = type;
     }
+    inline void SetMaterialName(const std::string &name) override
+    {
+        mMaterialName = name;
+    }
+    inline void SetMaterialID(uint32_t id) override
+    {
+        mMaterialID = id;
+    }
     void SetPBRParameters(const PBRParameters &params = {});
     void SetPBRTextures(const PBRMaterialTextures &textures = {});
     void SetPBRTextures(std::optional<std::filesystem::path> albedoMapPath = std::nullopt,
@@ -103,93 +135,72 @@ class PBRMaterial final : public IMaterial
     std::string GetMaterialName() const override;
     uint32_t GetMaterialID() const override;
     void Update() override;
+    PBRMaterialParams GetPBRMaterialParams() const;
 };
 } // namespace MEngine
 
 namespace nlohmann
 {
-template <> struct adl_serializer<MEngine::PBRMaterial>
+template <> struct adl_serializer<MEngine::PBRMaterialParams>
 {
-    static void to_json(json &j, const MEngine::PBRMaterial &m)
+    static void to_json(json &j, const MEngine::PBRMaterialParams &m)
     {
-        auto pipelineTypeStr = magic_enum::enum_name(m.GetPipelineType());
+        auto pipelineTypeStr = magic_enum::enum_name(m.pipelineType);
         j["pipelineType"] = pipelineTypeStr;
-        auto materialParams = m.GetMaterialParams();
-        j["parameters"]["albedo"] = {materialParams.parameters.albedo.x, materialParams.parameters.albedo.y,
-                                     materialParams.parameters.albedo.z};
-        j["parameters"]["metallic"] = materialParams.parameters.metallic;
-        j["parameters"]["roughness"] = materialParams.parameters.roughness;
-        j["parameters"]["ao"] = materialParams.parameters.ao;
-        auto materialTextures = m.GetMaterialTextures();
-        if (materialTextures.albedoMap != nullptr)
-        {
-            j["textures"].push_back({{"type", "albedoMap"}, {"path", materialTextures.albedoMap->GetPath().string()}});
-        }
-        if (materialTextures.normalMap != nullptr)
-        {
-            j["textures"].push_back({{"type", "normalMap"}, {"path", materialTextures.normalMap->GetPath().string()}});
-        }
-        if (materialTextures.metallicRoughnessMap != nullptr)
-        {
-            j["textures"].push_back({{"type", "metallicRoughnessMap"},
-                                     {"path", materialTextures.metallicRoughnessMap->GetPath().string()}});
-        }
-        if (materialTextures.aoMap != nullptr)
-        {
-            j["textures"].push_back({{"type", "aoMap"}, {"path", materialTextures.aoMap->GetPath().string()}});
-        }
-        if (materialTextures.emissiveMap != nullptr)
-        {
-            j["textures"].push_back(
-                {{"type", "emissiveMap"}, {"path", materialTextures.emissiveMap->GetPath().string()}});
-        }
+        j["parameters"]["albedo"] = {m.albedo.x, m.albedo.y, m.albedo.z};
+        j["parameters"]["metallic"] = m.metallic;
+        j["parameters"]["roughness"] = m.roughness;
+        j["parameters"]["ao"] = m.ao;
+        j["textures"].push_back(
+            {{"type", "albedoMap"}, {"path", m.albedoMapPath.has_value() ? m.albedoMapPath.value() : ""}});
+        j["textures"].push_back(
+            {{"type", "normalMap"}, {"path", m.normalMapPath.has_value() ? m.normalMapPath.value() : ""}});
+        j["textures"].push_back(
+            {{"type", "metallicRoughnessMap"},
+             {"path", m.metallicRoughnessMapPath.has_value() ? m.metallicRoughnessMapPath.value() : ""}});
+        j["textures"].push_back({{"type", "aoMap"}, {"path", m.aoMapPath.has_value() ? m.aoMapPath.value() : ""}});
+        j["textures"].push_back(
+            {{"type", "emissiveMap"}, {"path", m.emissiveMapPath.has_value() ? m.emissiveMapPath.value() : ""}});
     }
-    static void from_json(const json &j, MEngine::PBRMaterial &m)
+    static void from_json(const json &j, MEngine::PBRMaterialParams &m)
     {
-        auto pipelineType = j["pipelineType"].get<std::string>();
-        m.SetPipelineType(magic_enum::enum_cast<MEngine::PipelineType>(pipelineType).value());
-        auto parameters = j["parameters"];
-        glm::vec3 albedo(parameters["albedo"][0].get<float>(), parameters["albedo"][1].get<float>(),
-                         parameters["albedo"][2].get<float>());
-        m.SetPBRParameters({albedo, parameters["metallic"].get<float>(), parameters["roughness"].get<float>(),
-                            parameters["ao"].get<float>()});
-        auto textures = j["textures"];
-        std::optional<std::filesystem::path> albedoMapPath = std::nullopt;
-        std::optional<std::filesystem::path> normalMapPath = std::nullopt;
-        std::optional<std::filesystem::path> metallicRoughnessMapPath = std::nullopt;
-        std::optional<std::filesystem::path> aoMapPath = std::nullopt;
-        std::optional<std::filesystem::path> emissiveMapPath = std::nullopt;
-        for (const auto &texture : textures)
+        auto pipelineTypeStr = j["pipelineType"].get<std::string>();
+        auto pipelineTypeOpt = magic_enum::enum_cast<MEngine::PipelineType>(pipelineTypeStr);
+        if (pipelineTypeOpt.has_value())
         {
-            auto type = texture["type"].get<std::string>();
-            auto path = texture["path"].get<std::string>();
-            if (type == "albedoMap")
-            {
-                albedoMapPath = path;
-            }
-            else if (type == "normalMap")
-            {
-                normalMapPath = path;
-            }
-            else if (type == "metallicRoughnessMap")
-            {
-                metallicRoughnessMapPath = path;
-            }
-            else if (type == "aoMap")
-            {
-                aoMapPath = path;
-            }
-            else if (type == "emissiveMap")
-            {
-                emissiveMapPath = path;
-            }
-            else
-            {
-                throw std::runtime_error("Unknown texture type: " + type);
-            }
+            m.pipelineType = pipelineTypeOpt.value();
         }
-        m.SetPBRTextures(albedoMapPath, normalMapPath, metallicRoughnessMapPath, aoMapPath, emissiveMapPath);
-        m.Update();
+        else
+        {
+            throw std::runtime_error("Invalid pipeline type: " + pipelineTypeStr);
+        }
+        m.albedo.x = j["parameters"]["albedo"][0].get<float>();
+        m.albedo.y = j["parameters"]["albedo"][1].get<float>();
+        m.albedo.z = j["parameters"]["albedo"][2].get<float>();
+        m.metallic = j["parameters"]["metallic"].get<float>();
+        m.roughness = j["parameters"]["roughness"].get<float>();
+        m.ao = j["parameters"]["ao"].get<float>();
+        std::pair<std::string, std::string> texture;
+        for (const auto &textureJson : j["textures"])
+        {
+            texture.first = textureJson["type"].get<std::string>();
+            texture.second = textureJson["path"].get<std::string>();
+            if (texture.first == "albedoMap")
+                m.albedoMapPath =
+                    texture.second == "" ? std::nullopt : std::optional<std::filesystem::path>(texture.second);
+            else if (texture.first == "normalMap")
+                m.normalMapPath =
+                    texture.second == "" ? std::nullopt : std::optional<std::filesystem::path>(texture.second);
+            else if (texture.first == "metallicRoughnessMap")
+                m.metallicRoughnessMapPath =
+                    texture.second == "" ? std::nullopt : std::optional<std::filesystem::path>(texture.second);
+            else if (texture.first == "aoMap")
+                m.aoMapPath =
+                    texture.second == "" ? std::nullopt : std::optional<std::filesystem::path>(texture.second);
+            else if (texture.first == "emissiveMap")
+                m.emissiveMapPath =
+                    texture.second == "" ? std::nullopt : std::optional<std::filesystem::path>(texture.second);
+        }
     }
 };
 } // namespace nlohmann

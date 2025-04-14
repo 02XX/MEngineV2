@@ -5,12 +5,13 @@ namespace MEngine
 PBRMaterial::PBRMaterial(std::shared_ptr<Context> context, std::shared_ptr<TextureManager> textureManager,
                          std::shared_ptr<BufferFactory> bufferFactory,
                          std::shared_ptr<PipelineLayoutManager> pipelineLayoutManager,
-                         std::shared_ptr<DescriptorManager> descriptorManager, std::string name, uint32_t id)
+                         std::shared_ptr<DescriptorManager> descriptorManager, const std::string &name, uint32_t id,
+                         const std::filesystem::path &materialPath)
     : mContext(context), mTextureManager(textureManager), mBufferFactory(bufferFactory),
       mPipelineLayoutManager(pipelineLayoutManager), mDescriptorManager(descriptorManager), mMaterialName(name),
-      mMaterialID(id)
+      mMaterialPath(materialPath), mMaterialID(id)
 {
-    mMaterialParamsUBO = mBufferFactory->CreateBuffer(BufferType::Uniform, sizeof(PBRMaterialParams));
+    mMaterialParamsUBO = mBufferFactory->CreateBuffer(BufferType::Uniform, sizeof(PBRParams));
     auto pbrDescriptorLayout = mPipelineLayoutManager->GetPBRDescriptorSetLayout();
     mMaterialDescriptorSet = std::move(mDescriptorManager->AllocateUniqueDescriptorSet({pbrDescriptorLayout})[0]);
 
@@ -20,6 +21,55 @@ PBRMaterial::PBRMaterial(std::shared_ptr<Context> context, std::shared_ptr<Textu
     mMaterialTextures.metallicRoughnessMap = mTextureManager->GetDefaultTexture();
     mMaterialTextures.aoMap = mTextureManager->GetDefaultTexture();
     mMaterialTextures.emissiveMap = mTextureManager->GetDefaultTexture();
+}
+PBRMaterial::PBRMaterial(std::shared_ptr<Context> context, std::shared_ptr<TextureManager> textureManager,
+                         std::shared_ptr<BufferFactory> bufferFactory,
+                         std::shared_ptr<PipelineLayoutManager> pipelineLayoutManager,
+                         std::shared_ptr<DescriptorManager> descriptorManager, const PBRMaterialParams &params)
+    : mContext(context), mTextureManager(textureManager), mBufferFactory(bufferFactory),
+      mPipelineLayoutManager(pipelineLayoutManager), mDescriptorManager(descriptorManager)
+{
+    mMaterialParamsUBO = mBufferFactory->CreateBuffer(BufferType::Uniform, sizeof(PBRParams));
+    auto pbrDescriptorLayout = mPipelineLayoutManager->GetPBRDescriptorSetLayout();
+    mMaterialDescriptorSet = std::move(mDescriptorManager->AllocateUniqueDescriptorSet({pbrDescriptorLayout})[0]);
+
+    mMaterialName = params.materialName;
+    mMaterialID = params.materialID;
+    mMaterialParams.parameters.albedo = params.albedo;
+    mMaterialParams.parameters.metallic = params.metallic;
+    mMaterialParams.parameters.roughness = params.roughness;
+    mMaterialParams.parameters.ao = params.ao;
+    mMaterialParams.parameters.emissive = params.emissive;
+    mMaterialTextures.albedoMap = mTextureManager->GetDefaultTexture();
+    mMaterialTextures.normalMap = mTextureManager->GetDefaultTexture();
+    mMaterialTextures.metallicRoughnessMap = mTextureManager->GetDefaultTexture();
+    mMaterialTextures.aoMap = mTextureManager->GetDefaultTexture();
+    mMaterialTextures.emissiveMap = mTextureManager->GetDefaultTexture();
+    if (params.albedoMapPath.has_value())
+    {
+        mMaterialTextures.albedoMap = mTextureManager->GetTexture(params.albedoMapPath.value());
+        mMaterialParams.textureFlag.useAlbedoMap = true;
+    }
+    if (params.normalMapPath.has_value())
+    {
+        mMaterialTextures.normalMap = mTextureManager->GetTexture(params.normalMapPath.value());
+        mMaterialParams.textureFlag.useNormalMap = true;
+    }
+    if (params.metallicRoughnessMapPath.has_value())
+    {
+        mMaterialTextures.metallicRoughnessMap = mTextureManager->GetTexture(params.metallicRoughnessMapPath.value());
+        mMaterialParams.textureFlag.useMetallicRoughnessMap = true;
+    }
+    if (params.aoMapPath.has_value())
+    {
+        mMaterialTextures.aoMap = mTextureManager->GetTexture(params.aoMapPath.value());
+        mMaterialParams.textureFlag.useAOMap = true;
+    }
+    if (params.emissiveMapPath.has_value())
+    {
+        mMaterialTextures.emissiveMap = mTextureManager->GetTexture(params.emissiveMapPath.value());
+        mMaterialParams.textureFlag.useEmissiveMap = true;
+    }
 }
 PipelineType PBRMaterial::GetPipelineType() const
 {
@@ -106,11 +156,11 @@ void PBRMaterial::Update()
     auto pbrDescriptorLayoutBindings = mPipelineLayoutManager->GetPBRDescriptorLayoutBindings();
     // 更新UBO
     auto mapped = mMaterialParamsUBO->GetAllocationInfo().pMappedData;
-    memcpy(mapped, &mMaterialParams, sizeof(PBRMaterialParams));
+    memcpy(mapped, &mMaterialParams, sizeof(PBRParams));
     // 更新描述符集
     vk::WriteDescriptorSet writer;
     vk::DescriptorBufferInfo bufferInfo;
-    bufferInfo.setBuffer(mMaterialParamsUBO->GetHandle()).setOffset(0).setRange(sizeof(PBRMaterialParams));
+    bufferInfo.setBuffer(mMaterialParamsUBO->GetHandle()).setOffset(0).setRange(sizeof(PBRParams));
     writer.setDstSet(mMaterialDescriptorSet.get())
         .setDescriptorType(vk::DescriptorType::eUniformBuffer)
         .setBufferInfo({bufferInfo})
@@ -183,5 +233,37 @@ void PBRMaterial::Update()
     writers.push_back(EmissiveWriter);
 
     mContext->GetDevice().updateDescriptorSets(writers, {});
+}
+PBRMaterialParams PBRMaterial::GetPBRMaterialParams() const
+{
+    PBRMaterialParams params;
+    params.pipelineType = mPipelineType;
+    params.materialName = mMaterialName;
+    params.materialID = mMaterialID;
+    params.albedo = mMaterialParams.parameters.albedo;
+    params.metallic = mMaterialParams.parameters.metallic;
+    params.roughness = mMaterialParams.parameters.roughness;
+    params.ao = mMaterialParams.parameters.ao;
+    if (mMaterialParams.textureFlag.useAlbedoMap)
+    {
+        params.albedoMapPath = mMaterialTextures.albedoMap->GetPath();
+    }
+    if (mMaterialParams.textureFlag.useNormalMap)
+    {
+        params.normalMapPath = mMaterialTextures.normalMap->GetPath();
+    }
+    if (mMaterialParams.textureFlag.useMetallicRoughnessMap)
+    {
+        params.metallicRoughnessMapPath = mMaterialTextures.metallicRoughnessMap->GetPath();
+    }
+    if (mMaterialParams.textureFlag.useAOMap)
+    {
+        params.aoMapPath = mMaterialTextures.aoMap->GetPath();
+    }
+    if (mMaterialParams.textureFlag.useEmissiveMap)
+    {
+        params.emissiveMapPath = mMaterialTextures.emissiveMap->GetPath();
+    }
+    return params;
 }
 } // namespace MEngine
