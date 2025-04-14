@@ -13,8 +13,10 @@ PipelineLayoutManager::PipelineLayoutManager(std::shared_ptr<ILogger> logger, st
 
     // PipelineLayout
     CreateShadowDepthPipelineLayout();
-    CreateOpaquePipelineLayout();
-    CreateTranslucencyPipelineLayout();
+    CreateOpaquePBRPipelineLayout();
+    CreateOpaquePhongPipelineLayout();
+    CreateTransparentPBRPipelineLayout();
+    CreateTransparentPhongPipelineLayout();
     CreateScreenSpaceEffectPipelineLayout();
     CreateSkyPipelineLayout();
     CreateParticlePipelineLayout();
@@ -61,10 +63,16 @@ void PipelineLayoutManager::CreatePBRDescriptorSetLayout()
 void PipelineLayoutManager::CreateShadowDepthPipelineLayout()
 {
 }
-void PipelineLayoutManager::CreateOpaquePipelineLayout()
+void PipelineLayoutManager::CreateOpaquePBRPipelineLayout()
 {
 }
-void PipelineLayoutManager::CreateTranslucencyPipelineLayout()
+void PipelineLayoutManager::CreateOpaquePhongPipelineLayout()
+{
+}
+void PipelineLayoutManager::CreateTransparentPhongPipelineLayout()
+{
+}
+void PipelineLayoutManager::CreateTransparentPBRPipelineLayout()
 {
     vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo;
     std::vector<vk::DescriptorSetLayout> setLayouts{

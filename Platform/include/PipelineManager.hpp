@@ -15,11 +15,13 @@ namespace MEngine
 enum class PipelineType
 {
     // 基础渲染
-    ShadowMap,          // 阴影深度贴图管线
-    ForwardOpaque,      // 前向渲染不透明物体管线
-    ForwardTransparent, // 前向渲染透明物体管线
-    DeferredGBuffer,    // 延迟渲染 GBuffer 阶段管线
-    DeferredLighting,   // 延迟渲染 Lighting 阶段管线0.
+    ShadowMap,               // 阴影深度贴图管线
+    ForwardOpaquePBR,        // 前向渲染不透明物体管线
+    ForwardTransparentPBR,   // 前向渲染透明物体管线
+    ForwardOpaquePhong,      // 前向渲染不透明物体管线（Phong）
+    ForwardTransparentPhong, // 前向渲染透明物体管线（Phong）
+    DeferredGBuffer,         // 延迟渲染 GBuffer 阶段管线
+    DeferredLighting,        // 延迟渲染 Lighting 阶段管线0.
 
     // 屏幕空间特效
     ScreenSpaceEffectSSAO, // 屏幕空间环境光遮蔽

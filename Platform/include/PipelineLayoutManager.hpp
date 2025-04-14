@@ -16,14 +16,20 @@ enum class PipelineLayoutType
 {
     ShadowDepth, // 阴影 深度贴图 Set0:{Camera_UBO, Light_SBO[6],
                  // ShadowParameters_SBO,ShadowMap[6](需要和Light_SBO按顺序一一对应)}
-    Opaque,      // 不透明物体 Set0:{Camera_UBO, Light_SBO[6], ShadowParameters_SBO,
+    OpaquePBR,   // 不透明物体PBR Set0:{Camera_UBO, Light_SBO[6], ShadowParameters_SBO,
                  // ShadowMap[6](需要和Light_SBO按顺序一一对应)} , Set1: PBR{Parameters_UBO{Albedo, Normal,
     // MetallicRoughness, AmbientOcclusion,Emissive}, AlbedoMap, NormalMap, MetallicRoughnessMap,
     // AmbientOcclusionMap, EmissiveMap}
-    Transparent, //  透明物体 Set0:{Camera_UBO, Light_SBO[6],
-                 //  ShadowParameters_SBO,ShadowMap[6](需要和Light_SBO按顺序一一对应)}  , Set1: PBR{Albedo, Normal,
-                 //  MetallicRoughness,
+    OpaquePhong, // 不透明物体Phong Set0:{Camera_UBO, Light_SBO[6], ShadowParameters_SBO,
+                 // ShadowMap[6](需要和Light_SBO按顺序一一对应)} , Set1: Phong{Parameters_UBO{Diffuse, Normal, Specular,
+                 // Glossiness}, DiffuseMap, NormalMap, SpecularMap, GlossinessMap}
+    TransparentPBR, //  透明物体 Set0:{Camera_UBO, Light_SBO[6],
+                    //  ShadowParameters_SBO,ShadowMap[6](需要和Light_SBO按顺序一一对应)}  , Set1: PBR{Albedo, Normal,
+                    //  MetallicRoughness,
     //  AmbientOcclusion, Emissive} + AlphaBlend
+    TransparentPhong,  // 透明物体 Set0:{Camera_UBO, Light_SBO[6],
+                       // ShadowParameters_SBO,ShadowMap[6](需要和Light_SBO按顺序一一对应)}  , Set1: Phong{Diffuse,
+                       // Normal, Specular, Glossiness} + AlphaBlend
     ScreenSpaceEffect, // 屏幕空间特效 Set0:{Camera_UBO, Light_SBO[6],
                        // ShadowParameters_SBO,ShadowMap[6](需要和Light_SBO按顺序一一对应)}  , Set1:
                        // PBR{Parameters_UBO{Albedo, Normal,
@@ -31,8 +37,8 @@ enum class PipelineLayoutType
             // , Set1: Skybox{CubeMap, Rotation_UBO}
     Particle, // 粒子 Set0:{Camera_UBO, Light_SBO[6], ShadowParameters_SBO,ShadowMap[6](需要和Light_SBO按顺序一一对应)}
               // , Set1: Particle{ParticleAttributes_SBO, ParticleMap}
-    Terrain, // 地形 Set0:{Camera_UBO, Light_SBO[6], ShadowParameters_SBO,ShadowMap[6](需要和Light_SBO按顺序一一对应)}
-             // , Set1: Terrain{TerrainMap0, TerrainMap1, TerrainMap2,
+    Terrain,  // 地形 Set0:{Camera_UBO, Light_SBO[6], ShadowParameters_SBO,ShadowMap[6](需要和Light_SBO按顺序一一对应)}
+              // , Set1: Terrain{TerrainMap0, TerrainMap1, TerrainMap2,
     // TerrainMap3, HeightMap, TerrainAttributes_UBO{Proportion, HeightScale, ...}}
     SkinnedMesh, // 骨骼动画 Set0:{Camera_UBO, Light_SBO[6],
                  // ShadowParameters_SBO,ShadowMap[6](需要和Light_SBO按顺序一一对应)}  , Set1:
@@ -103,8 +109,10 @@ class PipelineLayoutManager final : public NoCopyable
 
     // PipelineLayout
     void CreateShadowDepthPipelineLayout();
-    void CreateOpaquePipelineLayout();
-    void CreateTranslucencyPipelineLayout();
+    void CreateOpaquePBRPipelineLayout();
+    void CreateOpaquePhongPipelineLayout();
+    void CreateTransparentPBRPipelineLayout();
+    void CreateTransparentPhongPipelineLayout();
     void CreateScreenSpaceEffectPipelineLayout();
     void CreateSkyPipelineLayout();
     void CreateParticlePipelineLayout();

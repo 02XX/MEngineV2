@@ -47,7 +47,7 @@ struct PBRMaterialTextures
     std::shared_ptr<Texture> aoMap = nullptr;
     std::shared_ptr<Texture> emissiveMap = nullptr;
 };
-class PBRMaterialParams : public IMaterialParams
+class PBRMaterialMetadata : public IMaterialMetadata
 {
   public:
     glm::vec3 albedo = {1.0f, 1.0f, 1.0f};
@@ -55,11 +55,12 @@ class PBRMaterialParams : public IMaterialParams
     float roughness = 0.5f;
     float ao = 1.0f;
     float emissive = 0.0f;
-    std::optional<std::filesystem::path> albedoMapPath = std::nullopt;
-    std::optional<std::filesystem::path> normalMapPath = std::nullopt;
-    std::optional<std::filesystem::path> metallicRoughnessMapPath = std::nullopt;
-    std::optional<std::filesystem::path> aoMapPath = std::nullopt;
-    std::optional<std::filesystem::path> emissiveMapPath = std::nullopt;
+    // 外键
+    uuid AlbedoMapID{};
+    uuid NormalMapID{};
+    uuid MetallicRoughnessMapID{};
+    uuid AOMapID{};
+    uuid EmissiveMapID{};
 };
 class PBRMaterial final : public IMaterial
 {
@@ -92,7 +93,7 @@ class PBRMaterial final : public IMaterial
     PBRMaterial(std::shared_ptr<Context> context, std::shared_ptr<TextureManager> textureManager,
                 std::shared_ptr<BufferFactory> bufferFactory,
                 std::shared_ptr<PipelineLayoutManager> pipelineLayoutManager,
-                std::shared_ptr<DescriptorManager> descriptorManager, const PBRMaterialParams &params);
+                std::shared_ptr<DescriptorManager> descriptorManager, const PBRMaterialMetadata &params);
 
   public:
     PipelineType GetPipelineType() const override;
@@ -135,15 +136,15 @@ class PBRMaterial final : public IMaterial
     std::string GetMaterialName() const override;
     uint32_t GetMaterialID() const override;
     void Update() override;
-    PBRMaterialParams GetPBRMaterialParams() const;
+    PBRMaterialMetadata GetPBRMaterialMetadata() const;
 };
 } // namespace MEngine
 
 namespace nlohmann
 {
-template <> struct adl_serializer<MEngine::PBRMaterialParams>
+template <> struct adl_serializer<MEngine::PBRMaterialMetadata>
 {
-    static void to_json(json &j, const MEngine::PBRMaterialParams &m)
+    static void to_json(json &j, const MEngine::PBRMaterialMetadata &m)
     {
         auto pipelineTypeStr = magic_enum::enum_name(m.pipelineType);
         j["pipelineType"] = pipelineTypeStr;
@@ -162,7 +163,7 @@ template <> struct adl_serializer<MEngine::PBRMaterialParams>
         j["textures"].push_back(
             {{"type", "emissiveMap"}, {"path", m.emissiveMapPath.has_value() ? m.emissiveMapPath.value() : ""}});
     }
-    static void from_json(const json &j, MEngine::PBRMaterialParams &m)
+    static void from_json(const json &j, MEngine::PBRMaterialMetadata &m)
     {
         auto pipelineTypeStr = j["pipelineType"].get<std::string>();
         auto pipelineTypeOpt = magic_enum::enum_cast<MEngine::PipelineType>(pipelineTypeStr);

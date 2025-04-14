@@ -1,4 +1,4 @@
-#include "Material/PBRMaterial.hpp"
+#include "Entity/PBRMaterial.hpp"
 
 namespace MEngine
 {

@@ -34,3 +34,9 @@
 [submodule "3rdParty/fmt"]
 	path = 3rdParty/fmt
 	url = https://github.com/fmtlib/fmt
+[submodule "3rdParty/uuid"]
+	path = 3rdParty/uuid
+	url = https://github.com/boostorg/uuid.git
+[submodule "3rdParty/rttr"]
+	path = 3rdParty/rttr
+	url = https://github.com/rttrorg/rttr.git
