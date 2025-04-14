@@ -9,6 +9,7 @@ RenderPassManager::RenderPassManager(std::shared_ptr<ILogger> logger, std::share
                                      std::shared_ptr<ImageFactory> imageFactory)
     : mLogger(logger), mContext(context), mImageFactory(imageFactory)
 {
+
     CreateShadowDepthRenderPass();
     CreateMainRenderPass();
     CreateSkyRenderPass();

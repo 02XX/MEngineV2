@@ -7,11 +7,12 @@ UI::UI(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context, std::s
        std::shared_ptr<RenderPassManager> renderPassManager, std::shared_ptr<ImageFactory> imageFactory,
        std::shared_ptr<CommandBufferManager> commandBufferManager,
        std::shared_ptr<SyncPrimitiveManager> syncPrimitiveManager, std::shared_ptr<SamplerManager> samplerManager,
-       std::shared_ptr<entt::registry> registry, std::shared_ptr<MaterialManager> materialManager)
+       std::shared_ptr<entt::registry> registry, std::shared_ptr<MaterialManager> materialManager,
+       std::shared_ptr<TextureManager> textureManager)
     : mLogger(logger), mContext(context), mWindow(window), mRenderPassManager(renderPassManager),
       mImageFactory(imageFactory), mCommandBufferManager(commandBufferManager),
       mSyncPrimitiveManager(syncPrimitiveManager), mSamplerManager(samplerManager), mRegistry(registry),
-      mMaterialManager(materialManager)
+      mMaterialManager(materialManager), mTextureManager(textureManager)
 {
     mIconTransitionCommandBuffer = mCommandBufferManager->CreatePrimaryCommandBuffer(CommandBufferType::Graphic);
     mIconSampler = mSamplerManager->CreateUniqueSampler(vk::Filter::eLinear, vk::Filter::eLinear);
@@ -53,19 +54,32 @@ UI::UI(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context, std::s
     // Icons
     LoadUIIcon(mUIResourcePath / "Icon" / "folder.png", mFolderIcon);
     LoadUIIcon(mUIResourcePath / "Icon" / "file.png", mFileIcon);
+    auto defaultTexture = mTextureManager->GetDefaultTexture();
+    mDefaultTextureDescriptorSet =
+        ImGui_ImplVulkan_AddTexture(mSceneSampler.get(), defaultTexture->GetImageView(),
+                                    static_cast<VkImageLayout>(vk::ImageLayout::eShaderReadOnlyOptimal));
+    SetSceneViewPort();
 }
 void UI::ProcessEvent(const SDL_Event *event)
 {
     ImGui_ImplSDL3_ProcessEvent(event);
 }
-void UI::SetSceneViewPort(const std::vector<vk::ImageView> &imageViews)
+void UI::SetSceneViewPort()
 {
-    mSceneImageViews = imageViews;
-    for (size_t i = 0; i < mSceneImageViews.size(); ++i)
+    std::vector<vk::ImageView> imageViews;
+    for (auto imageView : mRenderPassManager->GetTransparentFrameResource())
     {
-        mSceneDescriptorSets.push_back(
-            ImGui_ImplVulkan_AddTexture(mSceneSampler.get(), mSceneImageViews[i],
-                                        static_cast<VkImageLayout>(vk::ImageLayout::eShaderReadOnlyOptimal)));
+        imageViews.push_back(imageView->renderTargetImageView.get());
+    }
+    for (auto sceneDescriptorSet : mSceneDescriptorSets)
+    {
+        ImGui_ImplVulkan_RemoveTexture(sceneDescriptorSet);
+    }
+    mSceneDescriptorSets.clear();
+    for (size_t i = 0; i < imageViews.size(); ++i)
+    {
+        mSceneDescriptorSets.push_back(ImGui_ImplVulkan_AddTexture(
+            mSceneSampler.get(), imageViews[i], static_cast<VkImageLayout>(vk::ImageLayout::eShaderReadOnlyOptimal)));
     }
 }
 void UI::CollectEntity()
@@ -221,6 +235,33 @@ void UI::HierarchyWindow()
     }
     ImGui::End();
 }
+void UI::ShowTexture(const std::string &name, std::shared_ptr<Texture> texture, ImVec2 size)
+{
+
+    ImGui::Columns(2, nullptr, false); // 创建两列布局，不显示分隔线
+    ImGui::SetColumnWidth(0, 100);     // 固定文本列宽
+    ImGui::Text("%s", name.c_str());
+    ImGui::NextColumn(); // 切换到图片列
+    if (texture == nullptr)
+    {
+        ImGui::Image(reinterpret_cast<ImTextureID>(static_cast<VkDescriptorSet>(mDefaultTextureDescriptorSet)), size,
+                     ImVec2(0, 1), ImVec2(1, 0));
+    }
+    else
+    {
+        if (!texture->GetUIDescriptorID())
+        {
+            auto id = ImGui_ImplVulkan_AddTexture(texture->GetSampler(), texture->GetImageView(),
+                                                  static_cast<VkImageLayout>(vk::ImageLayout::eShaderReadOnlyOptimal));
+            texture->SetUIDescriptorID(id);
+        }
+        ImGui::Image(reinterpret_cast<ImTextureID>(static_cast<VkDescriptorSet>(texture->GetUIDescriptorID())), size,
+                     ImVec2(0, 1), ImVec2(1, 0));
+    }
+    ImGui::Dummy(ImVec2(0, 5));
+
+    ImGui::Columns(1); // 恢复单列布局
+}
 void UI::InspectorWindow()
 {
     ImGui::Begin("Inspector", nullptr, ImGuiWindowFlags_None);
@@ -282,25 +323,59 @@ void UI::InspectorWindow()
                     }
                     ImGui::EndCombo();
                 }
-                // // textures
-                // auto textures = material.material->GetTextures();
-                // for (auto texture : textures)
-                // {
-                //     if (texture->GetUIDescriptorID() != nullptr)
-                //     {
-                //         ImGui::Text("%s", magic_enum::enum_name(texture->GetTextureType()).data());
-                //         ImGui::Image(
-                //             reinterpret_cast<ImTextureID>(static_cast<VkDescriptorSet>(texture->GetUIDescriptorID())),
-                //             ImVec2(mInspectorImageWidth, mInspectorImageHeight), ImVec2(0, 1), ImVec2(1, 0));
-                //     }
-                //     else
-                //     {
-                //         auto id = ImGui_ImplVulkan_AddTexture(
-                //             texture->GetSampler(), texture->GetImageView(),
-                //             static_cast<VkImageLayout>(vk::ImageLayout::eShaderReadOnlyOptimal));
-                //         texture->SetUIDescriptorID(id);
-                //     }
-                // }
+                switch (material.material->GetPipelineType())
+                {
+                case PipelineType::ShadowMap:
+                case PipelineType::ForwardOpaque:
+                case PipelineType::ForwardTransparent: {
+                    auto pbrMaterial = std::static_pointer_cast<PBRMaterial>(material.material);
+                    auto pbrMaterialTextures = pbrMaterial->GetMaterialTextures();
+                    auto pbrMaterialParams = pbrMaterial->GetMaterialParams();
+                    auto pbrTextureFlag = pbrMaterial->GetMaterialTextureFlag();
+                    auto albedoColor = glm::value_ptr(pbrMaterialParams.parameters.albedo);
+                    if (ImGui::ColorEdit3("Albedo", albedoColor))
+                    {
+                        pbrMaterialParams.parameters.albedo = glm::vec3(albedoColor[0], albedoColor[1], albedoColor[2]);
+                        pbrMaterial->SetPBRParameters(pbrMaterialParams.parameters);
+                        mContext->GetDevice().waitIdle();
+                        pbrMaterial->Update();
+                    }
+                    ImGui::Dummy(ImVec2(0, 5));
+                    ShowTexture("Albedo Map", pbrTextureFlag.useAlbedoMap ? pbrMaterialTextures.albedoMap : nullptr);
+                    ShowTexture("Normal Map", pbrTextureFlag.useNormalMap ? pbrMaterialTextures.normalMap : nullptr);
+                    ShowTexture("MetallicRoughness Map", pbrTextureFlag.useMetallicRoughnessMap
+                                                             ? pbrMaterialTextures.metallicRoughnessMap
+                                                             : nullptr);
+                    ShowTexture("AO Map", pbrTextureFlag.useAOMap ? pbrMaterialTextures.aoMap : nullptr);
+                    ShowTexture("Emissive Map",
+                                pbrTextureFlag.useEmissiveMap ? pbrMaterialTextures.emissiveMap : nullptr);
+                    break;
+                }
+                case PipelineType::DeferredGBuffer:
+                case PipelineType::DeferredLighting:
+                case PipelineType::ScreenSpaceEffectSSAO:
+                case PipelineType::ScreenSpaceEffectSSR:
+                case PipelineType::SkinnedMesh:
+                case PipelineType::MorphTarget:
+                case PipelineType::ParticleCPU:
+                case PipelineType::ParticleGPU:
+                case PipelineType::Decal:
+                case PipelineType::PostProcessToneMapping:
+                case PipelineType::PostProcessBloom:
+                case PipelineType::PostProcessDOF:
+                case PipelineType::PostProcessMotionBlur:
+                case PipelineType::PostProcessFXAA:
+                case PipelineType::PostProcessSMAA:
+                case PipelineType::PostProcessVignette:
+                case PipelineType::PostProcessChromaticAberration:
+                case PipelineType::PostProcessFilmGrain:
+                case PipelineType::PostProcessColorGrading:
+                case PipelineType::UISprite:
+                case PipelineType::UIText:
+                case PipelineType::Toon:
+                case PipelineType::Wireframe:
+                    break;
+                };
             }
         }
     }
@@ -369,35 +444,40 @@ void UI::SceneViewWindow()
     {
         mSceneViewPortWidth = width;
         mSceneViewPortHeight = height;
-        mIsSceneViewPortChanged = true;
+        mContext->GetDevice().waitIdle();
+        mRenderPassManager->RecreateFrameBuffer(width, height);
+        SetSceneViewPort();
     }
-    // 2. 显示场景视图
-    ImTextureID textureId =
-        reinterpret_cast<ImTextureID>(static_cast<VkDescriptorSet>(mSceneDescriptorSets[mImageIndex]));
-    ImGui::Image(textureId, ImVec2(mSceneViewPortWidth, mSceneViewPortHeight), ImVec2(0, 1), ImVec2(1, 0));
-
-    // 3. imGuizmo
-    ImVec2 imagePos = ImGui::GetItemRectMin();
-    ImVec2 imageSize = ImGui::GetItemRectSize();
-    ImGuizmo::SetRect(imagePos.x, imagePos.y, imageSize.x, imageSize.y);
-    ImGuizmo::SetDrawlist(ImGui::GetCurrentWindow()->DrawList);
-    if (mSelectedEntity != entt::null)
+    else
     {
-        auto &transform = mRegistry->get<TransformComponent>(mSelectedEntity);
-        auto modelMatrix = transform.modelMatrix;
-        ImGuizmo::Manipulate(glm::value_ptr(camera.viewMatrix), glm::value_ptr(camera.projectionMatrix),
-                             mGuizmoOperation, mGuizmoMode, glm::value_ptr(modelMatrix));
-        if (ImGuizmo::IsUsing())
+        // 显示场景视图
+        ImTextureID textureId =
+            reinterpret_cast<ImTextureID>(static_cast<VkDescriptorSet>(mSceneDescriptorSets[mImageIndex]));
+        ImGui::Image(textureId, ImVec2(mSceneViewPortWidth, mSceneViewPortHeight), ImVec2(0, 1), ImVec2(1, 0));
+
+        // 3. imGuizmo
+        ImVec2 imagePos = ImGui::GetItemRectMin();
+        ImVec2 imageSize = ImGui::GetItemRectSize();
+        ImGuizmo::SetRect(imagePos.x, imagePos.y, imageSize.x, imageSize.y);
+        ImGuizmo::SetDrawlist(ImGui::GetCurrentWindow()->DrawList);
+        if (mSelectedEntity != entt::null)
         {
-            // 分解矩阵
-            glm::vec3 translation, scale, skew;
-            glm::quat rotation;
-            glm::vec4 perspective;
-            if (glm::decompose(modelMatrix, scale, rotation, translation, skew, perspective))
+            auto &transform = mRegistry->get<TransformComponent>(mSelectedEntity);
+            auto modelMatrix = transform.modelMatrix;
+            ImGuizmo::Manipulate(glm::value_ptr(camera.viewMatrix), glm::value_ptr(camera.projectionMatrix),
+                                 mGuizmoOperation, mGuizmoMode, glm::value_ptr(modelMatrix));
+            if (ImGuizmo::IsUsing())
             {
-                transform.position = translation;
-                transform.rotation = rotation;
-                transform.scale = scale;
+                // 分解矩阵
+                glm::vec3 translation, scale, skew;
+                glm::quat rotation;
+                glm::vec4 perspective;
+                if (glm::decompose(modelMatrix, scale, rotation, translation, skew, perspective))
+                {
+                    transform.position = translation;
+                    transform.rotation = rotation;
+                    transform.scale = scale;
+                }
             }
         }
     }
@@ -495,7 +575,7 @@ void UI::AssetWindow()
     }
     ImGui::End();
 }
-void UI::RecordUICommandBuffer(vk::CommandBuffer commandBuffer)
+void UI::RenderUI()
 {
     CollectEntity();
     ImGui_ImplSDL3_NewFrame();
@@ -514,6 +594,9 @@ void UI::RecordUICommandBuffer(vk::CommandBuffer commandBuffer)
     AssetWindow();
     SceneViewWindow();
     ToolbarWindow();
+}
+void UI::RecordUICommandBuffer(vk::CommandBuffer commandBuffer)
+{
     ImGui::Render();
     ImDrawData *drawData = ImGui::GetDrawData();
     bool isMinimized = (drawData->DisplaySize.x <= 0.0f || drawData->DisplaySize.y <= 0.0f);

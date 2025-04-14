@@ -15,7 +15,15 @@
 #include <vulkan/vulkan.hpp>
 #include <vulkan/vulkan_handles.hpp>
 #include <vulkan/vulkan_structs.hpp>
-
+struct RenderSetting
+{
+    // "Render": {
+    //     "Resolution": {
+    //         "Width": 1920,
+    //         "Height": 1080
+    //     }
+    // },
+};
 namespace MEngine
 {
 enum class RenderPassType

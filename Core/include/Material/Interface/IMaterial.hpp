@@ -2,6 +2,7 @@
 
 #include "NoCopyable.hpp"
 #include "PipelineManager.hpp"
+#include "Texture.hpp"
 namespace MEngine
 {
 class IMaterial : public NoCopyable

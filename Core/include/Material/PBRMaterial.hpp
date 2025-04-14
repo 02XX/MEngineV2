@@ -83,6 +83,10 @@ class PBRMaterial final : public IMaterial
     {
         return mMaterialTextures;
     }
+    inline const PBRTextureFlag &GetMaterialTextureFlag() const
+    {
+        return mMaterialParams.textureFlag;
+    }
     inline void SetPipelineType(PipelineType type) override
     {
         mPipelineType = type;

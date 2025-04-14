@@ -64,6 +64,7 @@ class RenderSystem final : public System
     std::vector<vk::UniqueSemaphore> mImageAvailableSemaphores;
     std::vector<vk::UniqueSemaphore> mRenderFinishedSemaphores;
     std::vector<vk::UniqueFence> mInFlightFences;
+    vk::UniqueFence mUIUpdateFence;
 
     uint32_t mImageIndex;
     std::vector<std::vector<vk::UniqueCommandBuffer>> mSecondaryCommandBuffers;

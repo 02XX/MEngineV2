@@ -1,5 +1,6 @@
 #include "PipelineLayoutManager.hpp"
 #include <vector>
+#include <vulkan/vulkan_enums.hpp>
 namespace MEngine
 {
 
@@ -47,7 +48,8 @@ void PipelineLayoutManager::CreatePBRDescriptorSetLayout()
         mPBRDescriptorLayoutBindings.mNormalMapBinding,        mPBRDescriptorLayoutBindings.mMetallicRoughnessBinding,
         mPBRDescriptorLayoutBindings.mAmbientOcclusionBinding, mPBRDescriptorLayoutBindings.mEmissiveBinding};
     vk::DescriptorSetLayoutCreateInfo pbrDescriptorSetLayoutCreateInfo{};
-    pbrDescriptorSetLayoutCreateInfo.setBindings(pbrDescriptorSetLayoutBindings); // set: 1
+    pbrDescriptorSetLayoutCreateInfo.setBindings(pbrDescriptorSetLayoutBindings)
+        .setFlags(vk::DescriptorSetLayoutCreateFlagBits::eUpdateAfterBindPool); // set: 1
     mPBRDescriptorSetLayout = mContext->GetDevice().createDescriptorSetLayoutUnique(pbrDescriptorSetLayoutCreateInfo);
     if (!mPBRDescriptorSetLayout)
     {

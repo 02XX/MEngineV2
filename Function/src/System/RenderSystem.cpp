@@ -1,4 +1,5 @@
 #include "System/RenderSystem.hpp"
+#include <vulkan/vulkan.hpp>
 
 namespace MEngine
 {
@@ -35,6 +36,7 @@ void RenderSystem::Init()
         mRenderFinishedSemaphores.push_back(std::move(renderFinishedSemaphores));
         mInFlightFences.push_back(std::move(inFlightFence));
     }
+    mUIUpdateFence = mSyncPrimitiveManager->CreateFence(vk::FenceCreateFlagBits::eSignaled);
     // Uniform Buffer
     mVPUBO = mBufferFactory->CreateBuffer(BufferType::Uniform, sizeof(VPUniform));
     auto globalDescriptorSetLayout = mPipelineLayoutManager->GetGlobalDescriptorSetLayout();
@@ -44,13 +46,6 @@ void RenderSystem::Init()
         mGlobalDescriptorSets.push_back(std::move(sets[0]));
     }
     mWindow->SetEventCallback([this](const void *event) { mUI->ProcessEvent(static_cast<const SDL_Event *>(event)); });
-    // UI Scene View
-    std::vector<vk::ImageView> imageViews;
-    for (auto imageView : mRenderPassManager->GetTransparentFrameResource())
-    {
-        imageViews.push_back(imageView->renderTargetImageView.get());
-    }
-    mUI->SetSceneViewPort(imageViews);
     mIsInit = true;
     mLogger->Info("RenderSystem Initialized");
 }
@@ -120,18 +115,14 @@ void RenderSystem::Tick(float deltaTime)
 
 void RenderSystem::Prepare()
 {
-
     auto result = mContext->GetDevice().waitForFences({mInFlightFences[mFrameIndex].get()}, VK_TRUE,
                                                       1000000000); // 1s
     if (result != vk::Result::eSuccess)
     {
         throw std::runtime_error("Failed to wait fence");
     }
-
     mContext->GetDevice().resetFences({mInFlightFences[mFrameIndex].get()});
-
     mGraphicCommandBuffers[mFrameIndex]->reset();
-
     auto resultValue = mContext->GetDevice().acquireNextImageKHR(mContext->GetSwapchain(), 1000000000,
                                                                  mImageAvailableSemaphores[mFrameIndex].get(), nullptr);
     if (resultValue.result == vk::Result::eErrorOutOfDateKHR)
@@ -146,24 +137,20 @@ void RenderSystem::Prepare()
         throw std::runtime_error("Failed to acquire next image");
     }
     mImageIndex = resultValue.value;
+    //  ReCreateFrameBuffer
+    // if (mUI->IsSceneViewPortChanged())
+    // {
+    //     auto width = mUI->GetSceneWidth();
+    //     auto height = mUI->GetSceneHeight();
+
+    // }
+    mDescriptorManager->UpdateUniformDescriptorSet({mVPUBO.get()}, 0, mGlobalDescriptorSets[mFrameIndex].get());
+
+    mUI->RenderUI();
+
     vk::CommandBufferBeginInfo beginInfo;
     beginInfo.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
     mGraphicCommandBuffers[mFrameIndex]->begin(beginInfo);
-
-    // ReCreateFrameBuffer
-    if (mUI->IsSceneViewPortChanged())
-    {
-        auto width = mUI->GetSceneWidth();
-        auto height = mUI->GetSceneHeight();
-        // mRenderPassManager->RecreateFrameBuffer(width, height);
-        // std::vector<vk::ImageView> imageViews;
-        // for (auto imageView : mRenderPassManager->GetTransparentFrameResource())
-        // {
-        //     imageViews.push_back(imageView->renderTargetImageView.get());
-        // }
-        // mUI->SetSceneViewPort(imageViews);
-    }
-    mDescriptorManager->UpdateUniformDescriptorSet({mVPUBO.get()}, 0, mGlobalDescriptorSets[mFrameIndex].get());
 }
 void RenderSystem::RenderShadowDepthPass()
 {

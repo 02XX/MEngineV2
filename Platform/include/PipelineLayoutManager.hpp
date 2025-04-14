@@ -31,8 +31,8 @@ enum class PipelineLayoutType
             // , Set1: Skybox{CubeMap, Rotation_UBO}
     Particle, // 粒子 Set0:{Camera_UBO, Light_SBO[6], ShadowParameters_SBO,ShadowMap[6](需要和Light_SBO按顺序一一对应)}
               // , Set1: Particle{ParticleAttributes_SBO, ParticleMap}
-    Terrain,  // 地形 Set0:{Camera_UBO, Light_SBO[6], ShadowParameters_SBO,ShadowMap[6](需要和Light_SBO按顺序一一对应)}
-              // , Set1: Terrain{TerrainMap0, TerrainMap1, TerrainMap2,
+    Terrain, // 地形 Set0:{Camera_UBO, Light_SBO[6], ShadowParameters_SBO,ShadowMap[6](需要和Light_SBO按顺序一一对应)}
+             // , Set1: Terrain{TerrainMap0, TerrainMap1, TerrainMap2,
     // TerrainMap3, HeightMap, TerrainAttributes_UBO{Proportion, HeightScale, ...}}
     SkinnedMesh, // 骨骼动画 Set0:{Camera_UBO, Light_SBO[6],
                  // ShadowParameters_SBO,ShadowMap[6](需要和Light_SBO按顺序一一对应)}  , Set1:

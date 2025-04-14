@@ -9,6 +9,8 @@
 #include "RenderPassManager.hpp"
 #include "SamplerManager.hpp"
 #include "System/ISystem.hpp"
+#include "Texture.hpp"
+#include "TextureManager.hpp"
 #include "entt/entity/fwd.hpp"
 #include "entt/entt.hpp"
 #include "imgui.h"
@@ -17,6 +19,7 @@
 #include "imgui_internal.h"
 
 #include <cstdint>
+#include <memory>
 #include <vector>
 
 #include "Componet/CameraComponent.hpp"
@@ -44,6 +47,7 @@ class UI
     std::shared_ptr<SamplerManager> mSamplerManager;
     std::shared_ptr<entt::registry> mRegistry;
     std::shared_ptr<MaterialManager> mMaterialManager;
+    std::shared_ptr<TextureManager> mTextureManager;
 
   private:
     // ImGUI 相关
@@ -85,7 +89,6 @@ class UI
     uint32_t mSceneViewPortWidth = 0;
     uint32_t mSceneViewPortHeight = 0;
     vk::UniqueSampler mSceneSampler;
-    std::vector<vk::ImageView> mSceneImageViews;
     std::vector<vk::DescriptorSet> mSceneDescriptorSets;
     uint32_t mImageIndex = 0;
 
@@ -93,6 +96,7 @@ class UI
     // Inspector View
     uint32_t mInspectorImageWidth = 50;
     uint32_t mInspectorImageHeight = 50;
+    vk::DescriptorSet mDefaultTextureDescriptorSet;
 
   private:
     entt::entity mMainCamera;
@@ -117,16 +121,21 @@ class UI
 
     void CollectEntity();
 
+  private:
+    void ShowTexture(const std::string &name, std::shared_ptr<Texture> texture = nullptr, ImVec2 size = ImVec2(50, 50));
+
   public:
     UI(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context, std::shared_ptr<IWindow> window,
        std::shared_ptr<RenderPassManager> renderPassManager, std::shared_ptr<ImageFactory> imageFactory,
        std::shared_ptr<CommandBufferManager> commandBufferManager,
        std::shared_ptr<SyncPrimitiveManager> syncPrimitiveManager, std::shared_ptr<SamplerManager> samplerManager,
-       std::shared_ptr<entt::registry> registry, std::shared_ptr<MaterialManager> materialManager);
+       std::shared_ptr<entt::registry> registry, std::shared_ptr<MaterialManager> materialManager,
+       std::shared_ptr<TextureManager> textureManager);
     ~UI();
     void ProcessEvent(const SDL_Event *event);
+    void RenderUI();
     void RecordUICommandBuffer(vk::CommandBuffer commandBuffer);
-    void SetSceneViewPort(const std::vector<vk::ImageView> &imageViews);
+    void SetSceneViewPort();
 
   public:
     inline bool IsSceneViewPortChanged() const
