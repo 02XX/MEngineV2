@@ -5,9 +5,10 @@ namespace MEngine
 PBRMaterial::PBRMaterial(std::shared_ptr<Context> context, std::shared_ptr<TextureManager> textureManager,
                          std::shared_ptr<BufferFactory> bufferFactory,
                          std::shared_ptr<PipelineLayoutManager> pipelineLayoutManager,
-                         std::shared_ptr<DescriptorManager> descriptorManager)
+                         std::shared_ptr<DescriptorManager> descriptorManager, std::string name, uint32_t id)
     : mContext(context), mTextureManager(textureManager), mBufferFactory(bufferFactory),
-      mPipelineLayoutManager(pipelineLayoutManager), mDescriptorManager(descriptorManager)
+      mPipelineLayoutManager(pipelineLayoutManager), mDescriptorManager(descriptorManager), mMaterialName(name),
+      mMaterialID(id)
 {
     mMaterialParamsUBO = mBufferFactory->CreateBuffer(BufferType::Uniform, sizeof(PBRMaterialParams));
     auto pbrDescriptorLayout = mPipelineLayoutManager->GetPBRDescriptorSetLayout();
@@ -91,6 +92,14 @@ void PBRMaterial::SetPBRTextures(std::optional<std::filesystem::path> albedoMapP
         mMaterialTextures.emissiveMap = mTextureManager->GetTexture(emissiveMapPath.value());
         mMaterialParams.textureFlag.useEmissiveMap = true;
     }
+}
+std::string PBRMaterial::GetMaterialName() const
+{
+    return mMaterialName;
+}
+uint32_t PBRMaterial::GetMaterialID() const
+{
+    return mMaterialID;
 }
 void PBRMaterial::Update()
 {

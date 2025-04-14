@@ -58,6 +58,8 @@ class PBRMaterial final : public IMaterial
     std::shared_ptr<DescriptorManager> mDescriptorManager;
 
   private:
+    std::string mMaterialName = "PBRMaterial";
+    uint32_t mMaterialID = 0;
     PBRMaterialParams mMaterialParams{};
     PBRMaterialTextures mMaterialTextures{};
     PipelineType mPipelineType = PipelineType::ForwardOpaque;
@@ -70,7 +72,7 @@ class PBRMaterial final : public IMaterial
     PBRMaterial(std::shared_ptr<Context> context, std::shared_ptr<TextureManager> textureManager,
                 std::shared_ptr<BufferFactory> bufferFactory,
                 std::shared_ptr<PipelineLayoutManager> pipelineLayoutManager,
-                std::shared_ptr<DescriptorManager> descriptorManager);
+                std::shared_ptr<DescriptorManager> descriptorManager, std::string name, uint32_t id);
 
   public:
     PipelineType GetPipelineType() const override;
@@ -98,6 +100,8 @@ class PBRMaterial final : public IMaterial
                         std::optional<std::filesystem::path> metallicRoughnessMapPath = std::nullopt,
                         std::optional<std::filesystem::path> aoMapPath = std::nullopt,
                         std::optional<std::filesystem::path> emissiveMapPath = std::nullopt);
+    std::string GetMaterialName() const override;
+    uint32_t GetMaterialID() const override;
     void Update() override;
 };
 } // namespace MEngine

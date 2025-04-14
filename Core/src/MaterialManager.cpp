@@ -1,8 +1,4 @@
 #include "MaterialManager.hpp"
-#include "Material/PBRMaterial.hpp"
-#include "PipelineLayoutManager.hpp"
-#include <functional>
-#include <memory>
 
 namespace MEngine
 {
@@ -18,6 +14,25 @@ MaterialManager::MaterialManager(std::shared_ptr<ILogger> logger, std::shared_pt
       mSamplerManager(samplerManager), mTextureManager(textureManager), mBufferFactory(bufferFactory)
 {
 }
+std::shared_ptr<IMaterial> MaterialManager::GetMaterial(std::filesystem::path materialPath)
+{
+    // 判断path的extension是否为.mat
+    if (materialPath.extension() != ".mat")
+    {
+        // 修改为.mat
+        materialPath.replace_extension(".mat");
+    }
+    auto id = std::hash<std::string>{}(materialPath.string());
+    auto result = GetMaterial(id);
+    if (result != nullptr)
+    {
+        return result;
+    }
+    // 如果没有找到，则尝试从文件中加载材质
+    id = CreateMaterial(materialPath);
+    result = GetMaterial(id);
+    return result;
+}
 std::shared_ptr<IMaterial> MaterialManager::GetMaterial(uint32_t id)
 {
     auto it = mMaterials.find(id);
@@ -29,6 +44,12 @@ std::shared_ptr<IMaterial> MaterialManager::GetMaterial(uint32_t id)
 }
 void MaterialManager::SaveMaterial(std::filesystem::path materialPath, std::shared_ptr<IMaterial> material)
 {
+    // 判断path的extension是否为.mat
+    if (materialPath.extension() != ".mat")
+    {
+        // 修改为.mat
+        materialPath.replace_extension(".mat");
+    }
     Json materialJson;
     switch (material->GetPipelineType())
     {
@@ -77,11 +98,21 @@ void MaterialManager::SaveMaterial(std::filesystem::path materialPath, std::shar
 }
 uint32_t MaterialManager::CreateMaterial(std::filesystem::path materialPath)
 {
-    std::shared_ptr<IMaterial> material = std::make_shared<PBRMaterial>(mContext, mTextureManager, mBufferFactory,
-                                                                        mPipelineLayoutManager, mDescriptorManager);
     auto id = std::hash<std::string>{}(materialPath.string());
+
+    std::shared_ptr<IMaterial> material = std::make_shared<PBRMaterial>(
+        mContext, mTextureManager, mBufferFactory, mPipelineLayoutManager, mDescriptorManager, "DefaultMaterial", id);
     mMaterials[id] = material;
     SaveMaterial(materialPath, material);
     return id;
+}
+std::vector<std::shared_ptr<IMaterial>> MaterialManager::GetAllMaterials() const
+{
+    std::vector<std::shared_ptr<IMaterial>> materials;
+    for (auto &material : mMaterials)
+    {
+        materials.push_back(material.second);
+    }
+    return materials;
 }
 } // namespace MEngine

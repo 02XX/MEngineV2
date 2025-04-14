@@ -79,6 +79,8 @@ class UI
     vk::UniqueSampler mIconSampler;
     vk::UniqueCommandBuffer mIconTransitionCommandBuffer;
     vk::UniqueFence mIconTransitionFence;
+    entt::entity mAssetsSelectedEntity = entt::null;
+    entt::entity mAssetsHoveredEntity = entt::null;
 
   private:
     // Toolbar View
@@ -100,6 +102,7 @@ class UI
     uint32_t mInspectorImageWidth = 50;
     uint32_t mInspectorImageHeight = 50;
     vk::DescriptorSet mDefaultTextureDescriptorSet;
+    void InspectorMaterial(MaterialComponent &materialComponent);
 
   private:
     entt::entity mMainCamera;
@@ -117,6 +120,7 @@ class UI
     void SceneViewWindow();
     void AssetWindow();
     void EntryFolder(const std::filesystem::path &path);
+    void UpdateAssetsView();
     void OnAssetCreated(entt::registry &, entt::entity entity);
     void OnAssetUpdated(entt::registry &, entt::entity);
     void OnAssetDestroyed(entt::registry &, entt::entity entity);

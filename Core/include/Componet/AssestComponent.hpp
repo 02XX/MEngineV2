@@ -7,6 +7,10 @@ enum class AssetType
 {
     Folder,
     File,
+    Material,
+    Texture,
+    Model,
+    Animation,
 };
 struct AssetsComponent
 {
