@@ -1,8 +1,11 @@
 #pragma once
 
 #include "Context.hpp"
+#include "Entity.hpp"
 #include "Image.hpp"
 #include "ImageFactory.hpp"
+#include "Interface/IEntity.hpp"
+#include "Interface/ITexture.hpp"
 #include "NoCopyable.hpp"
 #include "SamplerManager.hpp"
 #include "stb_image.h"
@@ -12,42 +15,51 @@
 
 namespace MEngine
 {
-class Texture final : public NoCopyable
+class Texture final : public Entity<UUID>, public ITexture
 {
-  private:
-    // DI
-    std::shared_ptr<Context> mContext;
-    std::shared_ptr<ImageFactory> mImageFactory;
-    std::shared_ptr<SamplerManager> mSamplerManager;
+    friend nlohmann::adl_serializer<MEngine::Texture>;
+    friend class TextureRepository;
 
   private:
-    vk::DescriptorSet mUIDescriptorID = nullptr; // UI描述符 ID
-
+    std::filesystem::path imagePath{};
+    uint32_t mWidth;    // 纹理宽度
+    uint32_t mHeight;   // 纹理高度
+    uint32_t mChannels; // 纹理通道数
+    // Vulkan Resources
     UniqueImage mImage;             // Vulkan 纹理图像
     vk::UniqueImageView mImageView; // Vulkan 纹理图像视图
     vk::UniqueSampler mSampler;     // Vulkan 纹理采样器
-    std::filesystem::path mPath;    // 纹理路径
-    uint32_t mWidth;                // 纹理宽度
-    uint32_t mHeight;               // 纹理高度
-    uint32_t mChannels;             // 纹理通道数
+
   public:
-    Texture(std::shared_ptr<Context> context, std::shared_ptr<ImageFactory> imageFactory,
-            std::shared_ptr<SamplerManager> samplerManager, const std::filesystem::path &path);
-    vk::ImageView GetImageView() const;
-    vk::Sampler GetSampler() const;
-    vk::Image GetImage() const;
-    void LoadTexture(const std::filesystem::path &path);
-    inline vk::DescriptorSet GetUIDescriptorID() const
+    Texture();
+    // Getters
+    inline vk::Image GetImage() const override
     {
-        return mUIDescriptorID;
+        return mImage->GetHandle();
     }
-    inline void SetUIDescriptorID(vk::DescriptorSet id)
+    inline vk::ImageView GetImageView() const override
     {
-        mUIDescriptorID = id;
+        return mImageView.get();
     }
-    inline const std::filesystem::path &GetPath() const
+    inline vk::Sampler GetSampler() const override
     {
-        return mPath;
+        return mSampler.get();
+    }
+    inline const std::filesystem::path &GetImagePath() const override
+    {
+        return imagePath;
+    }
+    inline uint32_t GetWidth() const
+    {
+        return mWidth;
+    }
+    inline uint32_t GetHeight() const
+    {
+        return mHeight;
+    }
+    inline uint32_t GetChannels() const
+    {
+        return mChannels;
     }
 };
 } // namespace MEngine
@@ -58,11 +70,23 @@ template <> struct adl_serializer<MEngine::Texture>
 {
     static void to_json(json &j, const MEngine::Texture &texture)
     {
-        j = texture.GetPath().string();
+        auto &entity = static_cast<const MEngine::ITexture &>(texture);
+        j = entity;
+        j["id"] = texture.GetID();
+        j["imagePath"] = texture.GetImagePath().string();
+        j["width"] = texture.GetWidth();
+        j["height"] = texture.GetHeight();
+        j["channels"] = texture.GetChannels();
     }
     static void from_json(const json &j, MEngine::Texture &texture)
     {
-        texture.LoadTexture(j.get<std::string>());
+        auto &entity = static_cast<MEngine::ITexture &>(texture);
+        j.get_to(entity);
+        std::string imagePath = j.at("imagePath").get<std::string>();
+        texture.imagePath = imagePath;
+        texture.mWidth = j.at("width").get<uint32_t>();
+        texture.mHeight = j.at("height").get<uint32_t>();
+        texture.mChannels = j.at("channels").get<uint32_t>();
     }
 };
 } // namespace nlohmann

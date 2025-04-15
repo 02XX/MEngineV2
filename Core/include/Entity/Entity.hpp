@@ -5,13 +5,13 @@ namespace MEngine
 {
 template <typename TKey = UUID> class Entity : public virtual IEntity<TKey>
 {
-  private:
-    TKey mID{};
+  protected:
+    TKey mID = UUIDGenerator()();
     std::string mName = "DefaultEntity";
 
   public:
     Entity() = default;
-    Entity(TKey id, const std::string &name) : mID(id), mName(name){};
+    Entity(TKey id, const std::string &name) : mID(id), mName(name) {};
     ~Entity() override = default;
 
   public:

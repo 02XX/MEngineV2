@@ -10,11 +10,11 @@ PipelineLayoutManager::PipelineLayoutManager(std::shared_ptr<ILogger> logger, st
     // DescriptorSetLayout
     CreateGlobalDescriptorSetLayout();
     CreatePBRDescriptorSetLayout();
-
+    CreatePhongDescriptorSetLayout();
     // PipelineLayout
     CreateShadowDepthPipelineLayout();
-    CreateOpaquePBRPipelineLayout();
-    CreateOpaquePhongPipelineLayout();
+    CreatePBRPipelineLayout();
+    CreatePhongPipelineLayout();
     CreateTransparentPBRPipelineLayout();
     CreateTransparentPhongPipelineLayout();
     CreateScreenSpaceEffectPipelineLayout();
@@ -59,20 +59,17 @@ void PipelineLayoutManager::CreatePBRDescriptorSetLayout()
     }
     mLogger->Info("PBR descriptor set layout created successfully");
 }
+void PipelineLayoutManager::CreatePhongDescriptorSetLayout()
+{
+}
 // PipelineLayout
 void PipelineLayoutManager::CreateShadowDepthPipelineLayout()
 {
 }
-void PipelineLayoutManager::CreateOpaquePBRPipelineLayout()
+void PipelineLayoutManager::CreatePhongPipelineLayout()
 {
 }
-void PipelineLayoutManager::CreateOpaquePhongPipelineLayout()
-{
-}
-void PipelineLayoutManager::CreateTransparentPhongPipelineLayout()
-{
-}
-void PipelineLayoutManager::CreateTransparentPBRPipelineLayout()
+void PipelineLayoutManager::CreatePBRPipelineLayout()
 {
     vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo;
     std::vector<vk::DescriptorSetLayout> setLayouts{
@@ -87,7 +84,7 @@ void PipelineLayoutManager::CreateTransparentPBRPipelineLayout()
     {
         mLogger->Error("Failed to create pipeline layout for DefferPipelineLayout");
     }
-    mPipelineLayouts[PipelineLayoutType::Transparent] = std::move(pipelineLayout);
+    mPipelineLayouts[PipelineLayoutType::PBR] = std::move(pipelineLayout);
     mLogger->Info("Transparent pipeline layout created successfully");
 }
 void PipelineLayoutManager::CreateScreenSpaceEffectPipelineLayout()

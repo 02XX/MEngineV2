@@ -99,11 +99,12 @@ class PipelineLayoutManager final : public NoCopyable
     // DescriptorSetLayout
     void CreateGlobalDescriptorSetLayout();
     void CreatePBRDescriptorSetLayout();
+    void CreatePhongDescriptorSetLayout();
 
     // PipelineLayout
     void CreateShadowDepthPipelineLayout();
-    void CreateOpaquePBRPipelineLayout();
-    void CreateOpaquePhongPipelineLayout();
+    void CreatePBRPipelineLayout();
+    void CreatePhongPipelineLayout();
     void CreateTransparentPBRPipelineLayout();
     void CreateTransparentPhongPipelineLayout();
     void CreateScreenSpaceEffectPipelineLayout();

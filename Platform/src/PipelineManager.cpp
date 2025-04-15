@@ -10,8 +10,10 @@ PipelineManager::PipelineManager(std::shared_ptr<ILogger> logger, std::shared_pt
       mRenderPassManager(renderPassManager)
 {
     CreateShadowMapPipeline();
-    CreateForwardOpaquePipeline();
-    CreateForwardTransparentPipeline();
+    CreateForwardOpaquePBRPipeline();
+    CreateForwardOpaquePhongPipeline();
+    CreateForwardTransparentPBRPipeline();
+    CreateForwardTransparentPhongPipeline();
     CreateDeferredGBufferPipeline();
     CreateDeferredLightingPipeline();
     CreateScreenSpaceEffectSSAOPipeline();
@@ -39,10 +41,13 @@ PipelineManager::PipelineManager(std::shared_ptr<ILogger> logger, std::shared_pt
 void PipelineManager::CreateShadowMapPipeline()
 {
 }
-void PipelineManager::CreateForwardOpaquePipeline()
+void PipelineManager::CreateForwardOpaquePBRPipeline()
 {
 }
-void PipelineManager::CreateForwardTransparentPipeline()
+void PipelineManager::CreateForwardOpaquePhongPipeline()
+{
+}
+void PipelineManager::CreateForwardTransparentPBRPipeline()
 {
     // ========== 1. 顶点输入状态 ==========
     auto vertexBindingDescription = Vertex::GetVertexInputBindingDescription();
@@ -159,7 +164,7 @@ void PipelineManager::CreateForwardTransparentPipeline()
         .setPInputAssemblyState(&inputAssemblyInfo)
         .setPVertexInputState(&vertexInputInfo)
         .setStages(shaderStages)
-        .setLayout(mPipelineLayoutManager->GetPipelineLayout(PipelineLayoutType::Transparent))
+        .setLayout(mPipelineLayoutManager->GetPipelineLayout(PipelineLayoutType::PBR))
         .setRenderPass(mRenderPassManager->GetRenderPass(RenderPassType::Transparent))
         .setSubpass(0)
         .setPRasterizationState(&rasterizationInfo)
@@ -172,8 +177,11 @@ void PipelineManager::CreateForwardTransparentPipeline()
     {
         mLogger->Error("Failed to create ForwardTransparent pipeline");
     }
-    mPipelines[PipelineType::ForwardTransparent] = std::move(pipeline.value);
+    mPipelines[PipelineType::ForwardTransparentPBR] = std::move(pipeline.value);
     mLogger->Info("Create ForwardTransparent pipeline success");
+}
+void PipelineManager::CreateForwardTransparentPhongPipeline()
+{
 }
 void PipelineManager::CreateDeferredGBufferPipeline()
 {

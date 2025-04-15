@@ -75,8 +75,10 @@ class PipelineManager final : public NoCopyable
 
   private:
     void CreateShadowMapPipeline();
-    void CreateForwardOpaquePipeline();
-    void CreateForwardTransparentPipeline();
+    void CreateForwardOpaquePBRPipeline();
+    void CreateForwardOpaquePhongPipeline();
+    void CreateForwardTransparentPBRPipeline();
+    void CreateForwardTransparentPhongPipeline();
     void CreateDeferredGBufferPipeline();
     void CreateDeferredLightingPipeline();
     void CreateScreenSpaceEffectSSAOPipeline();

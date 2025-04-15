@@ -74,14 +74,16 @@ class RenderPassManager final : public NoCopyable
 
   private:
     void CreateShadowDepthRenderPass();
-    void CreateMainRenderPass();
+    void CreateDeferredCompositionRenderPass();
+    void CreateForwardCompositionRenderPass();
     void CreateSkyRenderPass();
     void CreateTransparentRenderPass();
     void CreatePostProcessRenderPass();
     void CreateUIRenderPass();
 
     void CreateShadowDepthFrameBuffer();
-    void CreateMainFrameBuffer();
+    void CreateDeferredCompositionFrameBuffer();
+    void CreateForwardCompositionFrameBuffer();
     void CreateSkyFrameBuffer();
     void CreateTransparentFrameBuffer();
     void CreatePostProcessFrameBuffer();

@@ -11,14 +11,16 @@ RenderPassManager::RenderPassManager(std::shared_ptr<ILogger> logger, std::share
 {
 
     CreateShadowDepthRenderPass();
-    CreateMainRenderPass();
+    CreateDeferredCompositionRenderPass();
+    CreateForwardCompositionRenderPass();
     CreateSkyRenderPass();
     CreateTransparentRenderPass();
     CreatePostProcessRenderPass();
     CreateUIRenderPass();
 
     CreateShadowDepthFrameBuffer();
-    CreateMainFrameBuffer();
+    CreateDeferredCompositionFrameBuffer();
+    CreateForwardCompositionFrameBuffer();
     CreateSkyFrameBuffer();
     CreateTransparentFrameBuffer();
     CreatePostProcessFrameBuffer();
@@ -27,7 +29,10 @@ RenderPassManager::RenderPassManager(std::shared_ptr<ILogger> logger, std::share
 void RenderPassManager::CreateShadowDepthRenderPass()
 {
 }
-void RenderPassManager::CreateMainRenderPass()
+void RenderPassManager::CreateDeferredCompositionRenderPass()
+{
+}
+void RenderPassManager::CreateForwardCompositionRenderPass()
 {
     std::vector<vk::AttachmentDescription> attachments{
         // 0: Albedo
@@ -186,7 +191,10 @@ void RenderPassManager::CreateUIRenderPass()
 void RenderPassManager::CreateShadowDepthFrameBuffer()
 {
 }
-void RenderPassManager::CreateMainFrameBuffer()
+void RenderPassManager::CreateDeferredCompositionFrameBuffer()
+{
+}
+void RenderPassManager::CreateForwardCompositionFrameBuffer()
 {
 }
 void RenderPassManager::CreateSkyFrameBuffer()
@@ -312,7 +320,8 @@ void RenderPassManager::RecreateFrameBuffer(uint32_t width, uint32_t height)
     mHeight = height;
     mContext->GetDevice().waitIdle();
     CreateShadowDepthFrameBuffer();
-    CreateMainFrameBuffer();
+    CreateDeferredCompositionFrameBuffer();
+    CreateForwardCompositionFrameBuffer();
     CreateSkyFrameBuffer();
     CreateTransparentFrameBuffer();
     CreatePostProcessFrameBuffer();
