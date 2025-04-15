@@ -508,9 +508,12 @@ void UI::SceneViewWindow()
     {
         mSceneViewPortWidth = width;
         mSceneViewPortHeight = height;
-        // mContext->GetDevice().waitIdle();
-        // mRenderPassManager->RecreateFrameBuffer(width, height);
-        // SetSceneViewPort();
+        if (mSceneViewPortWidth != 0 && mSceneViewPortHeight != 0)
+        {
+            mContext->GetDevice().waitIdle();
+            mRenderPassManager->RecreateFrameBuffer(width, height);
+            SetSceneViewPort();
+        }
     }
     else
     {
