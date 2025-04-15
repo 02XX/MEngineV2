@@ -20,7 +20,7 @@
 
 namespace MEngine
 {
-class MaterialRepository : public IRepository<PBRMaterial, PBRMaterialMetadata, boost::uuids::uuid>
+class MaterialRepository : public IRepository<PBRMaterial>
 {
   private:
     // DI

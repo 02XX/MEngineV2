@@ -23,13 +23,7 @@ enum class RenderType
                              // ForwardTransparentPhong
     Deferred, // RenderPass: DeferredComposition,subpass0, subpass1,  PipelineLayout: PBR, PipelineType: DeferredGBuffer
 };
-class IMaterialMetadata : public IMetadata<UUID>
-{
-  public:
-    RenderType renderType = RenderType::ForwardOpaquePBR; // 渲染类型
-};
-
-class IMaterial : public IEntity
+template <typename TKey = UUID> class IMaterial : public virtual IEntity<TKey>
 {
   protected:
   public:

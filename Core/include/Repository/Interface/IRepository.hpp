@@ -4,16 +4,14 @@
 #include "Repository/Interface/IReadOnlyRepository.hpp"
 #include "Repository/Interface/IStorage.hpp"
 #include "Repository/Interface/IWriteRepository.hpp"
-#include "boost/uuid.hpp"
 
 namespace MEngine
 {
-using UUID = boost::uuids::uuid;
-template <typename Entity, typename Metadata, typename ID = UUID>
-    requires std::derived_from<Entity, IEntity> && std::derived_from<Metadata, IMetadata<ID>>
-class IRepository : public IReadOnlyRepository<Entity, Metadata, ID>,
-                    public IWriteRepository<Entity, Metadata, ID>,
-                    public IStorage<Entity>
+template <typename TEntity, typename TKey = UUID>
+    requires std::derived_from<TEntity, IEntity<TKey>>
+class IRepository : public IReadOnlyRepository<TEntity, TKey>,
+                    public IWriteRepository<TEntity, TKey>,
+                    public IStorage<TEntity>
 {
   public:
     virtual ~IRepository() = default;

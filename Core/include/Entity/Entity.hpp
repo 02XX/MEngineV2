@@ -3,31 +3,31 @@
 
 namespace MEngine
 {
-class Entity : public IEntity
+template <typename TKey = UUID> class Entity : public virtual IEntity<TKey>
 {
   private:
-    uint32_t mID{};
+    TKey mID{};
     std::string mName = "DefaultEntity";
 
   public:
     Entity() = default;
-    Entity(uint32_t id, const std::string &name) : mID(id), mName(name) {};
+    Entity(TKey id, const std::string &name) : mID(id), mName(name){};
     ~Entity() override = default;
 
   public:
-    inline void SetID(uint32_t id) override
+    inline virtual void SetID(const TKey &id) override
     {
         mID = id;
     }
-    inline uint32_t GetID() const override
+    inline virtual TKey GetID() const override
     {
         return mID;
     }
-    inline void SetName(const std::string &name) override
+    inline virtual void SetName(const std::string &name) override
     {
         mName = name;
     }
-    inline const std::string &GetName() const override
+    inline virtual const std::string &GetName() const override
     {
         return mName;
     }

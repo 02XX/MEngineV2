@@ -3,6 +3,8 @@
 #include "BufferFactory.hpp"
 #include "CommandBuffeManager.hpp"
 #include "DescriptorManager.hpp"
+#include "Entity.hpp"
+#include "Entity/Entity.hpp"
 #include "ImageFactory.hpp"
 #include "Interface/IMaterial.hpp"
 #include "PipelineManager.hpp"
@@ -21,143 +23,152 @@ struct PBRParameters
 {
     glm::vec3 albedo = {1.0f, 1.0f, 1.0f};
     float metallic = 0.0f;
-    float roughness = 0.5f;
+    float roughness = 0.5F;
     float ao = 1.0f;
     float emissive = 0.0f;
     // TODO: 添加更多参数
 };
 struct PBRTextureFlag
 {
-    alignas(4) bool useAlbedoMap = false;
-    alignas(4) bool useNormalMap = false;
-    alignas(4) bool useMetallicRoughnessMap = false;
-    alignas(4) bool useAOMap = false;
-    alignas(4) bool useEmissiveMap = false;
+    uint32_t useAlbedoMap = 0; // 与GLSL的bool字节一致 4字节
+    uint32_t useNormalMap = 0;
+    uint32_t useMetallicRoughnessMap = 0;
+    uint32_t useAOMap = 0;
+    uint32_t useEmissiveMap = 0;
 };
 struct PBRParams
 {
     PBRParameters parameters;
     PBRTextureFlag textureFlag;
 };
-struct PBRMaterialTextures
+class PBRMaterial final : public IMaterial<>, public Entity<>
 {
-    std::shared_ptr<Texture> albedoMap = nullptr;
-    std::shared_ptr<Texture> normalMap = nullptr;
-    std::shared_ptr<Texture> metallicRoughnessMap = nullptr;
-    std::shared_ptr<Texture> aoMap = nullptr;
-    std::shared_ptr<Texture> emissiveMap = nullptr;
-};
-class PBRMaterialMetadata : public IMaterialMetadata
-{
-  public:
-    glm::vec3 albedo = {1.0f, 1.0f, 1.0f};
-    float metallic = 0.0f;
-    float roughness = 0.5f;
-    float ao = 1.0f;
-    float emissive = 0.0f;
+  private:
+    PBRParams mMaterialParams;
     // 外键
     UUID AlbedoMapID{};
     UUID NormalMapID{};
     UUID MetallicRoughnessMapID{};
     UUID AOMapID{};
     UUID EmissiveMapID{};
-};
-class PBRMaterial final : public IMaterial
-{
-  private:
-    // DI
-    std::shared_ptr<Context> mContext;
-    std::shared_ptr<TextureManager> mTextureManager;
-    std::shared_ptr<BufferFactory> mBufferFactory;
-    std::shared_ptr<PipelineLayoutManager> mPipelineLayoutManager;
-    std::shared_ptr<DescriptorManager> mDescriptorManager;
 
   private:
-    std::string mMaterialName = "PBRMaterial";
-    uint32_t mMaterialID = 0;
-    std::filesystem::path mMaterialPath;
-    PBRParams mMaterialParams{};
-    PBRMaterialTextures mMaterialTextures{};
-    PipelineType mPipelineType = PipelineType::ForwardOpaque;
-
   private:
+    // Vulkan Resources
     UniqueBuffer mMaterialParamsUBO;
     vk::UniqueDescriptorSet mMaterialDescriptorSet;
 
   public:
-    PBRMaterial(std::shared_ptr<Context> context, std::shared_ptr<TextureManager> textureManager,
-                std::shared_ptr<BufferFactory> bufferFactory,
-                std::shared_ptr<PipelineLayoutManager> pipelineLayoutManager,
-                std::shared_ptr<DescriptorManager> descriptorManager)
-        : mContext(context), mTextureManager(textureManager), mBufferFactory(bufferFactory),
-          mPipelineLayoutManager(pipelineLayoutManager), mDescriptorManager(descriptorManager)
+    // Getters
+    RenderType GetRenderType() const override;
+    inline const PBRParams &GetMaterialParams() const
     {
+        return mMaterialParams;
     }
-    ~PBRMaterial() override = default;
+    inline const UUID &GetAlbedoMapID() const
+    {
+        return AlbedoMapID;
+    }
+    inline const UUID &GetNormalMapID() const
+    {
+        return NormalMapID;
+    }
+    inline const UUID &GetMetallicRoughnessMapID() const
+    {
+        return MetallicRoughnessMapID;
+    }
+    inline const UUID &GetAOMapID() const
+    {
+        return AOMapID;
+    }
+    inline const UUID &GetEmissiveMapID() const
+    {
+        return EmissiveMapID;
+    }
+    inline void SetMaterialParams(const PBRParams &params)
+    {
+        mMaterialParams = params;
+    }
+    inline void SetAlbedoMapID(const UUID &id)
+    {
+        AlbedoMapID = id;
+    }
+    inline void SetNormalMapID(const UUID &id)
+    {
+        NormalMapID = id;
+    }
+    inline void SetMetallicRoughnessMapID(const UUID &id)
+    {
+        MetallicRoughnessMapID = id;
+    }
+    inline void SetAOMapID(const UUID &id)
+    {
+        AOMapID = id;
+    }
+    inline void SetEmissiveMapID(const UUID &id)
+    {
+        EmissiveMapID = id;
+    }
+    // Setters
+    void SetRenderType(RenderType type) override;
+    // Vulkan Resources
+    vk::DescriptorSet GetDescriptorSet() const override;
 };
 } // namespace MEngine
 
 namespace nlohmann
 {
-template <> struct adl_serializer<MEngine::PBRMaterialMetadata>
+template <> struct adl_serializer<MEngine::PBRMaterial>
 {
-    static void to_json(json &j, const MEngine::PBRMaterialMetadata &m)
+    static void to_json(json &j, const MEngine::PBRMaterial &m)
     {
-        auto pipelineTypeStr = magic_enum::enum_name(m.pipelineType);
-        j["pipelineType"] = pipelineTypeStr;
-        j["parameters"]["albedo"] = {m.albedo.x, m.albedo.y, m.albedo.z};
-        j["parameters"]["metallic"] = m.metallic;
-        j["parameters"]["roughness"] = m.roughness;
-        j["parameters"]["ao"] = m.ao;
-        j["textures"].push_back(
-            {{"type", "albedoMap"}, {"path", m.albedoMapPath.has_value() ? m.albedoMapPath.value() : ""}});
-        j["textures"].push_back(
-            {{"type", "normalMap"}, {"path", m.normalMapPath.has_value() ? m.normalMapPath.value() : ""}});
-        j["textures"].push_back(
-            {{"type", "metallicRoughnessMap"},
-             {"path", m.metallicRoughnessMapPath.has_value() ? m.metallicRoughnessMapPath.value() : ""}});
-        j["textures"].push_back({{"type", "aoMap"}, {"path", m.aoMapPath.has_value() ? m.aoMapPath.value() : ""}});
-        j["textures"].push_back(
-            {{"type", "emissiveMap"}, {"path", m.emissiveMapPath.has_value() ? m.emissiveMapPath.value() : ""}});
+        auto renderType = magic_enum::enum_name(m.GetRenderType());
+        j["RenderType"] = renderType;
+        j["Albedo"] = {m.GetMaterialParams().parameters.albedo.x, m.GetMaterialParams().parameters.albedo.y,
+                       m.GetMaterialParams().parameters.albedo.z};
+        j["Metallic"] = m.GetMaterialParams().parameters.metallic;
+        j["Roughness"] = m.GetMaterialParams().parameters.roughness;
+        j["AO"] = m.GetMaterialParams().parameters.ao;
+        j["Emissive"] = m.GetMaterialParams().parameters.emissive;
+        j["Textures"].push_back({"AlbedoMap", m.GetAlbedoMapID()});
+        j["Textures"].push_back({"NormalMap", m.GetNormalMapID()});
+        j["Textures"].push_back({"MetallicRoughnessMap", m.GetMetallicRoughnessMapID()});
+        j["Textures"].push_back({"AOMap", m.GetAOMapID()});
+        j["Textures"].push_back({"EmissiveMap", m.GetEmissiveMapID()});
     }
-    static void from_json(const json &j, MEngine::PBRMaterialMetadata &m)
+    static void from_json(const json &j, MEngine::PBRMaterial &m)
     {
-        auto pipelineTypeStr = j["pipelineType"].get<std::string>();
-        auto pipelineTypeOpt = magic_enum::enum_cast<MEngine::PipelineType>(pipelineTypeStr);
-        if (pipelineTypeOpt.has_value())
+        auto renderType = j.at("RenderType").get<std::string>();
+        m.SetRenderType(magic_enum::enum_cast<MEngine::RenderType>(renderType).value());
+        auto albedoArray = j.at("Albedo").get<std::array<float, 3>>();
+        glm::vec3 albedo(albedoArray[0], albedoArray[1], albedoArray[2]);
+        m.SetMaterialParams({albedo, j.at("Metallic").get<float>(), j.at("Roughness").get<float>(),
+                             j.at("AO").get<float>(), j.at("Emissive").get<float>()});
+        auto textures = j.at("Textures");
+        for (const auto &texture : textures)
         {
-            m.pipelineType = pipelineTypeOpt.value();
-        }
-        else
-        {
-            throw std::runtime_error("Invalid pipeline type: " + pipelineTypeStr);
-        }
-        m.albedo.x = j["parameters"]["albedo"][0].get<float>();
-        m.albedo.y = j["parameters"]["albedo"][1].get<float>();
-        m.albedo.z = j["parameters"]["albedo"][2].get<float>();
-        m.metallic = j["parameters"]["metallic"].get<float>();
-        m.roughness = j["parameters"]["roughness"].get<float>();
-        m.ao = j["parameters"]["ao"].get<float>();
-        std::pair<std::string, std::string> texture;
-        for (const auto &textureJson : j["textures"])
-        {
-            texture.first = textureJson["type"].get<std::string>();
-            texture.second = textureJson["path"].get<std::string>();
-            if (texture.first == "albedoMap")
-                m.albedoMapPath =
-                    texture.second == "" ? std::nullopt : std::optional<std::filesystem::path>(texture.second);
-            else if (texture.first == "normalMap")
-                m.normalMapPath =
-                    texture.second == "" ? std::nullopt : std::optional<std::filesystem::path>(texture.second);
-            else if (texture.first == "metallicRoughnessMap")
-                m.metallicRoughnessMapPath =
-                    texture.second == "" ? std::nullopt : std::optional<std::filesystem::path>(texture.second);
-            else if (texture.first == "aoMap")
-                m.aoMapPath =
-                    texture.second == "" ? std::nullopt : std::optional<std::filesystem::path>(texture.second);
-            else if (texture.first == "emissiveMap")
-                m.emissiveMapPath =
-                    texture.second == "" ? std::nullopt : std::optional<std::filesystem::path>(texture.second);
+            auto type = texture.at("Type").get<std::string>();
+            auto textureID = texture.at("ID").get<MEngine::UUID>();
+            if (type == "AlbedoMap")
+            {
+                m.SetAlbedoMapID(textureID);
+            }
+            else if (type == "NormalMap")
+            {
+                m.SetNormalMapID(textureID);
+            }
+            else if (type == "MetallicRoughnessMap")
+            {
+                m.SetMetallicRoughnessMapID(textureID);
+            }
+            else if (type == "AOMap")
+            {
+                m.SetAOMapID(textureID);
+            }
+            else if (type == "EmissiveMap")
+            {
+                m.SetEmissiveMapID(textureID);
+            }
         }
     }
 };

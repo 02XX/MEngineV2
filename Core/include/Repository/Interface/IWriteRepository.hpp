@@ -5,14 +5,14 @@
 #include <vector>
 namespace MEngine
 {
-template <typename Entity, typename Metadata, typename ID>
-    requires std::derived_from<Entity, IEntity> && std::derived_from<Metadata, IMetadata<ID>>
+template <typename TEntity, typename TKey = UUID>
+    requires std::derived_from<TEntity, IEntity<TKey>>
 class IWriteRepository
 {
   public:
     virtual ~IWriteRepository() = default;
-    virtual std::shared_ptr<Entity> Create(const Metadata &metadata) = 0;
-    virtual bool Update(const ID &id, const Metadata &delta) = 0;
-    virtual bool Delete(const ID &id) = 0;
+    virtual std::shared_ptr<TEntity> Create() = 0;
+    virtual bool Update(const TKey &id, const TEntity &delta) = 0;
+    virtual bool Delete(const TKey &id) = 0;
 };
 } // namespace MEngine

@@ -5,14 +5,14 @@
 #include <vector>
 namespace MEngine
 {
-template <typename Entity, typename Metadata, typename ID>
-    requires std::derived_from<Entity, IEntity> && std::derived_from<Metadata, IMetadata<ID>>
+template <typename TEntity, typename TKey = UUID>
+    requires std::derived_from<TEntity, IEntity<TKey>>
 class IReadOnlyRepository
 {
   public:
     virtual ~IReadOnlyRepository() = default;
-    virtual Entity *Get(const ID &id) = 0;
-    virtual std::vector<Entity *> GetAll() = 0;
-    virtual std::vector<Entity *> GetByName(const std::string &name) = 0;
+    virtual TEntity *Get(const TKey &id) = 0;
+    virtual std::vector<TEntity *> GetAll() = 0;
+    virtual std::vector<TEntity *> GetByName(const std::string &name) = 0;
 };
 } // namespace MEngine
