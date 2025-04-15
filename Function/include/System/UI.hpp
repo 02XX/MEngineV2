@@ -1,8 +1,7 @@
 #pragma once
-#include "Entity/PBRMaterial.hpp"
-#define NOMINMAX
 #include "CommandBuffeManager.hpp"
 #include "Context.hpp"
+#include "Entity/PBRMaterial.hpp"
 #include "Entity/Texture.hpp"
 #include "Image.hpp"
 #include "ImageFactory.hpp"
@@ -16,6 +15,7 @@
 #include "imgui_impl_sdl3.h"
 #include "imgui_impl_vulkan.h"
 #include "imgui_internal.h"
+
 
 #include <cstdint>
 #include <memory>

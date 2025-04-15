@@ -105,8 +105,6 @@ class PipelineLayoutManager final : public NoCopyable
     void CreateShadowDepthPipelineLayout();
     void CreatePBRPipelineLayout();
     void CreatePhongPipelineLayout();
-    void CreateTransparentPBRPipelineLayout();
-    void CreateTransparentPhongPipelineLayout();
     void CreateScreenSpaceEffectPipelineLayout();
     void CreateSkyPipelineLayout();
     void CreateParticlePipelineLayout();

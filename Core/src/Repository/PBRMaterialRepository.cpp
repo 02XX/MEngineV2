@@ -30,10 +30,19 @@ bool PBRMaterialRepository::Update(const UUID &id, const PBRMaterial &delta)
         material->mAOMapID = delta.mAOMapID;
         material->mEmissiveMapID = delta.mEmissiveMapID;
         // 更新材质的UBO
+        if (material->mMaterialParamsUBO == nullptr)
+        {
+            material->mMaterialParamsUBO = mBufferFactory->CreateBuffer(BufferType::Uniform, sizeof(PBRParams));
+        }
         auto pbrDescriptorLayoutBindings = mPipelineLayoutManager->GetPBRDescriptorLayoutBindings();
         auto mapped = material->mMaterialParamsUBO->GetAllocationInfo().pMappedData;
         memcpy(mapped, &material->mMaterialParams, sizeof(PBRParams));
         // 更新材质的DescriptorSet
+        if (!material->mMaterialDescriptorSet)
+        {
+            material->mMaterialDescriptorSet = std::move(mDescriptorManager->AllocateUniqueDescriptorSet(
+                {mPipelineLayoutManager->GetPBRDescriptorSetLayout()})[0]);
+        }
         vk::WriteDescriptorSet writer;
         vk::DescriptorBufferInfo bufferInfo;
         bufferInfo.setBuffer(material->mMaterialParamsUBO->GetHandle()).setOffset(0).setRange(sizeof(PBRParams));

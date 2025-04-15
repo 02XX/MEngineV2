@@ -1,5 +1,4 @@
 #include "System/UI.hpp"
-#include "Entity/PBRMaterial.hpp"
 
 namespace MEngine
 {
@@ -509,9 +508,9 @@ void UI::SceneViewWindow()
     {
         mSceneViewPortWidth = width;
         mSceneViewPortHeight = height;
-        mContext->GetDevice().waitIdle();
-        mRenderPassManager->RecreateFrameBuffer(width, height);
-        SetSceneViewPort();
+        // mContext->GetDevice().waitIdle();
+        // mRenderPassManager->RecreateFrameBuffer(width, height);
+        // SetSceneViewPort();
     }
     else
     {

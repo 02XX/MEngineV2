@@ -17,8 +17,6 @@ class TextureRepository final : public Repository<Texture>
     std::shared_ptr<ImageFactory> mImageFactory;
     std::shared_ptr<SamplerManager> mSamplerManager;
 
-  private:
-    std::shared_ptr<Texture> defaultTexture; // 默认纹理
   public:
     TextureRepository(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context,
                       std::shared_ptr<IConfigure> configure, std::shared_ptr<ImageFactory> imageFactory,

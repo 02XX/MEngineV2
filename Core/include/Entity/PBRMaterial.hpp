@@ -54,8 +54,12 @@ class PBRMaterial final : public IMaterial, public Entity<>
 
   public:
     PBRMaterial();
+    ~PBRMaterial() = default;
     // Getters
-    RenderType GetRenderType() const override;
+    inline RenderType GetRenderType() const override
+    {
+        return mRenderType;
+    }
     inline const PBRParams &GetMaterialParams() const
     {
         return mMaterialParams;
@@ -85,7 +89,10 @@ class PBRMaterial final : public IMaterial, public Entity<>
         mRenderType = renderType;
     }
     // Vulkan Resources
-    vk::DescriptorSet GetDescriptorSet() const override;
+    vk::DescriptorSet GetDescriptorSet() const override
+    {
+        return mMaterialDescriptorSet.get();
+    }
 };
 } // namespace MEngine
 
@@ -127,7 +134,7 @@ template <> struct adl_serializer<MEngine::PBRMaterial>
             if (type == "AlbedoMap")
             {
                 auto textureID = texture.at("ID").get<MEngine::UUID>();
-                if (m.mAlbedoMapID.is_nil())
+                if (m.mAlbedoMapID.IsEmpty())
                 {
                     m.mMaterialParams.textureFlag.useAlbedoMap = 1;
                 }
@@ -135,7 +142,7 @@ template <> struct adl_serializer<MEngine::PBRMaterial>
             }
             else if (type == "NormalMap")
             {
-                if (m.mNormalMapID.is_nil())
+                if (m.mNormalMapID.IsEmpty())
                 {
                     m.mMaterialParams.textureFlag.useNormalMap = 1;
                 }
@@ -143,7 +150,7 @@ template <> struct adl_serializer<MEngine::PBRMaterial>
             }
             else if (type == "MetallicRoughnessMap")
             {
-                if (m.mMetallicRoughnessMapID.is_nil())
+                if (m.mMetallicRoughnessMapID.IsEmpty())
                 {
                     m.mMaterialParams.textureFlag.useMetallicRoughnessMap = 1;
                 }
@@ -151,7 +158,7 @@ template <> struct adl_serializer<MEngine::PBRMaterial>
             }
             else if (type == "AOMap")
             {
-                if (m.mAOMapID.is_nil())
+                if (m.mAOMapID.IsEmpty())
                 {
                     m.mMaterialParams.textureFlag.useAOMap = 1;
                 }
@@ -159,7 +166,7 @@ template <> struct adl_serializer<MEngine::PBRMaterial>
             }
             else if (type == "EmissiveMap")
             {
-                if (m.mEmissiveMapID.is_nil())
+                if (m.mEmissiveMapID.IsEmpty())
                 {
                     m.mMaterialParams.textureFlag.useEmissiveMap = 1;
                 }

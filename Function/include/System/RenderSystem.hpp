@@ -38,9 +38,6 @@ class RenderSystem final : public System
 {
   private:
     // DI
-    std::shared_ptr<ILogger> mLogger;
-    std::shared_ptr<Context> mContext;
-    std::shared_ptr<entt::registry> mRegistry;
 
     std::shared_ptr<RenderPassManager> mRenderPassManager;
     std::shared_ptr<PipelineLayoutManager> mPipelineLayoutManager;

@@ -1,7 +1,6 @@
 #pragma once
 #include "IEntity.hpp"
 #include <vulkan/vulkan.hpp>
-using namespace boost::uuids;
 namespace MEngine
 {
 class ITexture : public virtual IEntity<UUID>

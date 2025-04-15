@@ -31,9 +31,10 @@ class Repository : public IRepository<TEntity, TKey>
     virtual TEntity *Create() override
     {
         auto entity = std::make_unique<TEntity>();
-        mEntities[entity->GetID()] = std::move(entity);
-        Update(entity->GetID(), *Get(entity->GetID()));
-        return mEntities[entity->GetID()].get();
+        auto id = entity->GetID();
+        Update(id, *Get(id));
+        mEntities[id] = std::move(entity);
+        return mEntities[id].get();
     }
     virtual TEntity *Get(const TKey &id) override
     {

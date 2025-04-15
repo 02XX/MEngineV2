@@ -45,8 +45,6 @@ add_subdirectory(3rdParty/glm)
 add_subdirectory(3rdParty/magic_enum)
 add_subdirectory(3rdParty/di)
 add_subdirectory(3rdParty/json)
-set(BOOST_ROOT "${CMAKE_SOURCE_DIR}/3rdParty/boost")
-add_subdirectory(3rdParty/boost)
 # add_subdirectory(3rdParty/rttr)
 
 

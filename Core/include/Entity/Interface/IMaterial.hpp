@@ -6,7 +6,6 @@
 
 namespace MEngine
 {
-using UUID = boost::uuids::uuid;
 enum class RenderType
 {
     ForwardOpaquePBR, // RenderPass: ForwardComposition, subpass0, PipelineLayout: PBR, PipelineType: ForwardOpaquePBR

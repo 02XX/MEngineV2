@@ -15,8 +15,6 @@ PipelineLayoutManager::PipelineLayoutManager(std::shared_ptr<ILogger> logger, st
     CreateShadowDepthPipelineLayout();
     CreatePBRPipelineLayout();
     CreatePhongPipelineLayout();
-    CreateTransparentPBRPipelineLayout();
-    CreateTransparentPhongPipelineLayout();
     CreateScreenSpaceEffectPipelineLayout();
     CreateSkyPipelineLayout();
     CreateParticlePipelineLayout();

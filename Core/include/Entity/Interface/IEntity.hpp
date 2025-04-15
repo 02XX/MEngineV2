@@ -1,12 +1,12 @@
 #pragma once
-#include "NoCopyable.hpp"
-#include "boost/uuid.hpp"
+#include "UUID.hpp"
 #include "nlohmann/adl_serializer.hpp"
 #include "nlohmann/json.hpp"
+
 namespace MEngine
 {
-using UUID = boost::uuids::uuid;
-using UUIDGenerator = boost::uuids::random_generator;
+using UUID = UUID;
+using UUIDGenerator = UUIDGenerator;
 template <typename TKey = UUID> class IEntity
 {
   public:
@@ -24,12 +24,11 @@ template <> struct adl_serializer<MEngine::UUID>
 {
     static void to_json(json &j, const MEngine::UUID &uuid)
     {
-        j = boost::uuids::to_string(uuid);
+        j = uuid.ToString();
     }
     static void from_json(const json &j, MEngine::UUID &uuid)
     {
-        boost::uuids::string_generator gen;
-        uuid = gen(j.get<std::string>());
+        uuid = MEngine::UUID(j.get<std::string>());
     }
 };
 template <typename TKey> struct adl_serializer<MEngine::IEntity<TKey>>

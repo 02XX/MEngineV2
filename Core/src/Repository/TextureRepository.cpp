@@ -7,20 +7,23 @@ TextureRepository::TextureRepository(std::shared_ptr<ILogger> logger, std::share
                                      std::shared_ptr<SamplerManager> samplerManager)
     : Repository<Texture>(logger, context, configure), mImageFactory(imageFactory), mSamplerManager(samplerManager)
 {
-    defaultTexture = std::shared_ptr<Texture>(Create());
+    auto defaultTexture = std::unique_ptr<Texture>(Create());
+    mEntities[UUID{}] = std::move(defaultTexture);
 }
 Texture *TextureRepository::Create()
 {
     auto texture = std::make_unique<Texture>();
     auto defaultImagePath = mConfigure->GetJson()["Texture"]["Default"].get<std::string>();
-    if (!CheckValidate(defaultImagePath))
+    std::filesystem::path fullPath = std::filesystem::current_path() / "Resource" / "Material" / defaultImagePath;
+    if (!CheckValidate(fullPath))
     {
         return nullptr;
     }
-    texture->imagePath = defaultImagePath;
-    mEntities[texture->GetID()] = std::move(texture);
-    Update(texture->GetID(), *Get(texture->GetID()));
-    return mEntities[texture->GetID()].get();
+    texture->imagePath = fullPath;
+    auto id = texture->GetID();
+    mEntities[id] = std::move(texture);
+    Update(id, *Get(id));
+    return mEntities[id].get();
 }
 bool TextureRepository::Update(const UUID &id, const Texture &delta)
 {

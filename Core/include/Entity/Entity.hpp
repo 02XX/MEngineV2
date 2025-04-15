@@ -11,8 +11,7 @@ template <typename TKey = UUID> class Entity : public virtual IEntity<TKey>
 
   public:
     Entity() = default;
-    Entity(TKey id, const std::string &name) : mID(id), mName(name) {};
-    ~Entity() override = default;
+    virtual ~Entity() = default;
 
   public:
     inline virtual void SetID(const TKey &id) override

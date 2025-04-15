@@ -25,7 +25,6 @@
 #include "SamplerManager.hpp"
 #include "ShaderManager.hpp"
 #include "SpdLogger.hpp"
-#include "boost/uuid.hpp"
 
 #include "Configure.hpp"
 #include "Repository/TextureRepository.hpp"
@@ -47,16 +46,6 @@ namespace MEngine
 {
 class Application final : public NoCopyable
 {
-
-    // BasicGeometryEntityManager(std::shared_ptr<ILogger> mLogger, std::shared_ptr<Context> context,
-    //     std::shared_ptr<PipelineManager> pipelineManager,
-    //     std::shared_ptr<PipelineLayoutManager> pipelineLayoutManager,
-    //     std::shared_ptr<DescriptorManager> descriptorManager,
-    //     std::shared_ptr<SamplerManager> samplerManager,
-    //     std::shared_ptr<IRepository<IMaterial>> materialRepository,
-    //     std::shared_ptr<ImageFactory> imageFactory, std::shared_ptr<BufferFactory> bufferFactory,
-    //     std::shared_ptr<BasicGeometryFactory> basicGeometryFactory,
-    //     std::shared_ptr<IRepository<ITexture>> textureRepository);
   private:
     bool mIsRunning;
     // DI
