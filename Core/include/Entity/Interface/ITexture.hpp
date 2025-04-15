@@ -11,11 +11,9 @@
 using namespace boost::uuids;
 namespace MEngine
 {
-class ITextureMetadata
+class ITextureMetadata : IMetadata
 {
   public:
-    uuid ID = random_generator()();
-    std::string textureName = "DefaultTexture";
     std::filesystem::path imagePath{};
 };
 class ITexture : public IEntity

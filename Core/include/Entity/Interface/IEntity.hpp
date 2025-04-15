@@ -1,10 +1,15 @@
 #pragma once
 
 #include "NoCopyable.hpp"
-
 namespace MEngine
 {
-class IEntity : public NoCopyable
+template <typename T> class IMetadata
+{
+  public:
+    T ID{};
+    std::string materialName = "DefaultMaterial";
+};
+template <typename ID> class IEntity
 {
   public:
     virtual ~IEntity() = default;
@@ -12,5 +17,6 @@ class IEntity : public NoCopyable
     virtual uint32_t GetID() const = 0;
     virtual void SetName(const std::string &name) = 0;
     virtual const std::string &GetName() const = 0;
+    virtual IMetadata<ID> *GetMetadata() = 0;
 };
 } // namespace MEngine

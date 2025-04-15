@@ -56,11 +56,11 @@ class PBRMaterialMetadata : public IMaterialMetadata
     float ao = 1.0f;
     float emissive = 0.0f;
     // 外键
-    uuid AlbedoMapID{};
-    uuid NormalMapID{};
-    uuid MetallicRoughnessMapID{};
-    uuid AOMapID{};
-    uuid EmissiveMapID{};
+    UUID AlbedoMapID{};
+    UUID NormalMapID{};
+    UUID MetallicRoughnessMapID{};
+    UUID AOMapID{};
+    UUID EmissiveMapID{};
 };
 class PBRMaterial final : public IMaterial
 {
@@ -88,55 +88,12 @@ class PBRMaterial final : public IMaterial
     PBRMaterial(std::shared_ptr<Context> context, std::shared_ptr<TextureManager> textureManager,
                 std::shared_ptr<BufferFactory> bufferFactory,
                 std::shared_ptr<PipelineLayoutManager> pipelineLayoutManager,
-                std::shared_ptr<DescriptorManager> descriptorManager, const std::string &name, uint32_t id,
-                const std::filesystem::path &materialPath);
-    PBRMaterial(std::shared_ptr<Context> context, std::shared_ptr<TextureManager> textureManager,
-                std::shared_ptr<BufferFactory> bufferFactory,
-                std::shared_ptr<PipelineLayoutManager> pipelineLayoutManager,
-                std::shared_ptr<DescriptorManager> descriptorManager, const PBRMaterialMetadata &params);
-
-  public:
-    PipelineType GetPipelineType() const override;
-    vk::DescriptorSet GetMaterialDescriptorSet() const override;
-    inline virtual std::filesystem::path GetMaterialPath() const override
+                std::shared_ptr<DescriptorManager> descriptorManager)
+        : mContext(context), mTextureManager(textureManager), mBufferFactory(bufferFactory),
+          mPipelineLayoutManager(pipelineLayoutManager), mDescriptorManager(descriptorManager)
     {
-        return mMaterialPath;
     }
-    inline const PBRParams &GetMaterialParams() const
-    {
-        return mMaterialParams;
-    }
-    inline const PBRMaterialTextures &GetMaterialTextures() const
-    {
-        return mMaterialTextures;
-    }
-    inline const PBRTextureFlag &GetMaterialTextureFlag() const
-    {
-        return mMaterialParams.textureFlag;
-    }
-    inline void SetPipelineType(PipelineType type) override
-    {
-        mPipelineType = type;
-    }
-    inline void SetMaterialName(const std::string &name) override
-    {
-        mMaterialName = name;
-    }
-    inline void SetMaterialID(uint32_t id) override
-    {
-        mMaterialID = id;
-    }
-    void SetPBRParameters(const PBRParameters &params = {});
-    void SetPBRTextures(const PBRMaterialTextures &textures = {});
-    void SetPBRTextures(std::optional<std::filesystem::path> albedoMapPath = std::nullopt,
-                        std::optional<std::filesystem::path> normalMapPath = std::nullopt,
-                        std::optional<std::filesystem::path> metallicRoughnessMapPath = std::nullopt,
-                        std::optional<std::filesystem::path> aoMapPath = std::nullopt,
-                        std::optional<std::filesystem::path> emissiveMapPath = std::nullopt);
-    std::string GetMaterialName() const override;
-    uint32_t GetMaterialID() const override;
-    void Update() override;
-    PBRMaterialMetadata GetPBRMaterialMetadata() const;
+    ~PBRMaterial() override = default;
 };
 } // namespace MEngine
 

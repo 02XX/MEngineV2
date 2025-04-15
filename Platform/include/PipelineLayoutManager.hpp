@@ -16,20 +16,13 @@ enum class PipelineLayoutType
 {
     ShadowDepth, // 阴影 深度贴图 Set0:{Camera_UBO, Light_SBO[6],
                  // ShadowParameters_SBO,ShadowMap[6](需要和Light_SBO按顺序一一对应)}
-    OpaquePBR,   // 不透明物体PBR Set0:{Camera_UBO, Light_SBO[6], ShadowParameters_SBO,
+    PBR,         // 不透明物体PBR Set0:{Camera_UBO, Light_SBO[6], ShadowParameters_SBO,
                  // ShadowMap[6](需要和Light_SBO按顺序一一对应)} , Set1: PBR{Parameters_UBO{Albedo, Normal,
     // MetallicRoughness, AmbientOcclusion,Emissive}, AlbedoMap, NormalMap, MetallicRoughnessMap,
     // AmbientOcclusionMap, EmissiveMap}
-    OpaquePhong, // 不透明物体Phong Set0:{Camera_UBO, Light_SBO[6], ShadowParameters_SBO,
-                 // ShadowMap[6](需要和Light_SBO按顺序一一对应)} , Set1: Phong{Parameters_UBO{Diffuse, Normal, Specular,
-                 // Glossiness}, DiffuseMap, NormalMap, SpecularMap, GlossinessMap}
-    TransparentPBR, //  透明物体 Set0:{Camera_UBO, Light_SBO[6],
-                    //  ShadowParameters_SBO,ShadowMap[6](需要和Light_SBO按顺序一一对应)}  , Set1: PBR{Albedo, Normal,
-                    //  MetallicRoughness,
-    //  AmbientOcclusion, Emissive} + AlphaBlend
-    TransparentPhong,  // 透明物体 Set0:{Camera_UBO, Light_SBO[6],
-                       // ShadowParameters_SBO,ShadowMap[6](需要和Light_SBO按顺序一一对应)}  , Set1: Phong{Diffuse,
-                       // Normal, Specular, Glossiness} + AlphaBlend
+    Phong, // 不透明物体Phong Set0:{Camera_UBO, Light_SBO[6], ShadowParameters_SBO,
+           // ShadowMap[6](需要和Light_SBO按顺序一一对应)} , Set1: Phong{Parameters_UBO{Diffuse, Normal, Specular,
+           // Glossiness}, DiffuseMap, NormalMap, SpecularMap, GlossinessMap}
     ScreenSpaceEffect, // 屏幕空间特效 Set0:{Camera_UBO, Light_SBO[6],
                        // ShadowParameters_SBO,ShadowMap[6](需要和Light_SBO按顺序一一对应)}  , Set1:
                        // PBR{Parameters_UBO{Albedo, Normal,

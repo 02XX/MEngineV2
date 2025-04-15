@@ -11,6 +11,5 @@ target_link_libraries(
     Platform
     glm::glm-header-only
     Boost::uuid
-    RTTR::RTTR
 )
 # target_compile_definitions(Core PRIVATE MENGINE_EXPORT)

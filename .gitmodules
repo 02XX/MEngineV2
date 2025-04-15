@@ -40,3 +40,12 @@
 [submodule "3rdParty/rttr"]
 	path = 3rdParty/rttr
 	url = https://github.com/rttrorg/rttr.git
+[submodule "3rdParty/assert"]
+	path = 3rdParty/assert
+	url = https://github.com/boostorg/assert.git
+[submodule "3rdParty/config"]
+	path = 3rdParty/config
+	url = https://github.com/boostorg/config.git
+[submodule "3rdParty/boost"]
+	path = 3rdParty/boost
+	url = https://github.com/boostorg/boost.git

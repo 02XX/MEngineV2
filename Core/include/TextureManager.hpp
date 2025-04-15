@@ -1,11 +1,12 @@
 #pragma once
 #include "Context.hpp"
+#include "Entity/Texture.hpp"
 #include "Interface/ILogger.hpp"
 #include "NoCopyable.hpp"
-#include "Texture.hpp"
 #include <cstdint>
 #include <memory>
 #include <unordered_map>
+
 namespace MEngine
 {
 class TextureManager final : public NoCopyable

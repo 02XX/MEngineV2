@@ -5,29 +5,40 @@
 #include "PipelineLayoutManager.hpp"
 #include "PipelineManager.hpp"
 
+#include "RenderPassManager.hpp"
 #include "boost/uuid.hpp"
-#include "boost/uuid/uuid.hpp"
 #include <cstdint>
 #include <vulkan/vulkan_handles.hpp>
-using namespace boost::uuids;
 namespace MEngine
 {
-class IMaterialMetadata
+using UUID = boost::uuids::uuid;
+enum class RenderType
+{
+    ForwardOpaquePBR, // RenderPass: ForwardComposition, subpass0, PipelineLayout: PBR, PipelineType: ForwardOpaquePBR
+    ForwardTransparentPBR,   // RenderPass: ForwardComposition, subpass1, PipelineLayout: PBR, PipelineType:
+                             // ForwardTransparentPBR
+    ForwardOpaquePhong,      // RenderPass: ForwardComposition, subpass0, PipelineLayout: Phong, PipelineType:
+                             // ForwardOpaquePhong
+    ForwardTransparentPhong, // RenderPass: ForwardComposition, subpass1, PipelineLayout: Phong, PipelineType:
+                             // ForwardTransparentPhong
+    Deferred, // RenderPass: DeferredComposition,subpass0, subpass1,  PipelineLayout: PBR, PipelineType: DeferredGBuffer
+};
+class IMaterialMetadata : public IMetadata<UUID>
 {
   public:
-    uuid ID = random_generator()();
-    std::string materialName = "DefaultMaterial";
-    PipelineLayoutType pipelineType = PipelineLayoutType::OpaquePBR;
+    RenderType renderType = RenderType::ForwardOpaquePBR; // 渲染类型
 };
+
 class IMaterial : public IEntity
 {
   protected:
   public:
     virtual ~IMaterial() = default;
     // Getters
-    virtual PipelineLayoutType GetPipelineType() const = 0;
-    virtual vk::DescriptorSet GetDescriptorSet() const = 0;
+    virtual RenderType GetRenderType() const = 0;
     // Setters
-    virtual void SetPipelineType(PipelineLayoutType type) = 0;
+    virtual void SetRenderType(RenderType type) = 0;
+    // Vulkan Resources
+    virtual vk::DescriptorSet GetDescriptorSet() const = 0;
 };
 } // namespace MEngine
