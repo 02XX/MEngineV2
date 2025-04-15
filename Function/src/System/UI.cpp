@@ -1,3 +1,4 @@
+#define NOMINMAX
 #include "System/UI.hpp"
 
 namespace MEngine
@@ -6,12 +7,12 @@ UI::UI(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context, std::s
        std::shared_ptr<RenderPassManager> renderPassManager, std::shared_ptr<ImageFactory> imageFactory,
        std::shared_ptr<CommandBufferManager> commandBufferManager,
        std::shared_ptr<SyncPrimitiveManager> syncPrimitiveManager, std::shared_ptr<SamplerManager> samplerManager,
-       std::shared_ptr<entt::registry> registry, std::shared_ptr<MaterialManager> materialManager,
-       std::shared_ptr<TextureManager> textureManager)
+       std::shared_ptr<entt::registry> registry, std::shared_ptr<IRepository<IMaterial>> materialRepository,
+       std::shared_ptr<IRepository<ITexture>> textureRepository)
     : mLogger(logger), mContext(context), mWindow(window), mRenderPassManager(renderPassManager),
       mImageFactory(imageFactory), mCommandBufferManager(commandBufferManager),
       mSyncPrimitiveManager(syncPrimitiveManager), mSamplerManager(samplerManager), mRegistry(registry),
-      mMaterialManager(materialManager), mTextureManager(textureManager)
+      mMaterialRepository(materialRepository), mTextureRepository(textureRepository)
 {
     mIconTransitionCommandBuffer = mCommandBufferManager->CreatePrimaryCommandBuffer(CommandBufferType::Graphic);
     mIconSampler = mSamplerManager->CreateUniqueSampler(vk::Filter::eLinear, vk::Filter::eLinear);
@@ -57,10 +58,10 @@ UI::UI(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context, std::s
     // Icons
     LoadUIIcon(mUIResourcePath / "Icon" / "folder.png", mFolderIcon);
     LoadUIIcon(mUIResourcePath / "Icon" / "file.png", mFileIcon);
-    auto defaultTexture = mTextureManager->GetDefaultTexture();
-    mDefaultTextureDescriptorSet =
-        ImGui_ImplVulkan_AddTexture(mSceneSampler.get(), defaultTexture->GetImageView(),
-                                    static_cast<VkImageLayout>(vk::ImageLayout::eShaderReadOnlyOptimal));
+    // auto defaultTexture = mTextureManager->GetDefaultTexture();
+    // mDefaultTextureDescriptorSet =
+    //     ImGui_ImplVulkan_AddTexture(mSceneSampler.get(), defaultTexture->GetImageView(),
+    //                                 static_cast<VkImageLayout>(vk::ImageLayout::eShaderReadOnlyOptimal));
     SetSceneViewPort();
 
     EntryFolder(mProjectPath);
@@ -262,14 +263,14 @@ void UI::ShowTexture(const std::string &name, std::shared_ptr<Texture> texture, 
     }
     else
     {
-        if (!texture->GetUIDescriptorID())
-        {
-            auto id = ImGui_ImplVulkan_AddTexture(texture->GetSampler(), texture->GetImageView(),
-                                                  static_cast<VkImageLayout>(vk::ImageLayout::eShaderReadOnlyOptimal));
-            texture->SetUIDescriptorID(id);
-        }
-        ImGui::Image(reinterpret_cast<ImTextureID>(static_cast<VkDescriptorSet>(texture->GetUIDescriptorID())), size,
-                     ImVec2(0, 1), ImVec2(1, 0));
+        // if (!texture->GetUIDescriptorID())
+        // {
+        //     auto id = ImGui_ImplVulkan_AddTexture(texture->GetSampler(), texture->GetImageView(),
+        //                                           static_cast<VkImageLayout>(vk::ImageLayout::eShaderReadOnlyOptimal));
+        //     texture->SetUIDescriptorID(id);
+        // }
+        // ImGui::Image(reinterpret_cast<ImTextureID>(static_cast<VkDescriptorSet>(texture->GetUIDescriptorID())), size,
+        //              ImVec2(0, 1), ImVec2(1, 0));
     }
     ImGui::Dummy(ImVec2(0, 5));
 
@@ -281,71 +282,71 @@ void UI::InspectorMaterial(MaterialComponent &materialComponent)
     {
         auto &material = materialComponent.material;
         auto pipelineTypeNames = magic_enum::enum_names<PipelineType>();
-        if (ImGui::BeginCombo("Pipeline Type", magic_enum::enum_name(material->GetPipelineType()).data()))
-        {
-            for (int i = 0; i < pipelineTypeNames.size(); i++)
-            {
-                bool isSelected = (i == static_cast<int>(material->GetPipelineType()));
-                if (ImGui::Selectable(pipelineTypeNames[i].data(), isSelected))
-                {
-                    material->SetPipelineType(static_cast<PipelineType>(i));
-                    mMaterialManager->SaveMaterial(material->GetMaterialPath(), material);
-                }
-            }
-            ImGui::EndCombo();
-        }
-        switch (material->GetPipelineType())
-        {
-        case PipelineType::ShadowMap:
-        case PipelineType::ForwardOpaque:
-        case PipelineType::ForwardTransparent: {
-            auto pbrMaterial = std::static_pointer_cast<PBRMaterial>(material);
-            auto pbrMaterialTextures = pbrMaterial->GetMaterialTextures();
-            auto pbrMaterialParams = pbrMaterial->GetMaterialParams();
-            auto pbrTextureFlag = pbrMaterial->GetMaterialTextureFlag();
-            auto albedoColor = glm::value_ptr(pbrMaterialParams.parameters.albedo);
-            if (ImGui::ColorEdit3("Albedo", albedoColor))
-            {
-                pbrMaterialParams.parameters.albedo = glm::vec3(albedoColor[0], albedoColor[1], albedoColor[2]);
-                pbrMaterial->SetPBRParameters(pbrMaterialParams.parameters);
-                mContext->GetDevice().waitIdle();
-                pbrMaterial->Update();
-                mMaterialManager->SaveMaterial(pbrMaterial->GetMaterialPath(), pbrMaterial);
-            }
-            ImGui::Dummy(ImVec2(0, 5));
-            ShowTexture("Albedo Map", pbrTextureFlag.useAlbedoMap ? pbrMaterialTextures.albedoMap : nullptr);
-            ShowTexture("Normal Map", pbrTextureFlag.useNormalMap ? pbrMaterialTextures.normalMap : nullptr);
-            ShowTexture("MetallicRoughness Map",
-                        pbrTextureFlag.useMetallicRoughnessMap ? pbrMaterialTextures.metallicRoughnessMap : nullptr);
-            ShowTexture("AO Map", pbrTextureFlag.useAOMap ? pbrMaterialTextures.aoMap : nullptr);
-            ShowTexture("Emissive Map", pbrTextureFlag.useEmissiveMap ? pbrMaterialTextures.emissiveMap : nullptr);
-            break;
-        }
-        case PipelineType::DeferredGBuffer:
-        case PipelineType::DeferredLighting:
-        case PipelineType::ScreenSpaceEffectSSAO:
-        case PipelineType::ScreenSpaceEffectSSR:
-        case PipelineType::SkinnedMesh:
-        case PipelineType::MorphTarget:
-        case PipelineType::ParticleCPU:
-        case PipelineType::ParticleGPU:
-        case PipelineType::Decal:
-        case PipelineType::PostProcessToneMapping:
-        case PipelineType::PostProcessBloom:
-        case PipelineType::PostProcessDOF:
-        case PipelineType::PostProcessMotionBlur:
-        case PipelineType::PostProcessFXAA:
-        case PipelineType::PostProcessSMAA:
-        case PipelineType::PostProcessVignette:
-        case PipelineType::PostProcessChromaticAberration:
-        case PipelineType::PostProcessFilmGrain:
-        case PipelineType::PostProcessColorGrading:
-        case PipelineType::UISprite:
-        case PipelineType::UIText:
-        case PipelineType::Toon:
-        case PipelineType::Wireframe:
-            break;
-        };
+        // if (ImGui::BeginCombo("Pipeline Type", magic_enum::enum_name(material->GetPipelineType()).data()))
+        // {
+        //     for (int i = 0; i < pipelineTypeNames.size(); i++)
+        //     {
+        //         bool isSelected = (i == static_cast<int>(material->GetPipelineType()));
+        //         if (ImGui::Selectable(pipelineTypeNames[i].data(), isSelected))
+        //         {
+        //             material->SetPipelineType(static_cast<PipelineType>(i));
+        //             mMaterialManager->SaveMaterial(material->GetMaterialPath(), material);
+        //         }
+        //     }
+        //     ImGui::EndCombo();
+        // }
+        // switch (material->GetPipelineType())
+        // {
+        // case PipelineType::ShadowMap:
+        // case PipelineType::ForwardOpaque:
+        // case PipelineType::ForwardTransparent: {
+        //     auto pbrMaterial = std::static_pointer_cast<PBRMaterial>(material);
+        //     auto pbrMaterialTextures = pbrMaterial->GetMaterialTextures();
+        //     auto pbrMaterialParams = pbrMaterial->GetMaterialParams();
+        //     auto pbrTextureFlag = pbrMaterial->GetMaterialTextureFlag();
+        //     auto albedoColor = glm::value_ptr(pbrMaterialParams.parameters.albedo);
+        //     if (ImGui::ColorEdit3("Albedo", albedoColor))
+        //     {
+        //         pbrMaterialParams.parameters.albedo = glm::vec3(albedoColor[0], albedoColor[1], albedoColor[2]);
+        //         pbrMaterial->SetPBRParameters(pbrMaterialParams.parameters);
+        //         mContext->GetDevice().waitIdle();
+        //         pbrMaterial->Update();
+        //         mMaterialManager->SaveMaterial(pbrMaterial->GetMaterialPath(), pbrMaterial);
+        //     }
+        //     ImGui::Dummy(ImVec2(0, 5));
+        //     ShowTexture("Albedo Map", pbrTextureFlag.useAlbedoMap ? pbrMaterialTextures.albedoMap : nullptr);
+        //     ShowTexture("Normal Map", pbrTextureFlag.useNormalMap ? pbrMaterialTextures.normalMap : nullptr);
+        //     ShowTexture("MetallicRoughness Map",
+        //                 pbrTextureFlag.useMetallicRoughnessMap ? pbrMaterialTextures.metallicRoughnessMap : nullptr);
+        //     ShowTexture("AO Map", pbrTextureFlag.useAOMap ? pbrMaterialTextures.aoMap : nullptr);
+        //     ShowTexture("Emissive Map", pbrTextureFlag.useEmissiveMap ? pbrMaterialTextures.emissiveMap : nullptr);
+        //     break;
+        // }
+        // case PipelineType::DeferredGBuffer:
+        // case PipelineType::DeferredLighting:
+        // case PipelineType::ScreenSpaceEffectSSAO:
+        // case PipelineType::ScreenSpaceEffectSSR:
+        // case PipelineType::SkinnedMesh:
+        // case PipelineType::MorphTarget:
+        // case PipelineType::ParticleCPU:
+        // case PipelineType::ParticleGPU:
+        // case PipelineType::Decal:
+        // case PipelineType::PostProcessToneMapping:
+        // case PipelineType::PostProcessBloom:
+        // case PipelineType::PostProcessDOF:
+        // case PipelineType::PostProcessMotionBlur:
+        // case PipelineType::PostProcessFXAA:
+        // case PipelineType::PostProcessSMAA:
+        // case PipelineType::PostProcessVignette:
+        // case PipelineType::PostProcessChromaticAberration:
+        // case PipelineType::PostProcessFilmGrain:
+        // case PipelineType::PostProcessColorGrading:
+        // case PipelineType::UISprite:
+        // case PipelineType::UIText:
+        // case PipelineType::Toon:
+        // case PipelineType::Wireframe:
+        //     break;
+        // };
     }
 }
 void UI::InspectorWindow()
@@ -396,26 +397,26 @@ void UI::InspectorWindow()
             if (ImGui::CollapsingHeader("Material Component", ImGuiTreeNodeFlags_DefaultOpen))
             {
                 // 获取所有材质
-                auto materials = mMaterialManager->GetAllMaterials();
-                std::string name =
-                    material.material->GetMaterialName() + "@" + std::to_string(material.material->GetMaterialID());
+                // auto materials = mMaterialManager->GetAllMaterials();
+                // std::string name =
+                // material.material->GetMaterialName() + "@" + std::to_string(material.material->GetMaterialID());
                 // 显示材质列表
-                if (ImGui::BeginCombo("Material", name.c_str()))
-                {
-                    for (int i = 0; i < materials.size(); i++)
-                    {
-                        ImGui::PushID(i);
-                        std::string materialName =
-                            materials[i]->GetMaterialName() + "@" + std::to_string(materials[i]->GetMaterialID());
-                        bool isSelected = (materials[i]->GetMaterialID() == material.material->GetMaterialID());
-                        if (ImGui::Selectable(materialName.c_str(), isSelected))
-                        {
-                            material.material = materials[i];
-                        }
-                        ImGui::PopID();
-                    }
-                    ImGui::EndCombo();
-                }
+                // if (ImGui::BeginCombo("Material", name.c_str()))
+                // {
+                //     for (int i = 0; i < materials.size(); i++)
+                //     {
+                //         ImGui::PushID(i);
+                //         std::string materialName =
+                //             materials[i]->GetMaterialName() + "@" + std::to_string(materials[i]->GetMaterialID());
+                //         bool isSelected = (materials[i]->GetMaterialID() == material.material->GetMaterialID());
+                //         if (ImGui::Selectable(materialName.c_str(), isSelected))
+                //         {
+                //             material.material = materials[i];
+                //         }
+                //         ImGui::PopID();
+                //     }
+                //     ImGui::EndCombo();
+                // }
             }
             InspectorMaterial(material);
         }
@@ -601,7 +602,7 @@ void UI::AssetWindow()
                 materialName = std::format("NewMaterial{}.mat", ++count);
                 newMaterialPath = mCurrentPath / materialName;
             }
-            mMaterialManager->CreateMaterial(newMaterialPath);
+            // mMaterialManager->CreateMaterial(newMaterialPath);
             UpdateAssetsView();
         }
         if (ImGui::MenuItem("Delete"))
@@ -776,9 +777,9 @@ void UI::UpdateAssetsView()
                 {
                     mAssetRegistry->emplace<AssetsComponent>(entity, entry.path(), entry.path().filename().string(),
                                                              AssetType::Material, mFileIcon);
-                    auto materialID = mMaterialManager->LoadMaterialFromFile(entry.path().string());
-                    auto material = mMaterialManager->GetMaterial(materialID);
-                    mAssetRegistry->emplace<MaterialComponent>(entity, material);
+                    // auto materialID = mMaterialManager->LoadMaterialFromFile(entry.path().string());
+                    // auto material = mMaterialManager->GetMaterial(materialID);
+                    // mAssetRegistry->emplace<MaterialComponent>(entity, material);
                 }
                 else if (entry.path().extension() == ".tex")
                 {

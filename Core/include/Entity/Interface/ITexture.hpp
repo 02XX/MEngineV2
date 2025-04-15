@@ -1,13 +1,6 @@
 #pragma once
-
 #include "IEntity.hpp"
-#include "NoCopyable.hpp"
-#include "PipelineLayoutManager.hpp"
-#include "PipelineManager.hpp"
-#include "boost/uuid.hpp"
-#include "boost/uuid/uuid.hpp"
-#include <cstdint>
-#include <vulkan/vulkan_handles.hpp>
+#include <vulkan/vulkan.hpp>
 using namespace boost::uuids;
 namespace MEngine
 {
@@ -21,6 +14,8 @@ class ITexture : public virtual IEntity<UUID>
     virtual vk::ImageView GetImageView() const = 0;
     virtual vk::Sampler GetSampler() const = 0;
     virtual const std::filesystem::path &GetImagePath() const = 0;
+    // Setters
+    virtual void SetImagePath(const std::filesystem::path &path) = 0;
 };
 } // namespace MEngine
 

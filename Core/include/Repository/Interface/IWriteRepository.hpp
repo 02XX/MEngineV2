@@ -11,6 +11,7 @@ class IWriteRepository
     virtual ~IWriteRepository() = default;
     virtual TEntity *Create() = 0;
     virtual bool Update(const TKey &id, const TEntity &delta) = 0;
+    virtual bool Update(const TKey &id, const TEntity *delta) = 0;
     virtual bool Delete(const TKey &id) = 0;
 };
 } // namespace MEngine

@@ -4,14 +4,14 @@
 #include "Componet/MeshComponent.hpp"
 #include "Componet/TransformComponent.hpp"
 #include "Context.hpp"
-#include "Image.hpp"
-#include "MEngine.hpp"
-#include "MaterialManager.hpp"
+#include "DescriptorManager.hpp"
+#include "Entity/Interface/IMaterial.hpp"
+#include "Entity/Interface/ITexture.hpp"
 #include "NoCopyable.hpp"
 #include "PipelineLayoutManager.hpp"
 #include "PipelineManager.hpp"
-#include "Texture.hpp"
-#include "TextureManager.hpp"
+#include "Repository/Interface/IRepository.hpp"
+#include "SamplerManager.hpp"
 #include "entt/entt.hpp"
 #include <memory>
 
@@ -27,12 +27,12 @@ class BasicGeometryEntityManager : public NoCopyable
     std::shared_ptr<PipelineLayoutManager> mPipelineLayoutManager;
     std::shared_ptr<DescriptorManager> mDescriptorManager;
     std::shared_ptr<SamplerManager> mSamplerManager;
-    std::shared_ptr<MaterialManager> mMaterialManager;
+    std::shared_ptr<IRepository<IMaterial>> mMaterialRepository;
 
     std::shared_ptr<ImageFactory> mImageFactory;
     std::shared_ptr<BufferFactory> mBufferFactory;
     std::shared_ptr<BasicGeometryFactory> mBasicGeometryFactory;
-    std::shared_ptr<TextureManager> mTextureManager;
+    std::shared_ptr<IRepository<ITexture>> mTextureRepository;
 
   private:
   public:
@@ -41,10 +41,10 @@ class BasicGeometryEntityManager : public NoCopyable
                                std::shared_ptr<PipelineLayoutManager> pipelineLayoutManager,
                                std::shared_ptr<DescriptorManager> descriptorManager,
                                std::shared_ptr<SamplerManager> samplerManager,
-                               std::shared_ptr<MaterialManager> materialManager,
+                               std::shared_ptr<IRepository<IMaterial>> materialRepository,
                                std::shared_ptr<ImageFactory> imageFactory, std::shared_ptr<BufferFactory> bufferFactory,
                                std::shared_ptr<BasicGeometryFactory> basicGeometryFactory,
-                               std::shared_ptr<TextureManager> textureManager);
+                               std::shared_ptr<IRepository<ITexture>> textureRepository);
     entt::entity CreateCube(std::shared_ptr<entt::registry> registry);
     entt::entity CreateCylinder(std::shared_ptr<entt::registry> registry);
     entt::entity CreateSphere(std::shared_ptr<entt::registry> registry);

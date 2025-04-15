@@ -61,6 +61,11 @@ class Texture final : public Entity<UUID>, public ITexture
     {
         return mChannels;
     }
+    // Setters
+    void SetImagePath(const std::filesystem::path &path) override
+    {
+        imagePath = path;
+    };
 };
 } // namespace MEngine
 

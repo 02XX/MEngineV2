@@ -4,13 +4,14 @@ namespace MEngine
 {
 
 RenderSystem::RenderSystem(
-    std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context, std::shared_ptr<entt::registry> registry,
-    std::shared_ptr<RenderPassManager> renderPassManager, std::shared_ptr<PipelineLayoutManager> pipelineLayoutManager,
-    std::shared_ptr<PipelineManager> pipelineManager, std::shared_ptr<CommandBufferManager> commandBufferManager,
+    std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context, std::shared_ptr<IConfigure> configure,
+    std::shared_ptr<entt::registry> registry, std::shared_ptr<RenderPassManager> renderPassManager,
+    std::shared_ptr<PipelineLayoutManager> pipelineLayoutManager, std::shared_ptr<PipelineManager> pipelineManager,
+    std::shared_ptr<CommandBufferManager> commandBufferManager,
     std::shared_ptr<SyncPrimitiveManager> syncPrimitiveManager, std::shared_ptr<DescriptorManager> descriptorManager,
     std::shared_ptr<SamplerManager> samplerManager, std::shared_ptr<BufferFactory> bufferFactory,
     std::shared_ptr<ImageFactory> imageFactory, std::shared_ptr<IWindow> window, std::shared_ptr<UI> ui)
-    : mLogger(logger), mContext(context), mRegistry(registry), mRenderPassManager(renderPassManager),
+    : System(logger, context, configure, registry), mRenderPassManager(renderPassManager),
       mPipelineLayoutManager(pipelineLayoutManager), mPipelineManager(pipelineManager),
       mCommandBufferManager(commandBufferManager), mSyncPrimitiveManager(syncPrimitiveManager),
       mDescriptorManager(descriptorManager), mSamplerManager(samplerManager), mBufferFactory(bufferFactory),
@@ -65,13 +66,13 @@ void RenderSystem::Shutdown()
 
 void RenderSystem::CollectRenderEntities()
 {
-    mBatchMaterialComponents.clear();
+    mRenderEntities.clear();
     auto entities = mRegistry->view<MaterialComponent, MeshComponent>();
     for (auto entity : entities)
     {
         auto &material = mRegistry->get<MaterialComponent>(entity);
         auto &mesh = entities.get<MeshComponent>(entity);
-        mBatchMaterialComponents[material.material->GetPipelineType()].push_back(entity);
+        mRenderEntities[material.material->GetRenderType()].push_back(entity);
     }
 }
 void RenderSystem::CollectMainCamera()
@@ -146,7 +147,10 @@ void RenderSystem::Prepare()
 void RenderSystem::RenderShadowDepthPass()
 {
 }
-void RenderSystem::RenderMainPass()
+void RenderSystem::RenderDeferred()
+{
+}
+void RenderSystem::RenderForward()
 {
     auto extent = mRenderPassManager->GetExtent();
     vk::RenderPassBeginInfo renderPassBeginInfo;

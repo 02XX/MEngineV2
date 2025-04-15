@@ -66,6 +66,10 @@ class Repository : public IRepository<TEntity, TKey>
         return entities;
     }
     virtual bool Update(const TKey &id, const TEntity &delta) override = 0;
+    virtual bool Update(const TKey &id, const TEntity *delta) override
+    {
+        Update(id, *delta);
+    }
     virtual bool Delete(const TKey &id) override
     {
         auto it = mEntities.find(id);

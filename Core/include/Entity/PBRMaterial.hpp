@@ -78,6 +78,10 @@ class PBRMaterial final : public IMaterial, public Entity<>
     {
         return mEmissiveMapID;
     }
+    inline void SetRenderType(RenderType renderType) override
+    {
+        mRenderType = renderType;
+    }
     // Vulkan Resources
     vk::DescriptorSet GetDescriptorSet() const override;
 };

@@ -8,6 +8,7 @@
 #include "Componet/TransformComponent.hpp"
 #include "Context.hpp"
 #include "DescriptorManager.hpp"
+#include "Entity/Interface/IMaterial.hpp"
 #include "Image.hpp"
 #include "ImageFactory.hpp"
 #include "Interface/ILogger.hpp"
@@ -57,7 +58,7 @@ class RenderSystem final : public System
     std::shared_ptr<UI> mUI;
 
   private:
-    std::map<PipelineType, std::vector<entt::entity>> mBatchMaterialComponents;
+    std::map<RenderType, std::vector<entt::entity>> mRenderEntities;
 
     int64_t mFrameIndex;
     int64_t mFrameCount;
@@ -86,7 +87,8 @@ class RenderSystem final : public System
     void CollectMainCamera();
     void Prepare();
     void RenderShadowDepthPass();
-    void RenderMainPass();
+    void RenderDeferred();
+    void RenderForward();
     void RenderSkyPass();
     void RenderTranslucencyPass();
     void RenderPostProcessPass();
@@ -95,7 +97,8 @@ class RenderSystem final : public System
 
   public:
     RenderSystem(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context,
-                 std::shared_ptr<entt::registry> registry, std::shared_ptr<RenderPassManager> renderPassManager,
+                 std::shared_ptr<IConfigure> configure, std::shared_ptr<entt::registry> registry,
+                 std::shared_ptr<RenderPassManager> renderPassManager,
                  std::shared_ptr<PipelineLayoutManager> pipelineLayoutManager,
                  std::shared_ptr<PipelineManager> pipelineManager,
                  std::shared_ptr<CommandBufferManager> commandBufferManager,

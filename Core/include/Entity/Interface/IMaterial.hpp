@@ -30,7 +30,9 @@ class IMaterial : public virtual IEntity<UUID>
     virtual ~IMaterial() = default;
     // Getters
     virtual RenderType GetRenderType() const = 0;
-    // Vulkan Resources
+    // Setters
+    virtual void SetRenderType(RenderType renderType) = 0;
+    //  Vulkan Resources
     virtual vk::DescriptorSet GetDescriptorSet() const = 0;
 };
 } // namespace MEngine

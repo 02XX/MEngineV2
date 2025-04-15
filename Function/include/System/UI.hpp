@@ -1,16 +1,14 @@
 #pragma once
 #include "CommandBuffeManager.hpp"
 #include "Context.hpp"
+#include "Entity/Texture.hpp"
 #include "Image.hpp"
 #include "ImageFactory.hpp"
 #include "Interface/ILogger.hpp"
 #include "Interface/IWindow.hpp"
-#include "MEngine.hpp"
 #include "RenderPassManager.hpp"
 #include "SamplerManager.hpp"
 #include "System/ISystem.hpp"
-#include "Texture.hpp"
-#include "TextureManager.hpp"
 #include "entt/entity/fwd.hpp"
 #include "entt/entt.hpp"
 #include "imgui.h"
@@ -27,10 +25,12 @@
 #include "Componet/MaterialComponent.hpp"
 #include "Componet/MeshComponent.hpp"
 #include "Componet/TransformComponent.hpp"
+#include "Entity/Interface/IMaterial.hpp"
+#include "Entity/Interface/ITexture.hpp"
 #include "ImGuizmo.h"
 #include "ImageFactory.hpp"
-#include "MaterialManager.hpp"
 #include "Math.hpp"
+#include "Repository/Interface/IRepository.hpp"
 #include "stb_image.h"
 
 namespace MEngine
@@ -47,8 +47,8 @@ class UI
     std::shared_ptr<SyncPrimitiveManager> mSyncPrimitiveManager;
     std::shared_ptr<SamplerManager> mSamplerManager;
     std::shared_ptr<entt::registry> mRegistry;
-    std::shared_ptr<MaterialManager> mMaterialManager;
-    std::shared_ptr<TextureManager> mTextureManager;
+    std::shared_ptr<IRepository<IMaterial>> mMaterialRepository;
+    std::shared_ptr<IRepository<ITexture>> mTextureRepository;
 
   private:
     // ImGUI 相关
@@ -138,8 +138,8 @@ class UI
        std::shared_ptr<RenderPassManager> renderPassManager, std::shared_ptr<ImageFactory> imageFactory,
        std::shared_ptr<CommandBufferManager> commandBufferManager,
        std::shared_ptr<SyncPrimitiveManager> syncPrimitiveManager, std::shared_ptr<SamplerManager> samplerManager,
-       std::shared_ptr<entt::registry> registry, std::shared_ptr<MaterialManager> materialManager,
-       std::shared_ptr<TextureManager> textureManager);
+       std::shared_ptr<entt::registry> registry, std::shared_ptr<IRepository<IMaterial>> materialRepository,
+       std::shared_ptr<IRepository<ITexture>> textureRepository);
     ~UI();
     void ProcessEvent(const SDL_Event *event);
     void RenderUI();

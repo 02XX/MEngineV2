@@ -35,7 +35,17 @@ void RenderPassManager::CreateDeferredCompositionRenderPass()
 void RenderPassManager::CreateForwardCompositionRenderPass()
 {
     std::vector<vk::AttachmentDescription> attachments{
-        // 0: Albedo
+        // 0：Render Target: Color
+        vk::AttachmentDescription()
+            .setFormat(mImageFactory->GetRenderTargetFormat())
+            .setSamples(vk::SampleCountFlagBits::e1)
+            .setLoadOp(vk::AttachmentLoadOp::eClear)
+            .setStoreOp(vk::AttachmentStoreOp::eStore)
+            .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
+            .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
+            .setInitialLayout(vk::ImageLayout::eUndefined)
+            .setFinalLayout(vk::ImageLayout::eShaderReadOnlyOptimal),
+        // 1: Render Target: Albedo
         vk::AttachmentDescription()
             .setFormat(mImageFactory->GetRenderTargetFormat())
             .setSamples(vk::SampleCountFlagBits::e1)
@@ -45,7 +55,7 @@ void RenderPassManager::CreateForwardCompositionRenderPass()
             .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
             .setInitialLayout(vk::ImageLayout::eUndefined)
             .setFinalLayout(vk::ImageLayout::eShaderReadOnlyOptimal),
-        // 1: Position
+        // 2: Render Target: Position
         vk::AttachmentDescription()
             .setFormat(mImageFactory->GetRenderTargetFormat())
             .setSamples(vk::SampleCountFlagBits::e1)
@@ -55,7 +65,7 @@ void RenderPassManager::CreateForwardCompositionRenderPass()
             .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
             .setInitialLayout(vk::ImageLayout::eUndefined)
             .setFinalLayout(vk::ImageLayout::eShaderReadOnlyOptimal),
-        // 2: Normal
+        // 3: Render Target: Normal
         vk::AttachmentDescription()
             .setFormat(mImageFactory->GetRenderTargetFormat())
             .setSamples(vk::SampleCountFlagBits::e1)
@@ -65,7 +75,7 @@ void RenderPassManager::CreateForwardCompositionRenderPass()
             .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
             .setInitialLayout(vk::ImageLayout::eUndefined)
             .setFinalLayout(vk::ImageLayout::eShaderReadOnlyOptimal),
-        // 3: Metalness/Roughness
+        // 4: Render Target: Metalness/Roughness
         vk::AttachmentDescription()
             .setFormat(mImageFactory->GetRenderTargetFormat())
             .setSamples(vk::SampleCountFlagBits::e1)
@@ -75,7 +85,7 @@ void RenderPassManager::CreateForwardCompositionRenderPass()
             .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
             .setInitialLayout(vk::ImageLayout::eUndefined)
             .setFinalLayout(vk::ImageLayout::eShaderReadOnlyOptimal),
-        // 4: AO
+        // 5: Render Target: AO
         vk::AttachmentDescription()
             .setFormat(mImageFactory->GetRenderTargetFormat())
             .setSamples(vk::SampleCountFlagBits::e1)
@@ -85,7 +95,7 @@ void RenderPassManager::CreateForwardCompositionRenderPass()
             .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
             .setInitialLayout(vk::ImageLayout::eUndefined)
             .setFinalLayout(vk::ImageLayout::eShaderReadOnlyOptimal),
-        // 5: Emissive
+        // 6: Render Target: Emissive
         vk::AttachmentDescription()
             .setFormat(mImageFactory->GetRenderTargetFormat())
             .setSamples(vk::SampleCountFlagBits::e1)
@@ -95,7 +105,7 @@ void RenderPassManager::CreateForwardCompositionRenderPass()
             .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
             .setInitialLayout(vk::ImageLayout::eUndefined)
             .setFinalLayout(vk::ImageLayout::eShaderReadOnlyOptimal),
-        // 6: Depth
+        // 7: Render Target: Depth
         vk::AttachmentDescription()
             .setFormat(mImageFactory->GetDepthStencilFormat()) // 32位深度+8位模板存储
             .setSamples(vk::SampleCountFlagBits::e1)

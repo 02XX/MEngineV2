@@ -30,7 +30,8 @@ enum class RenderPassType
 {
     ShadowDepth,         // 生成所有光源的阴影贴图subpass0: 生成阴影贴图
     DeferredComposition, // Deferred, 延迟渲染Subpass0: GBuffer, Subpass1: Lighting
-    ForwardComposition,  // Forward, 前向渲染subpass0: 不透明物体渲染 subpass1: 透明物体渲染
+    ForwardComposition,  // Forward, 前向渲染subpass0: 不透明物体渲染 subpass1: 透明物体渲染，
+                         // 创建多个MRT，Phong只渲染第一个MRT，PBR渲染所有MRT
     Sky,                 // 天空盒渲染subpass0: 天空盒渲染
     Transparent,         // Forward 透明物体渲染subpass0: 透明物体渲染
     PostProcess,         // 后处理渲染subpass0: 后处理渲染

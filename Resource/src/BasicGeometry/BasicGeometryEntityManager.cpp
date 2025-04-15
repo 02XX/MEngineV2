@@ -1,20 +1,18 @@
 #include "BasicGeometry/BasicGeometryEntityManager.hpp"
-#include "PipelineManager.hpp"
-#include <filesystem>
-#include <memory>
 namespace MEngine
 {
 BasicGeometryEntityManager::BasicGeometryEntityManager(
     std::shared_ptr<ILogger> mLogger, std::shared_ptr<Context> context,
     std::shared_ptr<PipelineManager> pipelineManager, std::shared_ptr<PipelineLayoutManager> pipelineLayoutManager,
     std::shared_ptr<DescriptorManager> descriptorManager, std::shared_ptr<SamplerManager> samplerManager,
-    std::shared_ptr<MaterialManager> materialManager, std::shared_ptr<ImageFactory> imageFactory,
+    std::shared_ptr<IRepository<IMaterial>> materialRepository, std::shared_ptr<ImageFactory> imageFactory,
     std::shared_ptr<BufferFactory> bufferFactory, std::shared_ptr<BasicGeometryFactory> basicGeometryFactory,
-    std::shared_ptr<TextureManager> textureManager)
+    std::shared_ptr<IRepository<ITexture>> textureRepository)
     : mLogger(mLogger), mContext(context), mPipelineManager(pipelineManager),
       mPipelineLayoutManager(pipelineLayoutManager), mDescriptorManager(descriptorManager),
       mSamplerManager(samplerManager), mImageFactory(imageFactory), mBufferFactory(bufferFactory),
-      mBasicGeometryFactory(basicGeometryFactory), mMaterialManager(materialManager), mTextureManager(textureManager)
+      mBasicGeometryFactory(basicGeometryFactory), mMaterialRepository(materialRepository),
+      mTextureRepository(textureRepository)
 
 {
 }
@@ -25,11 +23,9 @@ entt::entity BasicGeometryEntityManager::CreateCube(std::shared_ptr<entt::regist
 
     // 2. 创建材质
     std::filesystem::path materialPath = std::filesystem::current_path() / "Resource" / "Material" / "CubeMaterial.mat";
-    auto materialID = mMaterialManager->CreateMaterial(materialPath);
-    auto material = mMaterialManager->GetMaterial(materialID);
-    material->SetPipelineType(PipelineType::ForwardTransparent);
-    mMaterialManager->SaveMaterial(materialPath, material);
-    material->Update();
+    auto material = mMaterialRepository->Create();
+    material->SetRenderType(RenderType::ForwardTransparentPBR);
+    mMaterialRepository->Update(material->GetID(), material);
     // 3. 创建网格
     auto mesh = std::make_shared<Mesh>(mBufferFactory, geometry.vertices, geometry.indices);
     // 4. 创建组件对象
