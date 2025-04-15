@@ -1,4 +1,6 @@
 #pragma once
+#include "Entity/PBRMaterial.hpp"
+#define NOMINMAX
 #include "CommandBuffeManager.hpp"
 #include "Context.hpp"
 #include "Entity/Texture.hpp"
@@ -8,7 +10,6 @@
 #include "Interface/IWindow.hpp"
 #include "RenderPassManager.hpp"
 #include "SamplerManager.hpp"
-#include "System/ISystem.hpp"
 #include "entt/entity/fwd.hpp"
 #include "entt/entt.hpp"
 #include "imgui.h"
@@ -30,9 +31,10 @@
 #include "ImGuizmo.h"
 #include "ImageFactory.hpp"
 #include "Math.hpp"
+#include "PipelineManager.hpp"
 #include "Repository/Interface/IRepository.hpp"
 #include "stb_image.h"
-
+#include <algorithm>
 namespace MEngine
 {
 class UI
@@ -47,8 +49,8 @@ class UI
     std::shared_ptr<SyncPrimitiveManager> mSyncPrimitiveManager;
     std::shared_ptr<SamplerManager> mSamplerManager;
     std::shared_ptr<entt::registry> mRegistry;
-    std::shared_ptr<IRepository<IMaterial>> mMaterialRepository;
-    std::shared_ptr<IRepository<ITexture>> mTextureRepository;
+    std::shared_ptr<IRepository<PBRMaterial>> mPBRMaterialRepository;
+    std::shared_ptr<IRepository<Texture>> mTextureRepository;
 
   private:
     // ImGUI 相关
@@ -138,8 +140,8 @@ class UI
        std::shared_ptr<RenderPassManager> renderPassManager, std::shared_ptr<ImageFactory> imageFactory,
        std::shared_ptr<CommandBufferManager> commandBufferManager,
        std::shared_ptr<SyncPrimitiveManager> syncPrimitiveManager, std::shared_ptr<SamplerManager> samplerManager,
-       std::shared_ptr<entt::registry> registry, std::shared_ptr<IRepository<IMaterial>> materialRepository,
-       std::shared_ptr<IRepository<ITexture>> textureRepository);
+       std::shared_ptr<entt::registry> registry, std::shared_ptr<IRepository<PBRMaterial>> pbrMaterialRepository,
+       std::shared_ptr<IRepository<Texture>> textureRepository);
     ~UI();
     void ProcessEvent(const SDL_Event *event);
     void RenderUI();

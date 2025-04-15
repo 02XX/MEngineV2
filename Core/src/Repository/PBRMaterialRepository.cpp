@@ -1,9 +1,8 @@
-#include "Entity/PBRMaterial.hpp"
-#include "Repository/MaterialRepository.hpp"
+#include "Repository/PBRMaterialRepository.hpp"
 
 namespace MEngine
 {
-MaterialRepository::MaterialRepository(
+PBRMaterialRepository::PBRMaterialRepository(
     std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context, std::shared_ptr<IConfigure> configure,
     std::shared_ptr<PipelineManager> pipelineManager, std::shared_ptr<PipelineLayoutManager> pipelineLayoutManager,
     std::shared_ptr<DescriptorManager> descriptorManager, std::shared_ptr<SamplerManager> samplerManager,
@@ -13,7 +12,7 @@ MaterialRepository::MaterialRepository(
       mSamplerManager(samplerManager), mTextureRepository(textureManager), mBufferFactory(bufferFactory)
 {
 }
-bool MaterialRepository::Update(const UUID &id, const PBRMaterial &delta)
+bool PBRMaterialRepository::Update(const UUID &id, const PBRMaterial &delta)
 {
     if (!CheckValidate(delta))
     {
@@ -115,7 +114,7 @@ bool MaterialRepository::Update(const UUID &id, const PBRMaterial &delta)
     mLogger->Info("Material with ID {} not exist", id);
     return false;
 }
-bool MaterialRepository::CheckValidate(const std::filesystem::path &filePath) const
+bool PBRMaterialRepository::CheckValidate(const std::filesystem::path &filePath) const
 {
     if (filePath.empty())
     {
@@ -139,11 +138,11 @@ bool MaterialRepository::CheckValidate(const std::filesystem::path &filePath) co
     }
     return true;
 }
-bool MaterialRepository::CheckValidate(const PBRMaterial &delta) const
+bool PBRMaterialRepository::CheckValidate(const PBRMaterial &delta) const
 {
     return true;
 }
-// std::shared_ptr<IMaterial> MaterialRepository::GetMaterial(std::filesystem::path materialPath)
+// std::shared_ptr<IMaterial> PBRMaterialRepository::GetMaterial(std::filesystem::path materialPath)
 // {
 //     // 判断path的extension是否为.mat
 //     if (materialPath.extension() != ".mat")
@@ -162,7 +161,7 @@ bool MaterialRepository::CheckValidate(const PBRMaterial &delta) const
 //     result = GetMaterial(id);
 //     return result;
 // }
-// std::shared_ptr<IMaterial> MaterialRepository::GetMaterial(uint32_t id)
+// std::shared_ptr<IMaterial> PBRMaterialRepository::GetMaterial(uint32_t id)
 // {
 //     auto it = mMaterials.find(id);
 //     if (it != mMaterials.end())
@@ -171,7 +170,7 @@ bool MaterialRepository::CheckValidate(const PBRMaterial &delta) const
 //     }
 //     return nullptr;
 // }
-// void MaterialRepository::SaveMaterial(std::filesystem::path materialPath, std::shared_ptr<IMaterial> material)
+// void PBRMaterialRepository::SaveMaterial(std::filesystem::path materialPath, std::shared_ptr<IMaterial> material)
 // {
 //     // 判断path的extension是否为.mat
 //     if (materialPath.extension() != ".mat")
@@ -226,7 +225,7 @@ bool MaterialRepository::CheckValidate(const PBRMaterial &delta) const
 //     file.close();
 //     mLogger->Info("Material saved successfully: {}", materialPath.string());
 // }
-// uint32_t MaterialRepository::CreateMaterial(std::filesystem::path materialPath)
+// uint32_t PBRMaterialRepository::CreateMaterial(std::filesystem::path materialPath)
 // {
 //     // 判断path的extension是否为.mat
 //     if (materialPath.extension() != ".mat")
@@ -243,7 +242,7 @@ bool MaterialRepository::CheckValidate(const PBRMaterial &delta) const
 //     SaveMaterial(materialPath, material);
 //     return id;
 // }
-// std::vector<std::shared_ptr<IMaterial>> MaterialRepository::GetAllMaterials() const
+// std::vector<std::shared_ptr<IMaterial>> PBRMaterialRepository::GetAllMaterials() const
 // {
 //     std::vector<std::shared_ptr<IMaterial>> materials;
 //     for (auto &material : mMaterials)
@@ -252,7 +251,7 @@ bool MaterialRepository::CheckValidate(const PBRMaterial &delta) const
 //     }
 //     return materials;
 // }
-// uint32_t MaterialRepository::LoadMaterialFromFile(std::filesystem::path materialPath)
+// uint32_t PBRMaterialRepository::LoadMaterialFromFile(std::filesystem::path materialPath)
 // {
 //     auto id = std::hash<std::string>{}(materialPath.string());
 //     if (mMaterials.find(id) != mMaterials.end())

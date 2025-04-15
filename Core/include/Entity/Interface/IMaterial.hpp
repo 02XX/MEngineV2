@@ -1,14 +1,9 @@
 #pragma once
 
 #include "IEntity.hpp"
-#include "NoCopyable.hpp"
-#include "PipelineLayoutManager.hpp"
-#include "PipelineManager.hpp"
+#include "nlohmann/adl_serializer.hpp"
+#include <vulkan/vulkan.hpp>
 
-#include "RenderPassManager.hpp"
-#include "boost/uuid.hpp"
-#include <cstdint>
-#include <vulkan/vulkan_handles.hpp>
 namespace MEngine
 {
 using UUID = boost::uuids::uuid;

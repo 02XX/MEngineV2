@@ -1,5 +1,5 @@
-#define NOMINMAX
 #include "System/UI.hpp"
+#include "Entity/PBRMaterial.hpp"
 
 namespace MEngine
 {
@@ -7,12 +7,12 @@ UI::UI(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context, std::s
        std::shared_ptr<RenderPassManager> renderPassManager, std::shared_ptr<ImageFactory> imageFactory,
        std::shared_ptr<CommandBufferManager> commandBufferManager,
        std::shared_ptr<SyncPrimitiveManager> syncPrimitiveManager, std::shared_ptr<SamplerManager> samplerManager,
-       std::shared_ptr<entt::registry> registry, std::shared_ptr<IRepository<IMaterial>> materialRepository,
-       std::shared_ptr<IRepository<ITexture>> textureRepository)
+       std::shared_ptr<entt::registry> registry, std::shared_ptr<IRepository<PBRMaterial>> pbrMaterialRepository,
+       std::shared_ptr<IRepository<Texture>> textureRepository)
     : mLogger(logger), mContext(context), mWindow(window), mRenderPassManager(renderPassManager),
       mImageFactory(imageFactory), mCommandBufferManager(commandBufferManager),
       mSyncPrimitiveManager(syncPrimitiveManager), mSamplerManager(samplerManager), mRegistry(registry),
-      mMaterialRepository(materialRepository), mTextureRepository(textureRepository)
+      mPBRMaterialRepository(pbrMaterialRepository), mTextureRepository(textureRepository)
 {
     mIconTransitionCommandBuffer = mCommandBufferManager->CreatePrimaryCommandBuffer(CommandBufferType::Graphic);
     mIconSampler = mSamplerManager->CreateUniqueSampler(vk::Filter::eLinear, vk::Filter::eLinear);

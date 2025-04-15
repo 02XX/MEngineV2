@@ -5,6 +5,10 @@
 #include "BufferFactory.hpp"
 #include "Context.hpp"
 #include "DescriptorManager.hpp"
+#include "Entity/Interface/IMaterial.hpp"
+#include "Entity/Interface/ITexture.hpp"
+#include "Entity/PBRMaterial.hpp"
+#include "Entity/Texture.hpp"
 #include "ImageFactory.hpp"
 #include "Interface/ILogger.hpp"
 #include "Interface/IWindow.hpp"
@@ -12,6 +16,8 @@
 #include "PipelineLayoutManager.hpp"
 #include "PipelineManager.hpp"
 #include "RenderPassManager.hpp"
+#include "Repository/Interface/IRepository.hpp"
+#include "Repository/PBRMaterialRepository.hpp"
 #include "SDL3/SDL.h"
 #include "SDL3/SDL_events.h"
 #include "SDL3/SDL_vulkan.h"
@@ -19,50 +25,62 @@
 #include "SamplerManager.hpp"
 #include "ShaderManager.hpp"
 #include "SpdLogger.hpp"
+#include "boost/uuid.hpp"
 
 #include "Configure.hpp"
+#include "Repository/TextureRepository.hpp"
 #include "SyncPrimitiveManager.hpp"
 #include "System/CameraSystem.hpp"
 #include "System/ISystem.hpp"
 #include "System/RenderSystem.hpp"
 #include "System/TransformSystem.hpp"
 #include "System/UI.hpp"
-#include "TextureManager.hpp"
 
-#define BOOST_DI_CFG_CTOR_LIMIT_SIZE 30 // 定义构造函数参数的最大数量
+#define BOOST_DI_CFG_CTOR_LIMIT_SIZE 50 // 定义构造函数参数的最大数量
 #include "boost/di.hpp"
 #include "entt/entt.hpp"
 #include <cstdint>
 #include <memory>
 
-using namespace boost::di;
+namespace DI = boost::di;
 namespace MEngine
 {
 class Application final : public NoCopyable
 {
+
+    // BasicGeometryEntityManager(std::shared_ptr<ILogger> mLogger, std::shared_ptr<Context> context,
+    //     std::shared_ptr<PipelineManager> pipelineManager,
+    //     std::shared_ptr<PipelineLayoutManager> pipelineLayoutManager,
+    //     std::shared_ptr<DescriptorManager> descriptorManager,
+    //     std::shared_ptr<SamplerManager> samplerManager,
+    //     std::shared_ptr<IRepository<IMaterial>> materialRepository,
+    //     std::shared_ptr<ImageFactory> imageFactory, std::shared_ptr<BufferFactory> bufferFactory,
+    //     std::shared_ptr<BasicGeometryFactory> basicGeometryFactory,
+    //     std::shared_ptr<IRepository<ITexture>> textureRepository);
   private:
     bool mIsRunning;
     // DI
     decltype(make_injector(
-        bind<IConfigure>().to<Configure>().in(singleton), bind<ILogger>().to<SpdLogger>().in(singleton),
-        bind<IWindow>().to<SDLWindow>().in(singleton), bind<Context>().to<Context>().in(singleton),
-        bind<entt::registry>().to<entt::registry>().in(singleton),
-        bind<CommandBufferManager>().to<CommandBufferManager>().in(singleton),
-        bind<SyncPrimitiveManager>().to<SyncPrimitiveManager>().in(singleton),
-        bind<PipelineLayoutManager>().to<PipelineLayoutManager>().in(singleton),
-        bind<ShaderManager>().to<ShaderManager>().in(singleton),
-        bind<DescriptorManager>().to<DescriptorManager>().in(singleton),
-        bind<SamplerManager>().to<SamplerManager>().in(singleton),
-        bind<BufferFactory>().to<BufferFactory>().in(singleton), bind<ImageFactory>().to<ImageFactory>().in(singleton),
-        bind<RenderPassManager>().to<RenderPassManager>().in(singleton),
-        bind<PipelineManager>().to<PipelineManager>().in(singleton),
-        bind<TextureManager>().to<TextureManager>().in(singleton),
-        bind<MaterialManager>().to<MaterialManager>().in(singleton),
-        bind<BasicGeometryFactory>().to<BasicGeometryFactory>().in(singleton),
-        bind<BasicGeometryEntityManager>().to<BasicGeometryEntityManager>().in(singleton),
-        bind<CameraSystem>().to<CameraSystem>().in(singleton), bind<UI>().to<UI>().in(singleton),
-        bind<RenderSystem>().to<RenderSystem>().in(singleton),
-        bind<TransformSystem>().to<TransformSystem>().in(singleton))) mInjector;
+        DI::bind<IConfigure>().to<Configure>().in(DI::singleton), DI::bind<ILogger>().to<SpdLogger>().in(DI::singleton),
+        DI::bind<IWindow>().to<SDLWindow>().in(DI::singleton), DI::bind<Context>().to<Context>().in(DI::singleton),
+        DI::bind<entt::registry>().to<entt::registry>().in(DI::singleton),
+        DI::bind<CommandBufferManager>().to<CommandBufferManager>().in(DI::singleton),
+        DI::bind<SyncPrimitiveManager>().to<SyncPrimitiveManager>().in(DI::singleton),
+        DI::bind<PipelineManager>().to<PipelineManager>().in(DI::singleton),
+        DI::bind<PipelineLayoutManager>().to<PipelineLayoutManager>().in(DI::singleton),
+        DI::bind<ShaderManager>().to<ShaderManager>().in(DI::singleton),
+        DI::bind<DescriptorManager>().to<DescriptorManager>().in(DI::singleton),
+        DI::bind<SamplerManager>().to<SamplerManager>().in(DI::singleton),
+        DI::bind<BufferFactory>().to<BufferFactory>().in(DI::singleton),
+        DI::bind<ImageFactory>().to<ImageFactory>().in(DI::singleton),
+        DI::bind<RenderPassManager>().to<RenderPassManager>().in(DI::singleton),
+        DI::bind<IRepository<Texture>>().to<TextureRepository>().in(DI::singleton),
+        DI::bind<IRepository<PBRMaterial>>().to<PBRMaterialRepository>().in(DI::singleton),
+        DI::bind<BasicGeometryFactory>().to<BasicGeometryFactory>().in(DI::singleton),
+        DI::bind<BasicGeometryEntityManager>().to<BasicGeometryEntityManager>().in(DI::singleton),
+        DI::bind<CameraSystem>().to<CameraSystem>().in(DI::singleton), DI::bind<UI>().to<UI>().in(DI::singleton),
+        DI::bind<RenderSystem>().to<RenderSystem>().in(DI::singleton),
+        DI::bind<TransformSystem>().to<TransformSystem>().in(DI::singleton))) mInjector;
 
     // DI
     std::shared_ptr<ILogger> mLogger;
@@ -70,19 +88,6 @@ class Application final : public NoCopyable
     std::shared_ptr<IWindow> mWindow;
     std::shared_ptr<Context> mContext;
     std::shared_ptr<entt::registry> mRegistry;
-    // std::shared_ptr<PipelineManager> mPipelineManager;
-    // std::shared_ptr<PipelineLayoutManager> mPipelineLayoutManager;
-    // std::shared_ptr<RenderPassManager> mRenderPassManager;
-    // std::shared_ptr<ShaderManager> mShaderManager;
-    // std::shared_ptr<CommandBufferManager> mCommandBufferManager;
-    // std::shared_ptr<SyncPrimitiveManager> mSyncPrimitiveManager;
-    // std::shared_ptr<ImageFactory> mImageFactory;
-    // std::shared_ptr<DescriptorManager> mDescriptorManager;
-    // std::shared_ptr<SamplerManager> mSamplerManager;
-    // std::shared_ptr<BufferFactory> mBufferFactory;
-    // std::shared_ptr<TextureManager> mTextureManager;
-    // std::shared_ptr<MaterialManager> mMaterialManager;
-    // std::shared_ptr<BasicGeometryFactory> mBasicGeometryFactory;
     std::shared_ptr<BasicGeometryEntityManager> mBasicGeometryEntityManager;
     std::shared_ptr<UI> mUI;
     std::shared_ptr<RenderSystem> mRenderSystem;

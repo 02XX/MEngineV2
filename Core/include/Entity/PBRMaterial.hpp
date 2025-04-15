@@ -4,7 +4,9 @@
 #include "Entity/Entity.hpp"
 #include "Interface/IEntity.hpp"
 #include "Interface/IMaterial.hpp"
+#include "Math.hpp"
 #include "magic_enum/magic_enum.hpp"
+#include "nlohmann/adl_serializer.hpp"
 namespace MEngine
 {
 
@@ -33,7 +35,7 @@ struct PBRParams
 class PBRMaterial final : public IMaterial, public Entity<>
 {
     friend nlohmann::adl_serializer<MEngine::PBRMaterial>;
-    friend class MaterialRepository;
+    friend class PBRMaterialRepository;
 
   private:
     RenderType mRenderType = RenderType::ForwardOpaquePBR;

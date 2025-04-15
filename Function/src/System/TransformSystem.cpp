@@ -1,11 +1,10 @@
 #include "System/TransformSystem.hpp"
-#include "glm/gtc/quaternion.hpp"
 
 namespace MEngine
 {
 TransformSystem::TransformSystem(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context,
-                                 std::shared_ptr<entt::registry> registry)
-    : mLogger(logger), mContext(context), mRegistry(registry)
+                                 std::shared_ptr<IConfigure> configure, std::shared_ptr<entt::registry> registry)
+    : System(logger, context, configure, registry)
 {
 }
 void TransformSystem::Init()

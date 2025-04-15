@@ -68,7 +68,7 @@ class Repository : public IRepository<TEntity, TKey>
     virtual bool Update(const TKey &id, const TEntity &delta) override = 0;
     virtual bool Update(const TKey &id, const TEntity *delta) override
     {
-        Update(id, *delta);
+        return Update(id, *delta);
     }
     virtual bool Delete(const TKey &id) override
     {

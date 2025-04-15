@@ -154,16 +154,16 @@ void RenderSystem::RenderForward()
 {
     auto extent = mRenderPassManager->GetExtent();
     vk::RenderPassBeginInfo renderPassBeginInfo;
-    std::array<vk::ClearValue, 7> clearValues;
-    clearValues[0].color = vk::ClearColorValue(std::array<float, 4>{0.0f, 0.0f, 0.0f, 1.0f}); // 附件0: 位置
-    clearValues[1].color = vk::ClearColorValue(std::array<float, 4>{0.0f, 0.0f, 0.0f, 1.0f}); // 附件1: 法线
-    clearValues[2].color = vk::ClearColorValue(std::array<float, 4>{0.0f, 0.0f, 0.0f, 1.0f}); // 附件2: Albedo
-    clearValues[3].color = vk::ClearColorValue(std::array<float, 4>{0.0f, 0.0f, 0.0f, 1.0f}); // 附件3: 金属/粗糙度
-    clearValues[4].color = vk::ClearColorValue(std::array<float, 4>{0.0f, 0.0f, 0.0f, 1.0f}); // 附件4: AO
-    clearValues[5].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);                        // 附件5: 深度
-    clearValues[6].color = vk::ClearColorValue(std::array<float, 4>{0.0f, 0.0f, 0.0f, 1.0f}); // 附件6: Swapchain
-    auto defferFrameBuffers = mRenderPassManager->GetFrameBuffer(RenderPassType::MainPass);
-    renderPassBeginInfo.setRenderPass(mRenderPassManager->GetRenderPass(RenderPassType::MainPass))
+    std::array<vk::ClearValue, 8> clearValues;
+    clearValues[0].color = vk::ClearColorValue(std::array<float, 4>{0.0f, 0.0f, 0.0f, 1.0f}); // 附件0: Color
+    clearValues[1].color = vk::ClearColorValue(std::array<float, 4>{0.0f, 0.0f, 0.0f, 1.0f}); // 附件1: 位置
+    clearValues[2].color = vk::ClearColorValue(std::array<float, 4>{0.0f, 0.0f, 0.0f, 1.0f}); // 附件2: 法线
+    clearValues[3].color = vk::ClearColorValue(std::array<float, 4>{0.0f, 0.0f, 0.0f, 1.0f}); // 附件3: Albedo
+    clearValues[4].color = vk::ClearColorValue(std::array<float, 4>{0.0f, 0.0f, 0.0f, 1.0f}); // 附件4: 金属/粗糙度
+    clearValues[5].color = vk::ClearColorValue(std::array<float, 4>{0.0f, 0.0f, 0.0f, 1.0f}); // 附件5: AO
+    clearValues[6].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);                        // 附件6: 深度
+    auto defferFrameBuffers = mRenderPassManager->GetFrameBuffer(RenderPassType::ForwardComposition);
+    renderPassBeginInfo.setRenderPass(mRenderPassManager->GetRenderPass(RenderPassType::ForwardComposition))
         .setFramebuffer(defferFrameBuffers[mImageIndex])
         .setRenderArea(vk::Rect2D({0, 0}, extent))
         .setClearValues(clearValues);
@@ -175,10 +175,10 @@ void RenderSystem::RenderForward()
 void RenderSystem::RenderTranslucencyPass()
 {
     auto extent = mRenderPassManager->GetExtent();
-    // Translucency entities
-    auto entities = mBatchMaterialComponents[PipelineType::ForwardTransparent];
-    auto pipelineLayout = mPipelineLayoutManager->GetPipelineLayout(PipelineLayoutType::Transparent);
-    auto pipeline = mPipelineManager->GetPipeline(PipelineType::ForwardTransparent);
+    // PBR
+    auto forwardTransparentPBREntities = mRenderEntities[RenderType::ForwardTransparentPBR];
+    auto pipelineLayout = mPipelineLayoutManager->GetPipelineLayout(PipelineLayoutType::PBR);
+    auto pipeline = mPipelineManager->GetPipeline(PipelineType::ForwardTransparentPBR);
     auto renderPass = mRenderPassManager->GetRenderPass(RenderPassType::Transparent);
     auto transparentFrameBuffers = mRenderPassManager->GetFrameBuffer(RenderPassType::Transparent);
     vk::RenderPassBeginInfo renderPassBeginInfo;
@@ -208,7 +208,7 @@ void RenderSystem::RenderTranslucencyPass()
         // 1. 绑定管线
         mGraphicCommandBuffers[mFrameIndex]->bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
 
-        for (auto entity : entities)
+        for (auto entity : forwardTransparentPBREntities)
         {
             auto &material = mRegistry->get<MaterialComponent>(entity);
             auto &mesh = mRegistry->get<MeshComponent>(entity);
@@ -220,7 +220,7 @@ void RenderSystem::RenderTranslucencyPass()
             mGraphicCommandBuffers[mFrameIndex]->bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0,
                                                                     mGlobalDescriptorSets[mFrameIndex].get(), {});
             // 3. 绑定材质描述符集
-            auto materialDescriptorSet = material.material->GetMaterialDescriptorSet();
+            auto materialDescriptorSet = material.material->GetDescriptorSet();
             mGraphicCommandBuffers[mFrameIndex]->bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 1,
                                                                     materialDescriptorSet, {});
             //  4. 绑定顶点缓冲区
@@ -233,6 +233,7 @@ void RenderSystem::RenderTranslucencyPass()
             mGraphicCommandBuffers[mFrameIndex]->drawIndexed(mesh.mesh->GetIndexCount(), 1, 0, 0, 0);
         }
     }
+    // Phong
     mGraphicCommandBuffers[mFrameIndex]->endRenderPass();
 }
 void RenderSystem::RenderPostProcessPass()

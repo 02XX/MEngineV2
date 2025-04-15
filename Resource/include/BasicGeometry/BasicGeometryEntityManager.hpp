@@ -7,6 +7,8 @@
 #include "DescriptorManager.hpp"
 #include "Entity/Interface/IMaterial.hpp"
 #include "Entity/Interface/ITexture.hpp"
+#include "Entity/PBRMaterial.hpp"
+#include "Entity/Texture.hpp"
 #include "NoCopyable.hpp"
 #include "PipelineLayoutManager.hpp"
 #include "PipelineManager.hpp"
@@ -27,12 +29,12 @@ class BasicGeometryEntityManager : public NoCopyable
     std::shared_ptr<PipelineLayoutManager> mPipelineLayoutManager;
     std::shared_ptr<DescriptorManager> mDescriptorManager;
     std::shared_ptr<SamplerManager> mSamplerManager;
-    std::shared_ptr<IRepository<IMaterial>> mMaterialRepository;
+    std::shared_ptr<IRepository<PBRMaterial>> mPBRMaterialRepository;
 
     std::shared_ptr<ImageFactory> mImageFactory;
     std::shared_ptr<BufferFactory> mBufferFactory;
     std::shared_ptr<BasicGeometryFactory> mBasicGeometryFactory;
-    std::shared_ptr<IRepository<ITexture>> mTextureRepository;
+    std::shared_ptr<IRepository<Texture>> mTextureRepository;
 
   private:
   public:
@@ -41,10 +43,10 @@ class BasicGeometryEntityManager : public NoCopyable
                                std::shared_ptr<PipelineLayoutManager> pipelineLayoutManager,
                                std::shared_ptr<DescriptorManager> descriptorManager,
                                std::shared_ptr<SamplerManager> samplerManager,
-                               std::shared_ptr<IRepository<IMaterial>> materialRepository,
+                               std::shared_ptr<IRepository<PBRMaterial>> pbrMaterialRepository,
                                std::shared_ptr<ImageFactory> imageFactory, std::shared_ptr<BufferFactory> bufferFactory,
                                std::shared_ptr<BasicGeometryFactory> basicGeometryFactory,
-                               std::shared_ptr<IRepository<ITexture>> textureRepository);
+                               std::shared_ptr<IRepository<Texture>> textureRepository);
     entt::entity CreateCube(std::shared_ptr<entt::registry> registry);
     entt::entity CreateCylinder(std::shared_ptr<entt::registry> registry);
     entt::entity CreateSphere(std::shared_ptr<entt::registry> registry);
