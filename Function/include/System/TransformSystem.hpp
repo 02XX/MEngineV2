@@ -9,7 +9,7 @@
 #include <memory>
 namespace MEngine
 {
-class TransformSystem final : public System<TransformComponent>
+class TransformSystem final : public System
 {
   private:
     glm::mat4x4 mRotationMatrix = glm::mat4(1.0f);

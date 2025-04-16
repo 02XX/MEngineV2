@@ -4,8 +4,6 @@
 #include <concepts>
 namespace MEngine
 {
-template <typename... Component>
-    requires(std::derived_from<Component, IComponent<>> && ...)
 class ISystem
 {
   public:

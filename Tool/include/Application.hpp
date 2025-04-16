@@ -82,9 +82,9 @@ class Application final : public NoCopyable
     std::shared_ptr<entt::registry> mRegistry;
     std::shared_ptr<BasicGeometryEntityManager> mBasicGeometryEntityManager;
     std::shared_ptr<UI> mUI;
-    std::shared_ptr<ISystem<MaterialComponent, MeshComponent>> mRenderSystem;
-    std::shared_ptr<ISystem<CameraComponent>> mCameraSystem;
-    std::shared_ptr<ISystem<TransformComponent>> mTransformSystem;
+    std::shared_ptr<ISystem> mRenderSystem;
+    std::shared_ptr<ISystem> mCameraSystem;
+    std::shared_ptr<ISystem> mTransformSystem;
 
     // time
     uint32_t mTargetFPS = 120;

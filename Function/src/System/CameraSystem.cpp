@@ -4,7 +4,7 @@ namespace MEngine
 {
 CameraSystem::CameraSystem(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context,
                            std::shared_ptr<IConfigure> configure, std::shared_ptr<entt::registry> registry)
-    : System<CameraComponent>(logger, context, configure, registry)
+    : System(logger, context, configure, registry)
 {
 }
 void CameraSystem::Init()

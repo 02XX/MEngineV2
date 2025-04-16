@@ -7,7 +7,7 @@
 #include "entt/entt.hpp"
 namespace MEngine
 {
-class CameraSystem final : public System<CameraComponent>
+class CameraSystem final : public System
 {
   public:
     CameraSystem(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context,

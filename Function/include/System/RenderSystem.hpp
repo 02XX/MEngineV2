@@ -32,7 +32,7 @@
 #include <vector>
 namespace MEngine
 {
-class RenderSystem final : public System<MaterialComponent, MeshComponent>
+class RenderSystem final : public System
 {
   private:
     // DI

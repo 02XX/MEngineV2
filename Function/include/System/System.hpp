@@ -7,9 +7,7 @@
 
 namespace MEngine
 {
-template <typename... Component>
-    requires(std::derived_from<Component, IComponent<>> && ...)
-class System : public ISystem<Component...>
+class System : public ISystem
 {
   protected:
     // DI
