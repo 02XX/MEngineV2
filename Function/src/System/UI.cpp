@@ -532,6 +532,14 @@ void UI::SceneViewWindow()
         // 显示场景视图
         if (!mSceneDescriptorSets.empty())
         {
+            for (auto &imageView : mSceneImageViews)
+            {
+                if (imageView == nullptr)
+                {
+                    mLogger->Error("Scene ImageView is nullptr");
+                    return;
+                }
+            }
             ImTextureID textureId =
                 reinterpret_cast<ImTextureID>(static_cast<VkDescriptorSet>(mSceneDescriptorSets[mImageIndex]));
             ImGui::Image(textureId, ImVec2(mSceneViewPortWidth, mSceneViewPortHeight), ImVec2(0, 1), ImVec2(1, 0));
@@ -644,7 +652,7 @@ void UI::DisplayAssetEntity()
         // {
         const int itemWidth = mIconSize + 10;
         const int itemHeight = mIconSize + 20;
-        const int columns = std::max(1, static_cast<int>(ImGui::GetContentRegionAvail().x / itemWidth));
+        int columns = std::max(1, static_cast<int>(ImGui::GetContentRegionAvail().x / itemWidth));
         ImGui::Columns(columns, "AssetColumns", false); // false = 不显示边框
         for (int i = 0; i < mProcessedAssets.size(); ++i)
         {

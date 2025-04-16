@@ -52,12 +52,13 @@ entt::entity BasicGeometryEntityManager::CreateCube(std::shared_ptr<entt::regist
 }
 entt::entity BasicGeometryEntityManager::CreateQuad(std::shared_ptr<entt::registry> registry)
 {
+    return entt::null;
 }
 entt::entity BasicGeometryEntityManager::CreateCylinder(std::shared_ptr<entt::registry> registry)
-{
+{ return entt::null;
 }
 entt::entity BasicGeometryEntityManager::CreateSphere(std::shared_ptr<entt::registry> registry)
-{
+{ return entt::null;
 }
 
 } // namespace MEngine

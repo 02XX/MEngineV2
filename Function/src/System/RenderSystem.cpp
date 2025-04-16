@@ -130,7 +130,7 @@ void RenderSystem::Tick(float deltaTime)
 {
     // TickRotationMatrix();
     Prepare(); // Prepare
-    // mUI->RenderUI();
+    mUI->RenderUI();
     CollectRenderEntities(); // Collect same material render entities
     CollectMainCamera();
     // RenderShadowDepthPass();  // Shadow pass
@@ -138,7 +138,7 @@ void RenderSystem::Tick(float deltaTime)
     // RenderSkyPass();          // Sky pass
     RenderTranslucencyPass(); // Translucency pass
     // RenderPostProcessPass();  // Post process pass
-    // RenderUIPass(deltaTime); // UI pass
+    RenderUIPass(deltaTime); // UI pass
     Present(); // Present
 }
 
@@ -329,6 +329,8 @@ void RenderSystem::RenderUIPass(float deltaTime)
     mGraphicCommandBuffers[mFrameIndex]->beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);
     mUI->RecordUICommandBuffer(mGraphicCommandBuffers[mFrameIndex].get());
     mGraphicCommandBuffers[mFrameIndex]->endRenderPass();
+    mLastFrameImages[mImageIndex] = &uiFrameResources[mImageIndex]->renderTargetImage;
+    mLastFrameImageViews[mImageIndex] = uiFrameResources[mImageIndex]->renderTargetImageView.get();
 }
 void RenderSystem::Present()
 {

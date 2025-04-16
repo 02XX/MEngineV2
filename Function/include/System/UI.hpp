@@ -14,7 +14,7 @@
 #include "imgui_impl_sdl3.h"
 #include "imgui_impl_vulkan.h"
 #include "imgui_internal.h"
-
+#include <algorithm>
 #include <cstdint>
 #include <memory>
 #include <vector>
@@ -32,7 +32,7 @@
 #include "PipelineManager.hpp"
 #include "Repository/Interface/IRepository.hpp"
 #include "stb_image.h"
-#include <algorithm>
+#undef max
 namespace MEngine
 {
 class UI
