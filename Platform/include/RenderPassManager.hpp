@@ -3,18 +3,19 @@
 #include "Context.hpp"
 #include "Image.hpp"
 #include "ImageFactory.hpp"
+#include "Interface/IConfigure.hpp"
 #include "Interface/ILogger.hpp"
 #include "MEngine.hpp"
 #include "NoCopyable.hpp"
 
+#include "SDLWindow.hpp"
 #include "magic_enum/magic_enum.hpp"
 #include <cstdint>
 #include <memory>
 #include <unordered_map>
 #include <vector>
 #include <vulkan/vulkan.hpp>
-#include <vulkan/vulkan_handles.hpp>
-#include <vulkan/vulkan_structs.hpp>
+
 struct RenderSetting
 {
     // "Render": {
@@ -49,8 +50,8 @@ struct TransparentFrameResource
 struct UIFrameResource
 {
     // Render Target
-    vk::ImageView renderTargetImageView; // Swapchain Image View
-    vk::Image renderTargetImage;         // Swapchain Image
+    vk::UniqueImageView renderTargetImageView;
+    UniqueImage renderTargetImage;
     // Depth Stencil
     vk::UniqueImageView depthStencilImageView;
     UniqueImage depthStencilImage;
@@ -62,6 +63,7 @@ class RenderPassManager final : public NoCopyable
     std::shared_ptr<ILogger> mLogger;
     std::shared_ptr<Context> mContext;
     std::shared_ptr<ImageFactory> mImageFactory;
+    std::shared_ptr<IConfigure> mConfigure;
 
   private:
     std::unordered_map<RenderPassType, vk::UniqueRenderPass> mRenderPasses;
@@ -92,10 +94,9 @@ class RenderPassManager final : public NoCopyable
 
   public:
     RenderPassManager(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context,
-                      std::shared_ptr<ImageFactory> imageFactory);
+                      std::shared_ptr<IConfigure> configure, std::shared_ptr<ImageFactory> imageFactory);
     vk::RenderPass GetRenderPass(RenderPassType type) const;
     std::vector<vk::Framebuffer> GetFrameBuffer(RenderPassType type) const;
-    void RecreateUIFrameBuffer();
     void RecreateFrameBuffer(uint32_t width, uint32_t height);
     vk::Extent2D GetExtent() const
     {

@@ -1,15 +1,13 @@
 #include "RenderPassManager.hpp"
-#include <array>
-#include <vector>
-#include <vulkan/vulkan_structs.hpp>
 
 namespace MEngine
 {
 RenderPassManager::RenderPassManager(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context,
-                                     std::shared_ptr<ImageFactory> imageFactory)
-    : mLogger(logger), mContext(context), mImageFactory(imageFactory)
+                                     std::shared_ptr<IConfigure> configure, std::shared_ptr<ImageFactory> imageFactory)
+    : mLogger(logger), mContext(context), mImageFactory(imageFactory), mConfigure(configure)
 {
-
+    mWidth = mContext->GetSurfaceInfo().extent.width;
+    mHeight = mContext->GetSurfaceInfo().extent.height;
     CreateShadowDepthRenderPass();
     CreateDeferredCompositionRenderPass();
     CreateForwardCompositionRenderPass();
@@ -132,7 +130,7 @@ void RenderPassManager::CreateTransparentRenderPass()
             .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
             .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
             .setInitialLayout(vk::ImageLayout::eUndefined)
-            .setFinalLayout(vk::ImageLayout::eShaderReadOnlyOptimal),
+            .setFinalLayout(vk::ImageLayout::eColorAttachmentOptimal),
         // Depth Stencil
         vk::AttachmentDescription()
             .setFormat(mImageFactory->GetDepthStencilFormat())
@@ -182,7 +180,7 @@ void RenderPassManager::CreateUIRenderPass()
             .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
             .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
             .setInitialLayout(vk::ImageLayout::eColorAttachmentOptimal)
-            .setFinalLayout(vk::ImageLayout::ePresentSrcKHR),
+            .setFinalLayout(vk::ImageLayout::eColorAttachmentOptimal),
     };
     std::vector<vk::AttachmentReference> colorRefs = {
         vk::AttachmentReference(0, vk::ImageLayout::eColorAttachmentOptimal)};
@@ -262,21 +260,21 @@ void RenderPassManager::CreateUIFrameBuffer()
 {
     mFrameBuffers[RenderPassType::UI].clear();
     mUIFrameResources.clear();
+    auto extent = vk::Extent2D{mWidth, mHeight};
     auto swapchainImages = mContext->GetSwapchainImages();
     auto swapchainImageViews = mContext->GetSwapchainImageViews();
-    auto extent = mContext->GetSurfaceInfo().extent;
     for (size_t i = 0; i < swapchainImageViews.size(); ++i)
     {
         auto uiFrameResource = std::make_shared<UIFrameResource>();
         // Render Target
-        auto swapchainImageView = swapchainImageViews[i];
-        auto swapchainImage = swapchainImages[i];
-        uiFrameResource->renderTargetImage = swapchainImage;
-        uiFrameResource->renderTargetImageView = swapchainImageView;
+        auto renderTargetImage = mImageFactory->CreateImage(ImageType::RenderTarget, vk::Extent3D(extent, 1));
+        auto renderTargetImageView = mImageFactory->CreateImageView(renderTargetImage.get());
+        uiFrameResource->renderTargetImage = std::move(renderTargetImage);
+        uiFrameResource->renderTargetImageView = std::move(renderTargetImageView);
         // 保存资源
         mUIFrameResources.push_back(uiFrameResource);
         // 创建帧缓冲
-        std::array<vk::ImageView, 1> attachments = {uiFrameResource->renderTargetImageView};
+        std::array<vk::ImageView, 1> attachments = {uiFrameResource->renderTargetImageView.get()};
         vk::FramebufferCreateInfo framebufferCreateInfo;
         framebufferCreateInfo.setRenderPass(mRenderPasses[RenderPassType::UI].get())
             .setAttachments(attachments)
@@ -335,12 +333,7 @@ void RenderPassManager::RecreateFrameBuffer(uint32_t width, uint32_t height)
     CreateSkyFrameBuffer();
     CreateTransparentFrameBuffer();
     CreatePostProcessFrameBuffer();
-    // CreateUIFrameBuffer();
-    mLogger->Info("Frame buffers recreated with {}x{} successfully", width, height);
-}
-void RenderPassManager::RecreateUIFrameBuffer()
-{
     CreateUIFrameBuffer();
-    mLogger->Info("UI Frame buffer recreated successfully");
+    mLogger->Info("Frame buffers recreated with {}x{} successfully", width, height);
 }
 } // namespace MEngine

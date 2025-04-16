@@ -15,7 +15,6 @@
 #include "imgui_impl_vulkan.h"
 #include "imgui_internal.h"
 
-
 #include <cstdint>
 #include <memory>
 #include <vector>
@@ -97,6 +96,7 @@ class UI
     vk::UniqueSampler mSceneSampler;
     std::vector<vk::DescriptorSet> mSceneDescriptorSets;
     uint32_t mImageIndex = 0;
+    std::vector<vk::ImageView> mSceneImageViews;
 
   private:
     // Inspector View
@@ -145,7 +145,7 @@ class UI
     void ProcessEvent(const SDL_Event *event);
     void RenderUI();
     void RecordUICommandBuffer(vk::CommandBuffer commandBuffer);
-    void SetSceneViewPort();
+    void SetSceneViewPort(std::vector<vk::ImageView> imageViews);
 
   public:
     inline bool IsSceneViewPortChanged() const

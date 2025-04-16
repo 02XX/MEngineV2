@@ -61,7 +61,6 @@ UI::UI(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context, std::s
     // mDefaultTextureDescriptorSet =
     //     ImGui_ImplVulkan_AddTexture(mSceneSampler.get(), defaultTexture->GetImageView(),
     //                                 static_cast<VkImageLayout>(vk::ImageLayout::eShaderReadOnlyOptimal));
-    SetSceneViewPort();
 
     EntryFolder(mProjectPath);
 }
@@ -69,23 +68,37 @@ void UI::ProcessEvent(const SDL_Event *event)
 {
     ImGui_ImplSDL3_ProcessEvent(event);
 }
-void UI::SetSceneViewPort()
+void UI::SetSceneViewPort(std::vector<vk::ImageView> imageViews)
 {
-    std::vector<vk::ImageView> imageViews;
-    for (auto imageView : mRenderPassManager->GetTransparentFrameResource())
+    // 判断imageView是否相等
+    for (auto imageView : imageViews)
     {
-        imageViews.push_back(imageView->renderTargetImageView.get());
+        if (imageView == nullptr)
+        {
+            mLogger->Error("ImageView is nullptr");
+            return;
+        }
     }
+    for (int i = 0; i < imageViews.size(); ++i)
+    {
+        if (!mSceneImageViews.empty() && imageViews[i] == mSceneImageViews[i])
+        {
+            return;
+        }
+    }
+    mSceneImageViews = imageViews;
     for (auto sceneDescriptorSet : mSceneDescriptorSets)
     {
         ImGui_ImplVulkan_RemoveTexture(sceneDescriptorSet);
     }
     mSceneDescriptorSets.clear();
-    for (size_t i = 0; i < imageViews.size(); ++i)
+    for (size_t i = 0; i < mSceneImageViews.size(); ++i)
     {
-        mSceneDescriptorSets.push_back(ImGui_ImplVulkan_AddTexture(
-            mSceneSampler.get(), imageViews[i], static_cast<VkImageLayout>(vk::ImageLayout::eShaderReadOnlyOptimal)));
+        mSceneDescriptorSets.push_back(
+            ImGui_ImplVulkan_AddTexture(mSceneSampler.get(), mSceneImageViews[i],
+                                        static_cast<VkImageLayout>(vk::ImageLayout::eShaderReadOnlyOptimal)));
     }
+    mLogger->Info("Scene View Descriptor Set Created");
 }
 void UI::CollectEntity()
 {
@@ -512,16 +525,17 @@ void UI::SceneViewWindow()
         {
             mContext->GetDevice().waitIdle();
             mRenderPassManager->RecreateFrameBuffer(width, height);
-            SetSceneViewPort();
         }
     }
     else
     {
         // 显示场景视图
-        ImTextureID textureId =
-            reinterpret_cast<ImTextureID>(static_cast<VkDescriptorSet>(mSceneDescriptorSets[mImageIndex]));
-        ImGui::Image(textureId, ImVec2(mSceneViewPortWidth, mSceneViewPortHeight), ImVec2(0, 1), ImVec2(1, 0));
-
+        if (!mSceneDescriptorSets.empty())
+        {
+            ImTextureID textureId =
+                reinterpret_cast<ImTextureID>(static_cast<VkDescriptorSet>(mSceneDescriptorSets[mImageIndex]));
+            ImGui::Image(textureId, ImVec2(mSceneViewPortWidth, mSceneViewPortHeight), ImVec2(0, 1), ImVec2(1, 0));
+        }
         // 3. imGuizmo
         ImVec2 imagePos = ImGui::GetItemRectMin();
         ImVec2 imageSize = ImGui::GetItemRectSize();

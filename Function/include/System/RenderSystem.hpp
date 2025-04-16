@@ -30,6 +30,7 @@
 #include <cstdint>
 #include <memory>
 #include <vector>
+#include <vulkan/vulkan_handles.hpp>
 namespace MEngine
 {
 class RenderSystem final : public System
@@ -65,6 +66,9 @@ class RenderSystem final : public System
     std::vector<std::vector<vk::UniqueCommandBuffer>> mSecondaryCommandBuffers;
     std::vector<vk::UniqueCommandBuffer> mGraphicCommandBuffers;
 
+    std::vector<UniqueImage *> mLastFrameImages;
+    std::vector<vk::ImageView> mLastFrameImageViews;
+
     // Global DescriptorSet
     std::vector<vk::UniqueDescriptorSet> mGlobalDescriptorSets;
     // main camera
@@ -88,6 +92,8 @@ class RenderSystem final : public System
     void RenderPostProcessPass();
     void RenderUIPass(float deltaTime);
     void Present();
+
+    void TransitionSwapchainImageLayout();
 
   public:
     RenderSystem(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context,
