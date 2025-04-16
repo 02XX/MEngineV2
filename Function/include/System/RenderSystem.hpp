@@ -2,10 +2,10 @@
 #include "Buffer.hpp"
 #include "BufferFactory.hpp"
 #include "CommandBuffeManager.hpp"
-#include "Componet/CameraComponent.hpp"
-#include "Componet/MaterialComponent.hpp"
-#include "Componet/MeshComponent.hpp"
-#include "Componet/TransformComponent.hpp"
+#include "Component/CameraComponent.hpp"
+#include "Component/MaterialComponent.hpp"
+#include "Component/MeshComponent.hpp"
+#include "Component/TransformComponent.hpp"
 #include "Context.hpp"
 #include "DescriptorManager.hpp"
 #include "Entity/Interface/IMaterial.hpp"
@@ -26,19 +26,16 @@
 #include "System/UI.hpp"
 #include "TaskScheduler.hpp"
 #include "Vertex.hpp"
-#include "entt/entity/fwd.hpp"
 #include "entt/entt.hpp"
 #include <cstdint>
 #include <memory>
 #include <vector>
 namespace MEngine
 {
-
-class RenderSystem final : public System
+class RenderSystem final : public System<MaterialComponent, MeshComponent>
 {
   private:
     // DI
-
     std::shared_ptr<RenderPassManager> mRenderPassManager;
     std::shared_ptr<PipelineLayoutManager> mPipelineLayoutManager;
     std::shared_ptr<PipelineManager> mPipelineManager;
@@ -103,7 +100,7 @@ class RenderSystem final : public System
                  std::shared_ptr<DescriptorManager> descriptorManager, std::shared_ptr<SamplerManager> samplerManager,
                  std::shared_ptr<BufferFactory> bufferFactory, std::shared_ptr<ImageFactory> imageFactory,
                  std::shared_ptr<IWindow> window, std::shared_ptr<UI> ui);
-    ~RenderSystem() override;
+    ~RenderSystem();
     void Init() override;
     void Tick(float deltaTime) override;
     void Shutdown() override;

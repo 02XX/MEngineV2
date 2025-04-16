@@ -3,12 +3,13 @@
 #include "ISystem.hpp"
 #include "Interface/IConfigure.hpp"
 #include "Interface/ILogger.hpp"
-#include "entt/entt.hpp"
 #include <memory>
 
 namespace MEngine
 {
-class System : public ISystem
+template <typename... Component>
+    requires(std::derived_from<Component, IComponent<>> && ...)
+class System : public ISystem<Component...>
 {
   protected:
     // DI
@@ -23,19 +24,23 @@ class System : public ISystem
 
   public:
     System(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context, std::shared_ptr<IConfigure> configure,
-           std::shared_ptr<entt::registry> registry);
-
-    virtual ~System() override = default;
-
+           std::shared_ptr<entt::registry> registry)
+        : mLogger(logger), mContext(context), mConfigure(configure), mRegistry(registry)
+    {
+    }
+    virtual ~System() = default;
+    // auto GetEntitiesView()
+    // {
+    //     return mRegistry->view<Component...>();
+    // };
     virtual void Init() override {};
     virtual void Tick(float deltaTime) override {};
     virtual void Shutdown() override {};
-
-    virtual bool IsInit() const
+    inline virtual bool IsInit() const
     {
         return mIsInit;
     };
-    virtual bool IsShutdown() const
+    inline virtual bool IsShutdown() const
     {
         return mIsShutdown;
     };

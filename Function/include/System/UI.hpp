@@ -9,7 +9,6 @@
 #include "Interface/IWindow.hpp"
 #include "RenderPassManager.hpp"
 #include "SamplerManager.hpp"
-#include "entt/entity/fwd.hpp"
 #include "entt/entt.hpp"
 #include "imgui.h"
 #include "imgui_impl_sdl3.h"
@@ -21,11 +20,11 @@
 #include <memory>
 #include <vector>
 
-#include "Componet/AssestComponent.hpp"
-#include "Componet/CameraComponent.hpp"
-#include "Componet/MaterialComponent.hpp"
-#include "Componet/MeshComponent.hpp"
-#include "Componet/TransformComponent.hpp"
+#include "Component/AssestComponent.hpp"
+#include "Component/CameraComponent.hpp"
+#include "Component/MaterialComponent.hpp"
+#include "Component/MeshComponent.hpp"
+#include "Component/TransformComponent.hpp"
 #include "Entity/Interface/IMaterial.hpp"
 #include "Entity/Interface/ITexture.hpp"
 #include "ImGuizmo.h"

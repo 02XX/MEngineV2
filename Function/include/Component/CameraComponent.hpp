@@ -1,10 +1,11 @@
 #pragma once
+#include "Component/Interface/IComponent.hpp"
 #include "MEngine.hpp"
 #include "Math.hpp"
-
+#include "entt/entity/storage.hpp"
 namespace MEngine
 {
-struct CameraComponent
+struct CameraComponent : public IComponent<>
 {
     bool isMainCamera = false;
     float aspectRatio = 1;
@@ -25,3 +26,7 @@ struct CameraComponent
     glm::mat4 projectionMatrix = glm::mat4(1.0f);
 };
 } // namespace MEngine
+// template <> struct entt::storage_type<MEngine::CameraComponent>
+// {
+//     using type = entt::storage<MEngine::CameraComponent>;
+// };

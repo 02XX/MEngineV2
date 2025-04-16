@@ -3,6 +3,9 @@
 #include "Application.hpp"
 #include "BasicGeometry/BasicGeometryEntityManager.hpp"
 #include "BufferFactory.hpp"
+#include "Component/CameraComponent.hpp"
+#include "Component/MaterialComponent.hpp"
+#include "Component/TransformComponent.hpp"
 #include "Context.hpp"
 #include "DescriptorManager.hpp"
 #include "Entity/Interface/IMaterial.hpp"
@@ -79,9 +82,9 @@ class Application final : public NoCopyable
     std::shared_ptr<entt::registry> mRegistry;
     std::shared_ptr<BasicGeometryEntityManager> mBasicGeometryEntityManager;
     std::shared_ptr<UI> mUI;
-    std::shared_ptr<RenderSystem> mRenderSystem;
-    std::shared_ptr<ISystem> mCameraSystem;
-    std::shared_ptr<ISystem> mTransformSystem;
+    std::shared_ptr<ISystem<MaterialComponent, MeshComponent>> mRenderSystem;
+    std::shared_ptr<ISystem<CameraComponent>> mCameraSystem;
+    std::shared_ptr<ISystem<TransformComponent>> mTransformSystem;
 
     // time
     uint32_t mTargetFPS = 120;

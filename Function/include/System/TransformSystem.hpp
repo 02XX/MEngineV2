@@ -1,15 +1,15 @@
 #pragma once
-#include "Componet/CameraComponent.hpp"
-#include "Componet/MaterialComponent.hpp"
-#include "Componet/MeshComponent.hpp"
-#include "Componet/TransformComponent.hpp"
+#include "Component/CameraComponent.hpp"
+#include "Component/MaterialComponent.hpp"
+#include "Component/MeshComponent.hpp"
+#include "Component/TransformComponent.hpp"
 #include "Interface/IConfigure.hpp"
 #include "System/System.hpp"
 #include "entt/entt.hpp"
 #include <memory>
 namespace MEngine
 {
-class TransformSystem final : public System
+class TransformSystem final : public System<TransformComponent>
 {
   private:
     glm::mat4x4 mRotationMatrix = glm::mat4(1.0f);

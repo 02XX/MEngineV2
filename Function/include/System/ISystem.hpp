@@ -1,11 +1,14 @@
 #pragma once
-#include "MEngine.hpp"
+#include "Component/Interface/IComponent.hpp"
+#include "entt/entt.hpp"
+#include <concepts>
 namespace MEngine
 {
+template <typename... Component>
+    requires(std::derived_from<Component, IComponent<>> && ...)
 class ISystem
 {
   public:
-    ISystem() = default;
     virtual ~ISystem() = default;
 
     virtual void Init() = 0;
