@@ -32,8 +32,13 @@ class Repository : public IRepository<TEntity, TKey>
     {
         auto entity = std::make_unique<TEntity>();
         auto id = entity->GetID();
-        Update(id, *Get(id));
         mEntities[id] = std::move(entity);
+        if (!Update(id, *Get(id)))
+        {
+            mLogger->Error("Failed to create entity!");
+            mEntities.erase(id);
+            return nullptr;
+        }
         return mEntities[id].get();
     }
     virtual TEntity *Get(const TKey &id) override

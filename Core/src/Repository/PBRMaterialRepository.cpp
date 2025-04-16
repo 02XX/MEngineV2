@@ -29,6 +29,12 @@ bool PBRMaterialRepository::Update(const UUID &id, const PBRMaterial &delta)
         material->mMetallicRoughnessMapID = delta.mMetallicRoughnessMapID;
         material->mAOMapID = delta.mAOMapID;
         material->mEmissiveMapID = delta.mEmissiveMapID;
+        material->mMaterialParams.textureFlag.useAlbedoMap = material->mAlbedoMapID.IsEmpty() ? 0 : 1;
+        material->mMaterialParams.textureFlag.useNormalMap = material->mNormalMapID.IsEmpty() ? 0 : 1;
+        material->mMaterialParams.textureFlag.useMetallicRoughnessMap =
+            material->mMetallicRoughnessMapID.IsEmpty() ? 0 : 1;
+        material->mMaterialParams.textureFlag.useAOMap = material->mAOMapID.IsEmpty() ? 0 : 1;
+        material->mMaterialParams.textureFlag.useEmissiveMap = material->mEmissiveMapID.IsEmpty() ? 0 : 1;
         // 更新材质的UBO
         if (material->mMaterialParamsUBO == nullptr)
         {

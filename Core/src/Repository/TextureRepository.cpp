@@ -7,22 +7,23 @@ TextureRepository::TextureRepository(std::shared_ptr<ILogger> logger, std::share
                                      std::shared_ptr<SamplerManager> samplerManager)
     : Repository<Texture>(logger, context, configure), mImageFactory(imageFactory), mSamplerManager(samplerManager)
 {
+    mCheckBoardData = CheckBoard();
     auto defaultTexture = std::unique_ptr<Texture>(Create());
     mEntities[UUID{}] = std::move(defaultTexture);
 }
 Texture *TextureRepository::Create()
 {
     auto texture = std::make_unique<Texture>();
-    auto defaultImagePath = mConfigure->GetJson()["Texture"]["Default"].get<std::string>();
-    std::filesystem::path fullPath = std::filesystem::current_path() / "Resource" / "Material" / defaultImagePath;
-    if (!CheckValidate(fullPath))
-    {
-        return nullptr;
-    }
-    texture->imagePath = fullPath;
+    texture->mWidth = 4096;
+    texture->mHeight = 4096;
+    texture->mChannels = 4;
+    texture->mImage =
+        mImageFactory->CreateImage(ImageType::Texture2D, vk::Extent3D{texture->mWidth, texture->mHeight, 1},
+                                   mCheckBoardData.size(), mCheckBoardData.data());
+    texture->mImageView = mImageFactory->CreateImageView(texture->mImage.get());
+    texture->mSampler = mSamplerManager->CreateUniqueSampler(vk::Filter::eLinear, vk::Filter::eLinear);
     auto id = texture->GetID();
     mEntities[id] = std::move(texture);
-    Update(id, *Get(id));
     return mEntities[id].get();
 }
 bool TextureRepository::Update(const UUID &id, const Texture &delta)
@@ -87,5 +88,34 @@ bool TextureRepository::CheckValidate(const Texture &delta) const
     // Check imagePath
     return CheckValidate(delta.imagePath);
     // TODO: CheckValidate other members
+}
+std::vector<unsigned char> TextureRepository::CheckBoard()
+{
+    // 4k
+    int width = 4096;
+    int height = 4096;
+    int channels = 4; // RGBA
+    int grid = 8;
+    int tileSize = width / grid;
+    std::vector<unsigned char> checkBoard(width * height * channels, 0);
+    for (int y = 0; y < height; y += tileSize)
+    {
+        for (int x = 0; x < width; x += tileSize)
+        {
+            unsigned char color = ((x / tileSize) % 2 == (y / tileSize) % 2) ? 255 : 0;
+            for (int j = 0; j < tileSize && (y + j) < height; ++j)
+            {
+                for (int i = 0; i < tileSize && (x + i) < width; ++i)
+                {
+                    int index = ((y + j) * width + (x + i)) * channels;
+                    checkBoard[index] = color;
+                    checkBoard[index + 1] = color;
+                    checkBoard[index + 2] = color;
+                    checkBoard[index + 3] = 255; // Alpha channel
+                }
+            }
+        }
+    }
+    return checkBoard;
 }
 } // namespace MEngine

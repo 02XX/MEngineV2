@@ -12,7 +12,7 @@ namespace MEngine
 
 struct PBRParameters
 {
-    glm::vec3 albedo = {1.0f, 1.0f, 1.0f};
+    alignas(16) glm::vec3 albedo = {1.0f, 1.0f, 1.0f};
     float metallic = 0.0f;
     float roughness = 0.5F;
     float ao = 1.0f;
@@ -21,7 +21,7 @@ struct PBRParameters
 };
 struct PBRTextureFlag
 {
-    uint32_t useAlbedoMap = 0; // 与GLSL的bool字节一致 4字节
+    uint32_t useAlbedoMap = 0; // 4字节
     uint32_t useNormalMap = 0;
     uint32_t useMetallicRoughnessMap = 0;
     uint32_t useAOMap = 0;
@@ -87,6 +87,66 @@ class PBRMaterial final : public IMaterial, public Entity<>
     inline void SetRenderType(RenderType renderType) override
     {
         mRenderType = renderType;
+    }
+    inline void SetAlbedoMapID(const UUID &id)
+    {
+        mAlbedoMapID = id;
+        if (mAlbedoMapID.IsEmpty())
+        {
+            mMaterialParams.textureFlag.useAlbedoMap = 0;
+        }
+        else
+        {
+            mMaterialParams.textureFlag.useAlbedoMap = 1;
+        }
+    }
+    inline void SetNormalMapID(const UUID &id)
+    {
+        mNormalMapID = id;
+        if (mNormalMapID.IsEmpty())
+        {
+            mMaterialParams.textureFlag.useNormalMap = 0;
+        }
+        else
+        {
+            mMaterialParams.textureFlag.useNormalMap = 1;
+        }
+    }
+    inline void SetMetallicRoughnessMapID(const UUID &id)
+    {
+        mMetallicRoughnessMapID = id;
+        if (mMetallicRoughnessMapID.IsEmpty())
+        {
+            mMaterialParams.textureFlag.useMetallicRoughnessMap = 0;
+        }
+        else
+        {
+            mMaterialParams.textureFlag.useMetallicRoughnessMap = 1;
+        }
+    }
+    inline void SetAOMapID(const UUID &id)
+    {
+        mAOMapID = id;
+        if (mAOMapID.IsEmpty())
+        {
+            mMaterialParams.textureFlag.useAOMap = 0;
+        }
+        else
+        {
+            mMaterialParams.textureFlag.useAOMap = 1;
+        }
+    }
+    inline void SetEmissiveMapID(const UUID &id)
+    {
+        mEmissiveMapID = id;
+        if (mEmissiveMapID.IsEmpty())
+        {
+            mMaterialParams.textureFlag.useEmissiveMap = 0;
+        }
+        else
+        {
+            mMaterialParams.textureFlag.useEmissiveMap = 1;
+        }
     }
     // Vulkan Resources
     vk::DescriptorSet GetDescriptorSet() const override

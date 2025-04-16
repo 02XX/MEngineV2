@@ -26,6 +26,7 @@ entt::entity BasicGeometryEntityManager::CreateCube(std::shared_ptr<entt::regist
     std::filesystem::path materialPath = std::filesystem::current_path() / "Resource" / "Material" / "CubeMaterial.mat";
     auto material = mPBRMaterialRepository->Create();
     material->SetRenderType(RenderType::ForwardTransparentPBR);
+
     mPBRMaterialRepository->Update(material->GetID(), material);
     // 3. 创建网格
     auto mesh = std::make_shared<Mesh>(mBufferFactory, geometry.vertices, geometry.indices);

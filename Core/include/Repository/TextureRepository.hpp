@@ -7,6 +7,7 @@
 #include "Repository/Repository.hpp"
 #include "stb_image.h"
 #include <memory>
+#include <vector>
 
 namespace MEngine
 {
@@ -17,6 +18,9 @@ class TextureRepository final : public Repository<Texture>
     std::shared_ptr<ImageFactory> mImageFactory;
     std::shared_ptr<SamplerManager> mSamplerManager;
 
+  private:
+    std::vector<unsigned char> mCheckBoardData;
+
   public:
     TextureRepository(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context,
                       std::shared_ptr<IConfigure> configure, std::shared_ptr<ImageFactory> imageFactory,
@@ -25,5 +29,6 @@ class TextureRepository final : public Repository<Texture>
     bool Update(const UUID &id, const Texture &delta) override;
     bool CheckValidate(const std::filesystem::path &filePath) const override;
     bool CheckValidate(const Texture &delta) const override;
+    std::vector<unsigned char> CheckBoard();
 };
 } // namespace MEngine
