@@ -24,6 +24,15 @@ struct CameraComponent : public IComponent<>
     glm::mat4 viewMatrix = glm::mat4(1.0f);
     // Projection Matrix
     glm::mat4 projectionMatrix = glm::mat4(1.0f);
+    CameraComponent()
+    {
+    }
+    CameraComponent(bool isMainCamera, float aspectRatio, glm::vec3 position, glm::vec3 up, glm::vec3 front, float yaw,
+                    float pitch, float roll, float zoom, float fovY, float nearPlane, float farPlane)
+        : isMainCamera(isMainCamera), aspectRatio(aspectRatio), position(position), up(up), front(front), yaw(yaw),
+          pitch(pitch), roll(roll), zoom(zoom), fovY(fovY), nearPlane(nearPlane), farPlane(farPlane)
+    {
+    }
 };
 } // namespace MEngine
 // template <> struct entt::storage_type<MEngine::CameraComponent>

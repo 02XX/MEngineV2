@@ -31,13 +31,16 @@ entt::entity BasicGeometryEntityManager::CreateCube(std::shared_ptr<entt::regist
     // 3. 创建网格
     auto mesh = std::make_shared<Mesh>(mBufferFactory, geometry.vertices, geometry.indices);
     // 4. 创建组件对象
-    TransformComponent transformComponent{.position = glm::vec3(0.0f, 0.0f, 0.0f),
-                                          .rotation = glm::quat(glm::vec3(1.0f, 1.0f, 1.0f)),
-                                          .scale = glm::vec3(1.0f, 1.0f, 1.0f)};
+    TransformComponent transformComponent;
+    transformComponent.position = glm::vec3(0.0f, 0.0f, 0.0f);
+    transformComponent.rotation = glm::quat(glm::vec3(1.0f, 1.0f, 1.0f));
+    transformComponent.scale = glm::vec3(1.0f, 1.0f, 1.0f);
     // 5. 创建网格组件
-    MeshComponent meshComponent{.mesh = mesh};
+    MeshComponent meshComponent;
+    meshComponent.mesh = mesh;
     // 6. 创建材质组件
-    MaterialComponent materialComponent{.material = material};
+    MaterialComponent materialComponent;
+    materialComponent.material = material;
 
     // 5. 创建实体并添加组件
     entt::entity entity = registry->create();

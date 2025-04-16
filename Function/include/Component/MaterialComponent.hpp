@@ -6,7 +6,11 @@ namespace MEngine
 {
 struct MaterialComponent : public IComponent<>
 {
-    IMaterial *material; // 材质
+    IMaterial *material = nullptr; // 材质
+    MaterialComponent(IMaterial *material) : material(material)
+    {
+    }
+    MaterialComponent() = default;
 };
 } // namespace MEngine
 

@@ -21,6 +21,11 @@ struct AssetsComponent : public IComponent<>
     std::string name;
     AssetType type;
     vk::DescriptorSet iconDescriptorSet;
+    AssetsComponent() = default;
+    AssetsComponent(std::filesystem::path p, std::string n, AssetType t, vk::DescriptorSet icon)
+        : path(std::move(p)), name(std::move(n)), type(t), iconDescriptorSet(icon)
+    {
+    }
 };
 } // namespace MEngine
 

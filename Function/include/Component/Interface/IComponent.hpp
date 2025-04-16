@@ -6,6 +6,6 @@ using UUID = UUID;
 using UUIDGenerator = UUIDGenerator;
 template <typename TKey = UUID> struct IComponent
 {
-    // TKey id = UUIDGenerator()();
+    TKey id = UUIDGenerator()();
 };
 } // namespace MEngine

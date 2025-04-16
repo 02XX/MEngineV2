@@ -8,7 +8,11 @@ namespace MEngine
 {
 struct MeshComponent : public IComponent<>
 {
-    std::shared_ptr<Mesh> mesh;
+    std::shared_ptr<Mesh> mesh{};
+    MeshComponent() = default;
+    MeshComponent(std::shared_ptr<Mesh> mesh) : mesh(mesh)
+    {
+    }
 };
 } // namespace MEngine
 
