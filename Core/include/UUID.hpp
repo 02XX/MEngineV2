@@ -1,5 +1,8 @@
 #pragma once
+
 #include "fmt/format.h"
+#include <array>
+#include <cstddef>
 #include <cstdint>
 #include <iomanip>
 #include <random>
@@ -10,14 +13,14 @@ namespace MEngine
 {
 class UUID final
 {
+    friend class std::hash<MEngine::UUID>;
+    friend class fmt::formatter<MEngine::UUID>;
+    friend class UUIDGenerator;
+
   private:
-    static constexpr int HEX_DIGITS_PER_BYTE = 2;
-    static constexpr int UUID_STRING_LENGTH = 36; // 32 hex digits + 4 hyphens
-
+    uint64_t high; // 64 bits
+    uint64_t low;  // 64 bits
   public:
-    uint64_t high;
-    uint64_t low;
-
     // Construct from string in format "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
     UUID(const std::string &uuid)
     {
@@ -48,19 +51,9 @@ class UUID final
         high = std::stoull(hexStr.substr(0, 16), nullptr, 16);
         low = std::stoull(hexStr.substr(16, 16), nullptr, 16);
     }
-
-    // Default constructor creates empty UUID
     UUID() : high(0), low(0)
     {
     }
-
-    // Copy/move constructors and assignment operators
-    UUID(const UUID &other) = default;
-    UUID &operator=(const UUID &other) = default;
-    UUID(UUID &&other) = default;
-    UUID &operator=(UUID &&other) = default;
-    ~UUID() = default;
-
     // Convert to string in format "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
     std::string ToString() const
     {
@@ -134,23 +127,33 @@ template <> struct hash<MEngine::UUID>
 {
     size_t operator()(const MEngine::UUID &id) const
     {
-        return std::hash<uint64_t>{}(id.high) ^ (std::hash<uint64_t>{}(id.low) << 1);
+        // FNV-1a hash function
+        size_t hash = 2166136261u;
+        size_t prime = 16777619;
+        hash ^= (id.high >> 32) & 0xFFFFFFFF;
+        hash *= prime;
+        hash ^= (id.high & 0xFFFFFFFF);
+        hash *= prime;
+        hash ^= (id.low >> 32) & 0xFFFFFFFF;
+        hash *= prime;
+        hash ^= (id.low & 0xFFFFFFFF);
+        hash *= prime;
+        return hash;
     }
 };
 } // namespace std
 template <> struct fmt::formatter<MEngine::UUID>
 {
-    // 解析格式说明符（此处无特殊处理）
     constexpr auto parse(fmt::format_parse_context &ctx) -> decltype(ctx.begin())
     {
         return ctx.begin();
     }
-
-    // 定义UUID的格式化逻辑
     template <typename FormatContext>
     auto format(const MEngine::UUID &id, FormatContext &ctx) const -> decltype(ctx.out())
     {
-        // 示例：将UUID格式化为两个16位十六进制数（根据实际需求调整）
-        return fmt::format_to(ctx.out(), "{:016X}-{:016X}", id.high, id.low);
+        // Convert to string in format "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+        std::string uuidStr = id.ToString();
+        // Format the UUID string
+        return fmt::format_to(ctx.out(), "{}", uuidStr);
     }
 };
