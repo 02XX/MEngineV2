@@ -1,6 +1,7 @@
 #include "RenderPassManager.hpp"
 #include <array>
 #include <vector>
+#include <vulkan/vulkan_enums.hpp>
 #include <vulkan/vulkan_structs.hpp>
 
 namespace MEngine
@@ -9,7 +10,7 @@ RenderPassManager::RenderPassManager(std::shared_ptr<ILogger> logger, std::share
                                      std::shared_ptr<ImageFactory> imageFactory)
     : mLogger(logger), mContext(context), mImageFactory(imageFactory)
 {
-
+    mFrameCount = mContext->GetSwapchainImages().size();
     CreateShadowDepthRenderPass();
     CreateDeferredCompositionRenderPass();
     CreateForwardCompositionRenderPass();
@@ -30,9 +31,6 @@ void RenderPassManager::CreateShadowDepthRenderPass()
 {
 }
 void RenderPassManager::CreateDeferredCompositionRenderPass()
-{
-}
-void RenderPassManager::CreateForwardCompositionRenderPass()
 {
     std::vector<vk::AttachmentDescription> attachments{
         // 0：Render Target: Color
@@ -116,6 +114,65 @@ void RenderPassManager::CreateForwardCompositionRenderPass()
             .setInitialLayout(vk::ImageLayout::eUndefined)
             .setFinalLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal),
     };
+    // GBuffer pass
+    std::vector<vk::AttachmentReference> gbufferColorRefs{
+        vk::AttachmentReference(1, vk::ImageLayout::eColorAttachmentOptimal), // Albedo
+        vk::AttachmentReference(2, vk::ImageLayout::eColorAttachmentOptimal), // Position
+        vk::AttachmentReference(3, vk::ImageLayout::eColorAttachmentOptimal), // Normal
+        vk::AttachmentReference(4, vk::ImageLayout::eColorAttachmentOptimal), // Metalness/Roughness
+        vk::AttachmentReference(5, vk::ImageLayout::eColorAttachmentOptimal), // AO
+        vk::AttachmentReference(6, vk::ImageLayout::eColorAttachmentOptimal)  // Emissive
+    };
+    vk::AttachmentReference depthRef(7, vk::ImageLayout::eDepthStencilAttachmentOptimal);
+    vk::SubpassDescription gbufferSubpass{};
+    gbufferSubpass.setColorAttachments(gbufferColorRefs)
+        .setPipelineBindPoint(vk::PipelineBindPoint::eGraphics)
+        .setPDepthStencilAttachment(&depthRef);
+    // lighting pass
+    std::vector<vk::AttachmentReference> lightingColorRefs{
+        vk::AttachmentReference(0, vk::ImageLayout::eColorAttachmentOptimal) // Color
+    };
+    std::vector<vk::AttachmentReference> lightingInputColorRefs{
+        {1, vk::ImageLayout::eShaderReadOnlyOptimal}, // Albedo
+        {2, vk::ImageLayout::eShaderReadOnlyOptimal}, // Position
+        {3, vk::ImageLayout::eShaderReadOnlyOptimal}, // Normal
+        {4, vk::ImageLayout::eShaderReadOnlyOptimal}, // MetalRoughness
+        {5, vk::ImageLayout::eShaderReadOnlyOptimal}, // AO
+        {6, vk::ImageLayout::eShaderReadOnlyOptimal}  // Emissive
+    };
+    vk::SubpassDescription lightingSubpass;
+    lightingSubpass.setPipelineBindPoint(vk::PipelineBindPoint::eGraphics)
+        .setColorAttachments(lightingColorRefs)
+        .setInputAttachments(lightingInputColorRefs);
+    std::vector<vk::SubpassDescription> subpasses{
+        gbufferSubpass,
+        lightingSubpass,
+    };
+    // dependency
+    vk::SubpassDependency gBufferSubPassToLightingSubPassDependency;
+    gBufferSubPassToLightingSubPassDependency
+        .setSrcSubpass(0) // Guffer
+        .setDstSubpass(1) // Lighting
+        .setSrcStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
+        .setSrcAccessMask(vk::AccessFlagBits::eColorAttachmentWrite)
+        .setDstStageMask(vk::PipelineStageFlagBits::eFragmentShader)
+        .setDstAccessMask(vk::AccessFlagBits::eInputAttachmentRead)
+        .setDependencyFlags(vk::DependencyFlagBits::eByRegion);
+    std::vector<vk::SubpassDependency> dependencies{
+        gBufferSubPassToLightingSubPassDependency,
+    };
+    vk::RenderPassCreateInfo renderPassCreateInfo{};
+    renderPassCreateInfo.setAttachments(attachments).setSubpasses(subpasses).setDependencies(dependencies);
+    auto renderPass = mContext->GetDevice().createRenderPassUnique(renderPassCreateInfo);
+    if (!renderPass)
+    {
+        mLogger->Error("Failed to create Deferred Composition render pass");
+    }
+    mRenderPasses[RenderPassType::DeferredComposition] = std::move(renderPass);
+    mLogger->Info("Deferred Composition render pass created successfully");
+}
+void RenderPassManager::CreateForwardCompositionRenderPass()
+{
 }
 void RenderPassManager::CreateSkyRenderPass()
 {
@@ -203,6 +260,79 @@ void RenderPassManager::CreateShadowDepthFrameBuffer()
 }
 void RenderPassManager::CreateDeferredCompositionFrameBuffer()
 {
+    mFrameBuffers[RenderPassType::DeferredComposition].clear();
+    mDeferredCompositionFrameResources.clear();
+    auto extent = vk::Extent2D{mWidth, mHeight};
+    auto renderPass = mRenderPasses[RenderPassType::DeferredComposition].get();
+    for (int i = 0; i < mFrameCount; i++)
+    {
+        auto deferredCompositionFrameResource = std::make_shared<DeferredCompositionFrameResource>();
+        // Render Target
+        auto renderTargetImage = mImageFactory->CreateImage(ImageType::RenderTarget, vk::Extent3D(extent, 1));
+        auto renderTargetImageView = mImageFactory->CreateImageView(renderTargetImage.get());
+        deferredCompositionFrameResource->renderTargetImage = std::move(renderTargetImage);
+        deferredCompositionFrameResource->renderTargetImageView = std::move(renderTargetImageView);
+        // Albedo
+        auto albedoImage = mImageFactory->CreateImage(ImageType::RenderTarget, vk::Extent3D(extent, 1));
+        auto albedoImageView = mImageFactory->CreateImageView(albedoImage.get());
+        deferredCompositionFrameResource->albedoImage = std::move(albedoImage);
+        deferredCompositionFrameResource->albedoImageView = std::move(albedoImageView);
+        // Position
+        auto positionImage = mImageFactory->CreateImage(ImageType::RenderTarget, vk::Extent3D(extent, 1));
+        auto positionImageView = mImageFactory->CreateImageView(positionImage.get());
+        deferredCompositionFrameResource->positionImage = std::move(positionImage);
+        deferredCompositionFrameResource->positionImageView = std::move(positionImageView);
+        // Normal
+        auto normalImage = mImageFactory->CreateImage(ImageType::RenderTarget, vk::Extent3D(extent, 1));
+        auto normalImageView = mImageFactory->CreateImageView(normalImage.get());
+        deferredCompositionFrameResource->normalImage = std::move(normalImage);
+        deferredCompositionFrameResource->normalImageView = std::move(normalImageView);
+        // Metalness/Roughness
+        auto metallicRoughnessImage = mImageFactory->CreateImage(ImageType::RenderTarget, vk::Extent3D(extent, 1));
+        auto metallicRoughnessImageView = mImageFactory->CreateImageView(metallicRoughnessImage.get());
+        deferredCompositionFrameResource->metallicRoughnessImage = std::move(metallicRoughnessImage);
+        deferredCompositionFrameResource->metallicRoughnessImageView = std::move(metallicRoughnessImageView);
+        // AO
+        auto aoImage = mImageFactory->CreateImage(ImageType::RenderTarget, vk::Extent3D(extent, 1));
+        auto aoImageView = mImageFactory->CreateImageView(aoImage.get());
+        deferredCompositionFrameResource->aoImage = std::move(aoImage);
+        deferredCompositionFrameResource->aoImageView = std::move(aoImageView);
+        // Emissive
+        auto emissiveImage = mImageFactory->CreateImage(ImageType::RenderTarget, vk::Extent3D(extent, 1));
+        auto emissiveImageView = mImageFactory->CreateImageView(emissiveImage.get());
+        deferredCompositionFrameResource->emissiveImage = std::move(emissiveImage);
+        deferredCompositionFrameResource->emissiveImageView = std::move(emissiveImageView);
+        // Depth Stencil
+        auto depthImage = mImageFactory->CreateImage(ImageType::DepthStencil, vk::Extent3D(extent, 1));
+        auto depthImageView = mImageFactory->CreateImageView(depthImage.get());
+        deferredCompositionFrameResource->depthStencilImage = std::move(depthImage);
+        deferredCompositionFrameResource->depthStencilImageView = std::move(depthImageView);
+        // 保存资源
+        mDeferredCompositionFrameResources.push_back(deferredCompositionFrameResource);
+        // 创建帧缓冲
+        auto attachments = std::array<vk::ImageView, 8>{
+            deferredCompositionFrameResource->renderTargetImageView.get(),
+            deferredCompositionFrameResource->albedoImageView.get(),
+            deferredCompositionFrameResource->positionImageView.get(),
+            deferredCompositionFrameResource->normalImageView.get(),
+            deferredCompositionFrameResource->metallicRoughnessImageView.get(),
+            deferredCompositionFrameResource->aoImageView.get(),
+            deferredCompositionFrameResource->emissiveImageView.get(),
+        };
+        vk::FramebufferCreateInfo framebufferCreateInfo;
+        framebufferCreateInfo.setRenderPass(renderPass)
+            .setAttachments(attachments)
+            .setWidth(extent.width)
+            .setHeight(extent.height)
+            .setLayers(1);
+        auto framebuffer = mContext->GetDevice().createFramebufferUnique(framebufferCreateInfo);
+        if (!framebuffer)
+        {
+            mLogger->Error("Failed to create framebuffer for Deferred Composition render pass");
+        }
+        mFrameBuffers[RenderPassType::DeferredComposition].push_back(std::move(framebuffer));
+        mLogger->Info("Framebuffer {} for Deferred Composition render pass created successfully", i);
+    }
 }
 void RenderPassManager::CreateForwardCompositionFrameBuffer()
 {

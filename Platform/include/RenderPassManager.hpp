@@ -37,6 +37,27 @@ enum class RenderPassType
     PostProcess,         // 后处理渲染subpass0: 后处理渲染
     UI,                  // UI渲染subpass0: UI渲染
 };
+struct DeferredCompositionFrameResource
+{
+    // Render Target
+    UniqueImage renderTargetImage;
+    UniqueImage albedoImage;
+    UniqueImage positionImage;
+    UniqueImage normalImage;
+    UniqueImage metallicRoughnessImage;
+    UniqueImage aoImage;
+    UniqueImage emissiveImage;
+    vk::UniqueImageView renderTargetImageView;
+    vk::UniqueImageView albedoImageView;
+    vk::UniqueImageView positionImageView;
+    vk::UniqueImageView normalImageView;
+    vk::UniqueImageView metallicRoughnessImageView;
+    vk::UniqueImageView aoImageView;
+    vk::UniqueImageView emissiveImageView;
+    // Depth Stencil
+    vk::UniqueImageView depthStencilImageView;
+    UniqueImage depthStencilImage;
+};
 struct TransparentFrameResource
 {
     // Render Target
@@ -68,10 +89,12 @@ class RenderPassManager final : public NoCopyable
     std::unordered_map<RenderPassType, std::vector<vk::UniqueFramebuffer>> mFrameBuffers;
     uint32_t mWidth = 800;
     uint32_t mHeight = 600;
+    uint32_t mFrameCount = 0;
 
   private:
     std::vector<std::shared_ptr<TransparentFrameResource>> mTransparentFrameResources;
     std::vector<std::shared_ptr<UIFrameResource>> mUIFrameResources;
+    std::vector<std::shared_ptr<DeferredCompositionFrameResource>> mDeferredCompositionFrameResources;
 
   private:
     void CreateShadowDepthRenderPass();
@@ -110,6 +133,10 @@ class RenderPassManager final : public NoCopyable
     inline std::vector<std::shared_ptr<UIFrameResource>> &GetUIFrameResource()
     {
         return mUIFrameResources;
+    }
+    inline std::vector<std::shared_ptr<DeferredCompositionFrameResource>> &GetDeferredCompositionFrameResource()
+    {
+        return mDeferredCompositionFrameResources;
     }
 };
 
