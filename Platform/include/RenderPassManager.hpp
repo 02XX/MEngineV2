@@ -11,7 +11,9 @@
 #include "SDLWindow.hpp"
 #include "magic_enum/magic_enum.hpp"
 #include <cstdint>
+#include <functional>
 #include <memory>
+#include <span>
 #include <unordered_map>
 #include <vector>
 #include <vulkan/vulkan.hpp>
@@ -37,45 +39,37 @@ enum class RenderPassType
     Transparent,         // Forward 透明物体渲染subpass0: 透明物体渲染
     PostProcess,         // 后处理渲染subpass0: 后处理渲染
     UI,                  // UI渲染subpass0: UI渲染
+    EditorUI,            // 编辑器UI渲染subpass0: UI渲染
 };
-struct ShadowDepthFrameResource
+struct RenderTarget
 {
-};
-struct DeferredFrameResource
-{
-};
-struct ForwardFrameResource
-{
-    // Render Target
-    vk::UniqueImageView renderTargetImageView;
-    UniqueImage renderTargetImage;
-    // Depth Stencil
-    vk::UniqueImageView depthStencilImageView;
+    // Render target 0: Color
+    UniqueImage colorImage;
+    vk::UniqueImageView colorImageView;
+    // Render target 1: Depth/Stencil
     UniqueImage depthStencilImage;
-};
-struct SkyFrameResource
-{
-};
-struct TransparentFrameResource
-{
-    // Render Target
-    vk::UniqueImageView renderTargetImageView;
-    UniqueImage renderTargetImage;
-    // Depth Stencil
     vk::UniqueImageView depthStencilImageView;
-    UniqueImage depthStencilImage;
+    // Render target 2: Albedo
+    UniqueImage albedoImage;
+    vk::UniqueImageView albedoImageView;
+    // Render target 3: Normal
+    UniqueImage normalImage;
+    vk::UniqueImageView normalImageView;
+    // Render target 4: WorldPos
+    UniqueImage worldPosImage;
+    vk::UniqueImageView worldPosImageView;
+    // Render target 5: MetallicRoughness
+    UniqueImage metallicRoughnessImage;
+    vk::UniqueImageView metallicRoughnessImageView;
+    // Render target 6: Emissive
+    UniqueImage emissiveImage;
+    vk::UniqueImageView emissiveImageView;
 };
-struct PostProcessFrameResource
+struct EditorRenderTarget
 {
-};
-struct UIFrameResource
-{
-    // Render Target
-    vk::UniqueImageView renderTargetImageView;
-    UniqueImage renderTargetImage;
-    // Depth Stencil
-    vk::UniqueImageView depthStencilImageView;
-    UniqueImage depthStencilImage;
+    // Editor target 0: Color
+    UniqueImage colorImage;
+    vk::UniqueImageView colorImageView;
 };
 class RenderPassManager final : public NoCopyable
 {
@@ -93,13 +87,8 @@ class RenderPassManager final : public NoCopyable
     uint32_t mHeight = 600;
 
   private:
-    std::vector<std::shared_ptr<ShadowDepthFrameResource>> mShadowDepthFrameResources;
-    std::vector<std::shared_ptr<DeferredFrameResource>> mDeferredFrameResources;
-    std::vector<std::shared_ptr<ForwardFrameResource>> mForwardFrameResources;
-    std::vector<std::shared_ptr<TransparentFrameResource>> mTransparentFrameResources;
-    std::vector<std::shared_ptr<SkyFrameResource>> mSkyFrameResources;
-    std::vector<std::shared_ptr<PostProcessFrameResource>> mPostProcessFrameResources;
-    std::vector<std::shared_ptr<UIFrameResource>> mUIFrameResources;
+    std::vector<std::unique_ptr<RenderTarget>> mRenderTargets;
+    std::vector<std::unique_ptr<EditorRenderTarget>> mEditorRenderTargets;
 
   private:
     void CreateShadowDepthRenderPass();
@@ -109,6 +98,10 @@ class RenderPassManager final : public NoCopyable
     void CreateTransparentRenderPass();
     void CreatePostProcessRenderPass();
     void CreateUIRenderPass();
+    void CreateEditorUIRenderPass();
+
+    void CreateRenderTarget();
+    void CreateEditorRenderTarget();
 
     void CreateShadowDepthFrameBuffer();
     void CreateDeferredCompositionFrameBuffer();
@@ -117,6 +110,7 @@ class RenderPassManager final : public NoCopyable
     void CreateTransparentFrameBuffer();
     void CreatePostProcessFrameBuffer();
     void CreateUIFrameBuffer();
+    void CreateEditorUIFrameBuffer();
 
   public:
     RenderPassManager(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context,
@@ -130,33 +124,17 @@ class RenderPassManager final : public NoCopyable
     }
 
   public:
-    inline std::vector<std::shared_ptr<TransparentFrameResource>> &GetTransparentFrameResources()
+    inline auto GetRenderTargets() const
     {
-        return mTransparentFrameResources;
+        return mRenderTargets |
+               std::views::transform(
+                   [](const std::unique_ptr<RenderTarget> &ptr) -> const RenderTarget & { return *ptr; });
     }
-    inline std::vector<std::shared_ptr<UIFrameResource>> &GetUIFrameResources()
+    inline auto GetEditorRenderTargets() const
     {
-        return mUIFrameResources;
-    }
-    inline std::vector<std::shared_ptr<ForwardFrameResource>> &GetForwardFrameResources()
-    {
-        return mForwardFrameResources;
-    }
-    inline std::vector<std::shared_ptr<PostProcessFrameResource>> &GetPostProcessFrameResources()
-    {
-        return mPostProcessFrameResources;
-    }
-    inline std::vector<std::shared_ptr<SkyFrameResource>> &GetSkyFrameResources()
-    {
-        return mSkyFrameResources;
-    }
-    inline std::vector<std::shared_ptr<DeferredFrameResource>> &GetDeferredFrameResources()
-    {
-        return mDeferredFrameResources;
-    }
-    inline std::vector<std::shared_ptr<ShadowDepthFrameResource>> &GetShadowDepthFrameResources()
-    {
-        return mShadowDepthFrameResources;
+        return mEditorRenderTargets |
+               std::views::transform(
+                   [](const std::unique_ptr<EditorRenderTarget> &ptr) -> const EditorRenderTarget & { return *ptr; });
     }
 };
 

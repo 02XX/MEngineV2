@@ -66,9 +66,6 @@ class RenderSystem final : public System
     std::vector<std::vector<vk::UniqueCommandBuffer>> mSecondaryCommandBuffers;
     std::vector<vk::UniqueCommandBuffer> mGraphicCommandBuffers;
 
-    std::vector<UniqueImage *> mLastFrameImages;
-    std::vector<vk::ImageView> mLastFrameImageViews;
-
     // Global DescriptorSet
     std::vector<vk::UniqueDescriptorSet> mGlobalDescriptorSets;
     // main camera
