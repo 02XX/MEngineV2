@@ -26,9 +26,9 @@ class Texture2D final : public Entity<UUID>, public ITexture
     uint32_t mHeight;   // 纹理高度
     uint32_t mChannels; // 纹理通道数
     // Vulkan Resources
-    UniqueImage mImage;             // Vulkan 纹理图像
-    vk::UniqueImageView mImageView; // Vulkan 纹理图像视图
-    vk::UniqueSampler mSampler;     // Vulkan 纹理采样器
+    UniqueImage mImage{};             // Vulkan 纹理图像
+    vk::UniqueImageView mImageView{}; // Vulkan 纹理图像视图
+    vk::UniqueSampler mSampler{};     // Vulkan 纹理采样器
 
   public:
     Texture2D();

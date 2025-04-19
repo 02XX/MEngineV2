@@ -1,17 +1,24 @@
-#include "System/UI.hpp"
-
+#include "System/EditorRenderSystem.hpp"
+#include "System/RenderSystem.hpp"
 namespace MEngine
 {
-UI::UI(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context, std::shared_ptr<IWindow> window,
-       std::shared_ptr<RenderPassManager> renderPassManager, std::shared_ptr<ImageFactory> imageFactory,
-       std::shared_ptr<CommandBufferManager> commandBufferManager,
-       std::shared_ptr<SyncPrimitiveManager> syncPrimitiveManager, std::shared_ptr<SamplerManager> samplerManager,
-       std::shared_ptr<entt::registry> registry, std::shared_ptr<IRepository<PBRMaterial>> pbrMaterialRepository,
-       std::shared_ptr<IRepository<Texture2D>> texture2DRepository)
-    : mLogger(logger), mContext(context), mWindow(window), mRenderPassManager(renderPassManager),
-      mImageFactory(imageFactory), mCommandBufferManager(commandBufferManager),
-      mSyncPrimitiveManager(syncPrimitiveManager), mSamplerManager(samplerManager), mRegistry(registry),
-      mPBRMaterialRepository(pbrMaterialRepository), mTexture2DRepository(texture2DRepository)
+EditorRenderSystem::EditorRenderSystem(
+    std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context, std::shared_ptr<IConfigure> configure,
+    std::shared_ptr<entt::registry> registry, std::shared_ptr<RenderPassManager> renderPassManager,
+    std::shared_ptr<PipelineLayoutManager> pipelineLayoutManager, std::shared_ptr<PipelineManager> pipelineManager,
+    std::shared_ptr<CommandBufferManager> commandBufferManager,
+    std::shared_ptr<SyncPrimitiveManager> syncPrimitiveManager, std::shared_ptr<DescriptorManager> descriptorManager,
+    std::shared_ptr<SamplerManager> samplerManager, std::shared_ptr<BufferFactory> bufferFactory,
+    std::shared_ptr<ImageFactory> imageFactory, std::shared_ptr<IWindow> window,
+    std::shared_ptr<IRepository<PBRMaterial>> pbrMaterialRepository,
+    std::shared_ptr<IRepository<Texture2D>> texture2DRepository)
+    : RenderSystem(logger, context, configure, registry, renderPassManager, pipelineLayoutManager, pipelineManager,
+                   commandBufferManager, syncPrimitiveManager, descriptorManager, bufferFactory, imageFactory),
+      mWindow(window), mSamplerManager(samplerManager), mPBRMaterialRepository(pbrMaterialRepository),
+      mTexture2DRepository(texture2DRepository)
+{
+}
+void EditorRenderSystem::Init()
 {
     mIconTransitionCommandBuffer = mCommandBufferManager->CreatePrimaryCommandBuffer(CommandBufferType::Graphic);
     mIconSampler = mSamplerManager->CreateUniqueSampler(vk::Filter::eLinear, vk::Filter::eLinear);
@@ -32,7 +39,7 @@ UI::UI(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context, std::s
     initInfo.Device = mContext->GetDevice();
     initInfo.QueueFamily = mContext->GetQueueFamilyIndicates().graphicsFamily.value();
     initInfo.Queue = mContext->GetGraphicQueue();
-    initInfo.RenderPass = mRenderPassManager->GetRenderPass(RenderPassType::UI);
+    initInfo.RenderPass = mRenderPassManager->GetRenderPass(RenderPassType::EditorUI);
     initInfo.MinImageCount = mContext->GetSurfaceInfo().imageCount;
     initInfo.ImageCount = mContext->GetSurfaceInfo().imageCount;
     initInfo.MSAASamples = static_cast<VkSampleCountFlagBits>(vk::SampleCountFlagBits::e1);
@@ -40,6 +47,8 @@ UI::UI(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context, std::s
     initInfo.Subpass = 0;
     initInfo.DescriptorPoolSize = 1000;
     ImGui_ImplVulkan_Init(&initInfo);
+    mWindow->SetEventCallback(
+        [](const void *event) { ImGui_ImplSDL3_ProcessEvent(static_cast<const SDL_Event *>(event)); });
 
     // Upload Fonts
     mIO->Fonts->AddFontDefault();
@@ -47,13 +56,11 @@ UI::UI(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context, std::s
                                                mIO->Fonts->GetGlyphRangesChineseSimplifiedCommon());
     mIO->FontDefault = mMSYHFont;
     mAssetRegistry = std::make_shared<entt::registry>();
-    mAssetRegistry->on_construct<AssetsComponent>().connect<&UI::OnAssetCreated>(this);
-    mAssetRegistry->on_update<AssetsComponent>().connect<&UI::OnAssetUpdated>(this);
-    mAssetRegistry->on_destroy<AssetsComponent>().connect<&UI::OnAssetDestroyed>(this);
     // ImGuizmo
     ImGuizmo::SetImGuiContext(ImGui::GetCurrentContext());
     ImGuizmo::Enable(true);
-
+    // SceneView
+    CreateSceneView();
     // Icons
     LoadUIIcon(mUIResourcePath / "Icon" / "folder.png", mFolderIcon);
     LoadUIIcon(mUIResourcePath / "Icon" / "file.png", mFileIcon);
@@ -61,61 +68,82 @@ UI::UI(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context, std::s
     // mDefaultTextureDescriptorSet =
     //     ImGui_ImplVulkan_AddTexture(mSceneSampler.get(), defaultTexture->GetImageView(),
     //                                 static_cast<VkImageLayout>(vk::ImageLayout::eShaderReadOnlyOptimal));
-
     EntryFolder(mProjectPath);
 }
-void UI::ProcessEvent(const SDL_Event *event)
+void EditorRenderSystem::Tick(float deltaTime)
 {
-    ImGui_ImplSDL3_ProcessEvent(event);
+    ImGui_ImplSDL3_NewFrame();
+    ImGui_ImplVulkan_NewFrame();
+    ImGui::NewFrame();
+    ImGuizmo::BeginFrame();
+    DockingSpace();
+    if (mIsFirstFrame)
+    {
+        SetDefaultWindowLayout();
+        mIsFirstFrame = false;
+    }
+    RightClickMenu();
+    HierarchyWindow();
+    InspectorWindow();
+    AssetWindow();
+    SceneViewWindow();
+    ToolbarWindow();
+
+    Prepare();
+    // TickRotationMatrix();
+    CollectRenderEntities(); // Collect same material render entities
+    CollectMainCamera();
+    // RenderShadowDepthPass();  // Shadow pass
+    // void RenderDeferred();
+    RenderForward();
+    // RenderSkyPass();          // Sky pass
+    // RenderTranslucencyPass(); // Translucency pass
+    // RenderPostProcessPass();  // Post process pass
+    // RenderUIPass(deltaTime); // UI pass
+    ImGui::Render();
+    ImDrawData *drawData = ImGui::GetDrawData();
+    bool isMinimized = (drawData->DisplaySize.x <= 0.0f || drawData->DisplaySize.y <= 0.0f);
+    if (!isMinimized)
+    {
+        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), mGraphicCommandBuffers[mFrameIndex].get());
+    }
+    CopyColorAttachmentToSwapchainImage(
+        mRenderPassManager->GetEditorRenderTargets()[mFrameIndex].colorImage->GetHandle());
+    Present();
 }
-void UI::SetSceneViewPort(std::vector<vk::ImageView> imageViews)
+void EditorRenderSystem::Shutdown()
 {
-    // 判断imageView是否相等
-    for (auto imageView : imageViews)
-    {
-        if (imageView == nullptr)
-        {
-            mLogger->Error("ImageView is nullptr");
-            return;
-        }
-    }
-    for (int i = 0; i < imageViews.size(); ++i)
-    {
-        if (!mSceneImageViews.empty() && imageViews[i] == mSceneImageViews[i])
-        {
-            return;
-        }
-    }
-    mSceneImageViews = imageViews;
+    mIO->Fonts->Clear();
+    mIO->Fonts->ClearInputData();
+    mIO->Fonts->ClearTexData();
+    ImGui_ImplVulkan_Shutdown();
+    ImGui_ImplSDL3_Shutdown();
+    ImGui::DestroyContext();
+    mIsShutdown = true;
+    mLogger->Info("EditorRenderSystem Shutdown");
+}
+void EditorRenderSystem::HandleSwapchainOutOfDate()
+{
+    RenderSystem::HandleSwapchainOutOfDate();
+    CreateSceneView();
+}
+void EditorRenderSystem::CreateSceneView()
+{
     for (auto sceneDescriptorSet : mSceneDescriptorSets)
     {
         ImGui_ImplVulkan_RemoveTexture(sceneDescriptorSet);
     }
     mSceneDescriptorSets.clear();
-    for (size_t i = 0; i < mSceneImageViews.size(); ++i)
+    auto editorRenderTargets = mRenderPassManager->GetEditorRenderTargets();
+    for (size_t i = 0; i < editorRenderTargets.size(); ++i)
     {
         mSceneDescriptorSets.push_back(
-            ImGui_ImplVulkan_AddTexture(mSceneSampler.get(), mSceneImageViews[i],
+            ImGui_ImplVulkan_AddTexture(mSceneSampler.get(), editorRenderTargets[i].colorImageView.get(),
                                         static_cast<VkImageLayout>(vk::ImageLayout::eShaderReadOnlyOptimal)));
     }
     mLogger->Info("Scene View Descriptor Set Created");
 }
-void UI::CollectEntity()
-{
-    // camera
-    auto entities = mRegistry->view<CameraComponent>();
-    for (auto entity : entities)
-    {
-        auto &camera = entities.get<CameraComponent>(entity);
-        if (camera.isMainCamera)
-        {
-            mMainCamera = entity;
-            break;
-        }
-    }
-}
-
-void UI::LoadUIIcon(const std::filesystem::path &iconPath, vk::DescriptorSet &descriptorSet)
+void EditorRenderSystem::LoadUIIcon(const std::filesystem::path &iconPath, vk::DescriptorSet &descriptorSet)
 {
     mIconTransitionCommandBuffer->reset();
     int iconWidth, iconHeight, iconChannels;
@@ -167,7 +195,7 @@ void UI::LoadUIIcon(const std::filesystem::path &iconPath, vk::DescriptorSet &de
     }
     stbi_image_free(iconData);
 }
-void UI::SetDefaultWindowLayout()
+void EditorRenderSystem::SetDefaultWindowLayout()
 {
     ImGui::DockBuilderRemoveNode(mDockSpaceID);
     ImGui::DockBuilderAddNode(mDockSpaceID, ImGuiDockNodeFlags_DockSpace);
@@ -192,16 +220,16 @@ void UI::SetDefaultWindowLayout()
     ImGui::DockBuilderDockWindow("Toolbar", dockTopCenterID);      // 顶部
     ImGui::DockBuilderFinish(mDockSpaceID);
 }
-void UI::RightClickMenu()
+void EditorRenderSystem::RightClickMenu()
 {
 }
-void UI::DockingSpace()
+void EditorRenderSystem::DockingSpace()
 {
     mMainViewport = ImGui::GetMainViewport();
     mDockSpaceID = ImGui::DockSpaceOverViewport();
 }
 
-void UI::HierarchyWindow()
+void EditorRenderSystem::HierarchyWindow()
 {
     ImGui::Begin("Hierarchy", nullptr, ImGuiWindowFlags_None);
     if (ImGui::IsWindowFocused())
@@ -261,7 +289,7 @@ void UI::HierarchyWindow()
     }
     ImGui::End();
 }
-void UI::ShowTexture(const std::string &name, std::shared_ptr<Texture2D> texture, ImVec2 size)
+void EditorRenderSystem::ShowTexture(const std::string &name, std::shared_ptr<Texture2D> texture, ImVec2 size)
 {
 
     ImGui::Columns(2, nullptr, false); // 创建两列布局，不显示分隔线
@@ -288,7 +316,7 @@ void UI::ShowTexture(const std::string &name, std::shared_ptr<Texture2D> texture
 
     ImGui::Columns(1); // 恢复单列布局
 }
-void UI::InspectorMaterial(MaterialComponent &materialComponent)
+void EditorRenderSystem::InspectorMaterial(MaterialComponent &materialComponent)
 {
     if (ImGui::CollapsingHeader("Material Attribute", ImGuiTreeNodeFlags_DefaultOpen))
     {
@@ -361,7 +389,7 @@ void UI::InspectorMaterial(MaterialComponent &materialComponent)
         // };
     }
 }
-void UI::InspectorWindow()
+void EditorRenderSystem::InspectorWindow()
 {
     ImGui::Begin("Inspector", nullptr, ImGuiWindowFlags_None);
     // 1. 显示选中实体的属性
@@ -458,7 +486,7 @@ void UI::InspectorWindow()
     }
     ImGui::End();
 }
-void UI::ToolbarWindow()
+void EditorRenderSystem::ToolbarWindow()
 {
     ImGui::Begin("Toolbar", nullptr, ImGuiWindowFlags_None);
     // 显示工具栏按钮
@@ -505,7 +533,7 @@ void UI::ToolbarWindow()
     ImGui::EndGroup();
     ImGui::End();
 }
-void UI::SceneViewWindow()
+void EditorRenderSystem::SceneViewWindow()
 {
     ImGui::Begin("SceneView", nullptr, ImGuiWindowFlags_None);
     ImVec2 windowPos = ImGui::GetWindowPos();
@@ -532,14 +560,6 @@ void UI::SceneViewWindow()
         // 显示场景视图
         if (!mSceneDescriptorSets.empty())
         {
-            for (auto &imageView : mSceneImageViews)
-            {
-                if (imageView == nullptr)
-                {
-                    mLogger->Error("Scene ImageView is nullptr");
-                    return;
-                }
-            }
             ImTextureID textureId =
                 reinterpret_cast<ImTextureID>(static_cast<VkDescriptorSet>(mSceneDescriptorSets[mImageIndex]));
             ImGui::Image(textureId, ImVec2(mSceneViewPortWidth, mSceneViewPortHeight), ImVec2(0, 1), ImVec2(1, 0));
@@ -572,7 +592,7 @@ void UI::SceneViewWindow()
     }
     ImGui::End();
 }
-void UI::AssetWindow()
+void EditorRenderSystem::AssetWindow()
 {
     ImGui::Begin("Assets", nullptr, ImGuiWindowFlags_MenuBar);
     if (ImGui::IsWindowFocused())
@@ -636,7 +656,7 @@ void UI::AssetWindow()
     }
     ImGui::End();
 }
-void UI::DisplayAssetEntity()
+void EditorRenderSystem::DisplayAssetEntity()
 {
     if (!std::filesystem::exists(mCurrentPath))
     {
@@ -722,64 +742,15 @@ void UI::DisplayAssetEntity()
         ImGui::TextColored(ImVec4(1, 0, 0, 1), "Error: %s", e.what());
     }
 }
-void UI::RenderUI()
-{
-    CollectEntity();
-    ImGui_ImplSDL3_NewFrame();
-    ImGui_ImplVulkan_NewFrame();
-    ImGui::NewFrame();
-    ImGuizmo::BeginFrame();
-    DockingSpace();
-    if (mIsFirstFrame)
-    {
-        SetDefaultWindowLayout();
-        mIsFirstFrame = false;
-    }
-    RightClickMenu();
-    HierarchyWindow();
-    InspectorWindow();
-    AssetWindow();
-    SceneViewWindow();
-    ToolbarWindow();
-}
-void UI::RecordUICommandBuffer(vk::CommandBuffer commandBuffer)
-{
-    ImGui::Render();
-    ImDrawData *drawData = ImGui::GetDrawData();
-    bool isMinimized = (drawData->DisplaySize.x <= 0.0f || drawData->DisplaySize.y <= 0.0f);
-    if (!isMinimized)
-    {
-        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
-    }
-}
-UI::~UI()
-{
-    mIO->Fonts->Clear();
-    mIO->Fonts->ClearInputData();
-    mIO->Fonts->ClearTexData();
-    ImGui_ImplVulkan_Shutdown();
-    ImGui_ImplSDL3_Shutdown();
-    ImGui::DestroyContext();
-    mLogger->Info("UI System Shutdown");
-}
 
-void UI::OnAssetCreated(entt::registry &, entt::entity entity)
+EditorRenderSystem::~EditorRenderSystem()
 {
-    mProcessedAssets.push_back(entity);
-    ProcessAssets();
-}
-void UI::OnAssetUpdated(entt::registry &, entt::entity)
-{
-}
-void UI::OnAssetDestroyed(entt::registry &, entt::entity entity)
-{
-    auto it = std::remove(mProcessedAssets.begin(), mProcessedAssets.end(), entity);
-    if (it != mProcessedAssets.end())
+    if (!IsShutdown())
     {
-        mProcessedAssets.erase(it, mProcessedAssets.end());
+        Shutdown();
     }
 }
-void UI::UpdateAssetsView()
+void EditorRenderSystem::UpdateAssetsView()
 {
     if (std::filesystem::exists(mCurrentPath))
     {
@@ -833,7 +804,7 @@ void UI::UpdateAssetsView()
         mLogger->Error("Path does not exist: {}", mCurrentPath.string());
     }
 }
-void UI::ProcessAssets()
+void EditorRenderSystem::ProcessAssets()
 {
     std::sort(mProcessedAssets.begin(), mProcessedAssets.end(), [this](entt::entity a, entt::entity b) {
         auto &compA = mAssetRegistry->get<AssetsComponent>(a);
@@ -842,7 +813,7 @@ void UI::ProcessAssets()
                (compA.type == compB.type && compA.name < compB.name);
     });
 }
-void UI::EntryFolder(const std::filesystem::path &path)
+void EditorRenderSystem::EntryFolder(const std::filesystem::path &path)
 {
     mCurrentPath = path;
     UpdateAssetsView();

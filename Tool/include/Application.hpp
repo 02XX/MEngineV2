@@ -33,10 +33,11 @@
 #include "Repository/Texture2DRepository.hpp"
 #include "SyncPrimitiveManager.hpp"
 #include "System/CameraSystem.hpp"
+#include "System/EditorRenderSystem.hpp"
 #include "System/ISystem.hpp"
 #include "System/RenderSystem.hpp"
 #include "System/TransformSystem.hpp"
-#include "System/UI.hpp"
+
 
 #define BOOST_DI_CFG_CTOR_LIMIT_SIZE 50 // 定义构造函数参数的最大数量
 #include "boost/di.hpp"
@@ -70,7 +71,7 @@ class Application final : public NoCopyable
         DI::bind<IRepository<PBRMaterial>>().to<PBRMaterialRepository>().in(DI::singleton),
         DI::bind<BasicGeometryFactory>().to<BasicGeometryFactory>().in(DI::singleton),
         DI::bind<BasicGeometryEntityManager>().to<BasicGeometryEntityManager>().in(DI::singleton),
-        DI::bind<CameraSystem>().to<CameraSystem>().in(DI::singleton), DI::bind<UI>().to<UI>().in(DI::singleton),
+        DI::bind<CameraSystem>().to<CameraSystem>().in(DI::singleton),
         DI::bind<RenderSystem>().to<RenderSystem>().in(DI::singleton),
         DI::bind<TransformSystem>().to<TransformSystem>().in(DI::singleton))) mInjector;
 
@@ -81,7 +82,6 @@ class Application final : public NoCopyable
     std::shared_ptr<Context> mContext;
     std::shared_ptr<entt::registry> mRegistry;
     std::shared_ptr<BasicGeometryEntityManager> mBasicGeometryEntityManager;
-    std::shared_ptr<UI> mUI;
     std::shared_ptr<ISystem> mRenderSystem;
     std::shared_ptr<ISystem> mCameraSystem;
     std::shared_ptr<ISystem> mTransformSystem;

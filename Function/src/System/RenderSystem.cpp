@@ -3,19 +3,19 @@
 namespace MEngine
 {
 
-RenderSystem::RenderSystem(
-    std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context, std::shared_ptr<IConfigure> configure,
-    std::shared_ptr<entt::registry> registry, std::shared_ptr<RenderPassManager> renderPassManager,
-    std::shared_ptr<PipelineLayoutManager> pipelineLayoutManager, std::shared_ptr<PipelineManager> pipelineManager,
-    std::shared_ptr<CommandBufferManager> commandBufferManager,
-    std::shared_ptr<SyncPrimitiveManager> syncPrimitiveManager, std::shared_ptr<DescriptorManager> descriptorManager,
-    std::shared_ptr<SamplerManager> samplerManager, std::shared_ptr<BufferFactory> bufferFactory,
-    std::shared_ptr<ImageFactory> imageFactory, std::shared_ptr<IWindow> window, std::shared_ptr<UI> ui)
+RenderSystem::RenderSystem(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context,
+                           std::shared_ptr<IConfigure> configure, std::shared_ptr<entt::registry> registry,
+                           std::shared_ptr<RenderPassManager> renderPassManager,
+                           std::shared_ptr<PipelineLayoutManager> pipelineLayoutManager,
+                           std::shared_ptr<PipelineManager> pipelineManager,
+                           std::shared_ptr<CommandBufferManager> commandBufferManager,
+                           std::shared_ptr<SyncPrimitiveManager> syncPrimitiveManager,
+                           std::shared_ptr<DescriptorManager> descriptorManager,
+                           std::shared_ptr<BufferFactory> bufferFactory, std::shared_ptr<ImageFactory> imageFactory)
     : System(logger, context, configure, registry), mRenderPassManager(renderPassManager),
       mPipelineLayoutManager(pipelineLayoutManager), mPipelineManager(pipelineManager),
       mCommandBufferManager(commandBufferManager), mSyncPrimitiveManager(syncPrimitiveManager),
-      mDescriptorManager(descriptorManager), mSamplerManager(samplerManager), mBufferFactory(bufferFactory),
-      mImageFactory(imageFactory), mWindow(window), mUI(ui)
+      mDescriptorManager(descriptorManager), mBufferFactory(bufferFactory), mImageFactory(imageFactory)
 {
 }
 void RenderSystem::Init()
@@ -45,7 +45,6 @@ void RenderSystem::Init()
         auto sets = mDescriptorManager->AllocateUniqueDescriptorSet({globalDescriptorSetLayout});
         mGlobalDescriptorSets.push_back(std::move(sets[0]));
     }
-    mWindow->SetEventCallback([this](const void *event) { mUI->ProcessEvent(static_cast<const SDL_Event *>(event)); });
     InitialTransitionImageLayout();
     mIsInit = true;
     mLogger->Info("RenderSystem Initialized");
@@ -58,7 +57,6 @@ RenderSystem::~RenderSystem()
 }
 void RenderSystem::Shutdown()
 {
-
     mContext->GetDevice().waitIdle();
     mIsShutdown = true;
     mLogger->Info("RenderSystem Shutdown");
@@ -153,9 +151,8 @@ void RenderSystem::CollectMainCamera()
 }
 void RenderSystem::Tick(float deltaTime)
 {
-    // mUI->RenderUI();
+    Prepare();
     // TickRotationMatrix();
-    Prepare();               // Prepare
     CollectRenderEntities(); // Collect same material render entities
     CollectMainCamera();
     // RenderShadowDepthPass();  // Shadow pass
@@ -165,7 +162,8 @@ void RenderSystem::Tick(float deltaTime)
     // RenderTranslucencyPass(); // Translucency pass
     // RenderPostProcessPass();  // Post process pass
     // RenderUIPass(deltaTime); // UI pass
-    Present(); // Present
+    CopyColorAttachmentToSwapchainImage(mRenderPassManager->GetRenderTargets()[mFrameIndex].colorImage->GetHandle());
+    Present();
 }
 
 void RenderSystem::Prepare()
@@ -182,12 +180,7 @@ void RenderSystem::Prepare()
                                                                  mImageAvailableSemaphores[mFrameIndex].get(), nullptr);
     if (resultValue.result == vk::Result::eErrorOutOfDateKHR)
     {
-        mLogger->Error("Swapchain out of date, recreating swapchain");
-        mContext->GetDevice().waitIdle();
-        mContext->RecreateSwapchain();
-        auto width = mContext->GetSurfaceInfo().extent.width;
-        auto height = mContext->GetSurfaceInfo().extent.height;
-        mRenderPassManager->RecreateFrameBuffer(width, height);
+        HandleSwapchainOutOfDate();
     }
     else if (resultValue.result != vk::Result::eSuccess && resultValue.result != vk::Result::eSuboptimalKHR)
     {
@@ -289,7 +282,7 @@ void RenderSystem::RenderTranslucencyPass()
     auto renderPass = mRenderPassManager->GetRenderPass(RenderPassType::Transparent);
     auto transparentFrameBuffers = mRenderPassManager->GetFrameBuffer(RenderPassType::Transparent);
     vk::RenderPassBeginInfo renderPassBeginInfo;
-    std::array<vk::ClearValue, 2> clearValues{
+    std::vector<vk::ClearValue> clearValues{
         vk::ClearValue(std::array<float, 4>{0.1f, 0.1f, 0.1f, 1.0f}), // 附件0: Render Target
         vk::ClearDepthStencilValue(1.0f, 0)                           // 附件1: Depth Stencil
     };
@@ -400,10 +393,46 @@ void RenderSystem::RenderUIPass(float deltaTime)
 }
 void RenderSystem::Present()
 {
-    auto renderTargetImages = mRenderPassManager->GetRenderTargets();
+
+    mGraphicCommandBuffers[mFrameIndex]->end();
+
+    vk::SubmitInfo submitInfo;
+    vk::PipelineStageFlags waitStage = vk::PipelineStageFlagBits::eColorAttachmentOutput;
+    submitInfo.setCommandBuffers(mGraphicCommandBuffers[mFrameIndex].get())
+        .setSignalSemaphores(mRenderFinishedSemaphores[mFrameIndex].get())
+        .setWaitSemaphores(mImageAvailableSemaphores[mFrameIndex].get())
+        .setWaitDstStageMask({waitStage});
+    mContext->SubmitToGraphicQueue({submitInfo}, mInFlightFences[mFrameIndex].get());
+
+    vk::PresentInfoKHR presentInfo;
+    auto swapchain = mContext->GetSwapchain();
+    presentInfo.setSwapchains(swapchain)
+        .setImageIndices({mImageIndex})
+        .setWaitSemaphores({mRenderFinishedSemaphores[mFrameIndex].get()});
+    try
+    {
+        mContext->SubmitToPresnetQueue(presentInfo);
+    }
+    catch (vk::OutOfDateKHRError &)
+    {
+        HandleSwapchainOutOfDate();
+    }
+    mFrameIndex = (mFrameIndex + 1) % mFrameCount;
+}
+void RenderSystem::HandleSwapchainOutOfDate()
+{
+    mLogger->Info("Swapchain out of date, recreating swapchain");
+    mContext->GetDevice().waitIdle();
+    mContext->RecreateSwapchain();
+    auto width = mContext->GetSurfaceInfo().extent.width;
+    auto height = mContext->GetSurfaceInfo().extent.height;
+    mRenderPassManager->RecreateFrameBuffer(width, height);
+}
+void RenderSystem::CopyColorAttachmentToSwapchainImage(vk::Image colorAttachment)
+{
     // 渲染完成的图像转换为可传输布局
     vk::ImageMemoryBarrier lastFrameImagePreBarrier;
-    lastFrameImagePreBarrier.setImage(renderTargetImages[mImageIndex].colorImage->GetHandle())
+    lastFrameImagePreBarrier.setImage(colorAttachment)
         .setOldLayout(vk::ImageLayout::eColorAttachmentOptimal)
         .setNewLayout(vk::ImageLayout::eTransferSrcOptimal)
         .setSubresourceRange(vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1))
@@ -435,9 +464,9 @@ void RenderSystem::Present()
         // .setDstOffset(vk::Offset3D{static_cast<int32_t>(offsetX), static_cast<int32_t>(offsetY), 0})
         .setDstOffset({0, 0, 0})
         .setExtent(vk::Extent3D(renderTargetExtent.width, renderTargetExtent.height, 1));
-    mGraphicCommandBuffers[mFrameIndex]->copyImage(
-        renderTargetImages[mImageIndex].colorImage->GetHandle(), vk::ImageLayout::eTransferSrcOptimal,
-        mContext->GetSwapchainImages()[mImageIndex], vk::ImageLayout::eTransferDstOptimal, imageCopy);
+    mGraphicCommandBuffers[mFrameIndex]->copyImage(colorAttachment, vk::ImageLayout::eTransferSrcOptimal,
+                                                   mContext->GetSwapchainImages()[mImageIndex],
+                                                   vk::ImageLayout::eTransferDstOptimal, imageCopy);
     // 交换链图像转换为可呈现布局
     vk::ImageMemoryBarrier swapchainPostBarrier;
     swapchainPostBarrier.setImage(mContext->GetSwapchainImages()[mImageIndex])
@@ -451,7 +480,7 @@ void RenderSystem::Present()
                                                          swapchainPostBarrier);
     // 将渲染的图像转回
     vk::ImageMemoryBarrier lastFrameImagePostBarrier;
-    lastFrameImagePostBarrier.setImage(renderTargetImages[mImageIndex].colorImage->GetHandle())
+    lastFrameImagePostBarrier.setImage(colorAttachment)
         .setOldLayout(vk::ImageLayout::eTransferSrcOptimal)
         .setNewLayout(vk::ImageLayout::eColorAttachmentOptimal)
         .setSubresourceRange(vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1))
@@ -460,34 +489,5 @@ void RenderSystem::Present()
     mGraphicCommandBuffers[mFrameIndex]->pipelineBarrier(vk::PipelineStageFlagBits::eTransfer,
                                                          vk::PipelineStageFlagBits::eColorAttachmentOutput, {}, {}, {},
                                                          lastFrameImagePostBarrier);
-    mGraphicCommandBuffers[mFrameIndex]->end();
-
-    vk::SubmitInfo submitInfo;
-    vk::PipelineStageFlags waitStage = vk::PipelineStageFlagBits::eColorAttachmentOutput;
-    submitInfo.setCommandBuffers(mGraphicCommandBuffers[mFrameIndex].get())
-        .setSignalSemaphores(mRenderFinishedSemaphores[mFrameIndex].get())
-        .setWaitSemaphores(mImageAvailableSemaphores[mFrameIndex].get())
-        .setWaitDstStageMask({waitStage});
-    mContext->SubmitToGraphicQueue({submitInfo}, mInFlightFences[mFrameIndex].get());
-
-    vk::PresentInfoKHR presentInfo;
-    auto swapchain = mContext->GetSwapchain();
-    presentInfo.setSwapchains(swapchain)
-        .setImageIndices({mImageIndex})
-        .setWaitSemaphores({mRenderFinishedSemaphores[mFrameIndex].get()});
-    try
-    {
-        mContext->SubmitToPresnetQueue(presentInfo);
-    }
-    catch (vk::OutOfDateKHRError &)
-    {
-        mLogger->Error("Swapchain out of date, recreating swapchain");
-        mContext->GetDevice().waitIdle();
-        mContext->RecreateSwapchain();
-        auto width = mContext->GetSurfaceInfo().extent.width;
-        auto height = mContext->GetSurfaceInfo().extent.height;
-        mRenderPassManager->RecreateFrameBuffer(width, height);
-    }
-    mFrameIndex = (mFrameIndex + 1) % mFrameCount;
 }
 } // namespace MEngine
