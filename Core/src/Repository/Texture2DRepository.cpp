@@ -1,4 +1,5 @@
 #include "Repository/Texture2DRepository.hpp"
+#include <utility>
 
 namespace MEngine
 {
@@ -9,8 +10,8 @@ Texture2DRepository::Texture2DRepository(std::shared_ptr<ILogger> logger, std::s
     : Repository<Texture2D>(logger, context, configure), mImageFactory(imageFactory), mSamplerManager(samplerManager)
 {
     mCheckBoardData = CheckBoard();
-    auto defaultTexture = std::unique_ptr<Texture2D>(Create());
-    mEntities[UUID{}] = std::move(defaultTexture);
+    auto defaultTexture = Create();
+    std::swap(mEntities[defaultTexture->GetID()], mEntities[UUID{}]);
 }
 Texture2D *Texture2DRepository::Create()
 {
