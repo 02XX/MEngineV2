@@ -90,7 +90,6 @@ class PipelineLayoutManager final : public NoCopyable
         vk::DescriptorSetLayoutBinding mEmissiveBinding{5, vk::DescriptorType::eCombinedImageSampler, 1,
                                                         vk::ShaderStageFlagBits::eFragment};
     } mPBRDescriptorLayoutBindings;
-
   private:
     std::unordered_map<PipelineLayoutType, vk::UniquePipelineLayout> mPipelineLayouts;
     vk::UniqueDescriptorSetLayout mPBRDescriptorSetLayout;

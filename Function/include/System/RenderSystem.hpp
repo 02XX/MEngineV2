@@ -81,6 +81,8 @@ class RenderSystem final : public System
     } mVPUniform;
 
   private:
+    void InitialTransitionImageLayout();
+
     void CollectRenderEntities();
     void CollectMainCamera();
     void Prepare();

@@ -38,6 +38,24 @@ enum class RenderPassType
     PostProcess,         // 后处理渲染subpass0: 后处理渲染
     UI,                  // UI渲染subpass0: UI渲染
 };
+struct ShadowDepthFrameResource
+{
+};
+struct DeferredFrameResource
+{
+};
+struct ForwardFrameResource
+{
+    // Render Target
+    vk::UniqueImageView renderTargetImageView;
+    UniqueImage renderTargetImage;
+    // Depth Stencil
+    vk::UniqueImageView depthStencilImageView;
+    UniqueImage depthStencilImage;
+};
+struct SkyFrameResource
+{
+};
 struct TransparentFrameResource
 {
     // Render Target
@@ -46,6 +64,9 @@ struct TransparentFrameResource
     // Depth Stencil
     vk::UniqueImageView depthStencilImageView;
     UniqueImage depthStencilImage;
+};
+struct PostProcessFrameResource
+{
 };
 struct UIFrameResource
 {
@@ -72,7 +93,12 @@ class RenderPassManager final : public NoCopyable
     uint32_t mHeight = 600;
 
   private:
+    std::vector<std::shared_ptr<ShadowDepthFrameResource>> mShadowDepthFrameResources;
+    std::vector<std::shared_ptr<DeferredFrameResource>> mDeferredFrameResources;
+    std::vector<std::shared_ptr<ForwardFrameResource>> mForwardFrameResources;
     std::vector<std::shared_ptr<TransparentFrameResource>> mTransparentFrameResources;
+    std::vector<std::shared_ptr<SkyFrameResource>> mSkyFrameResources;
+    std::vector<std::shared_ptr<PostProcessFrameResource>> mPostProcessFrameResources;
     std::vector<std::shared_ptr<UIFrameResource>> mUIFrameResources;
 
   private:
@@ -104,13 +130,33 @@ class RenderPassManager final : public NoCopyable
     }
 
   public:
-    inline std::vector<std::shared_ptr<TransparentFrameResource>> &GetTransparentFrameResource()
+    inline std::vector<std::shared_ptr<TransparentFrameResource>> &GetTransparentFrameResources()
     {
         return mTransparentFrameResources;
     }
-    inline std::vector<std::shared_ptr<UIFrameResource>> &GetUIFrameResource()
+    inline std::vector<std::shared_ptr<UIFrameResource>> &GetUIFrameResources()
     {
         return mUIFrameResources;
+    }
+    inline std::vector<std::shared_ptr<ForwardFrameResource>> &GetForwardFrameResources()
+    {
+        return mForwardFrameResources;
+    }
+    inline std::vector<std::shared_ptr<PostProcessFrameResource>> &GetPostProcessFrameResources()
+    {
+        return mPostProcessFrameResources;
+    }
+    inline std::vector<std::shared_ptr<SkyFrameResource>> &GetSkyFrameResources()
+    {
+        return mSkyFrameResources;
+    }
+    inline std::vector<std::shared_ptr<DeferredFrameResource>> &GetDeferredFrameResources()
+    {
+        return mDeferredFrameResources;
+    }
+    inline std::vector<std::shared_ptr<ShadowDepthFrameResource>> &GetShadowDepthFrameResources()
+    {
+        return mShadowDepthFrameResources;
     }
 };
 

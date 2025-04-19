@@ -29,6 +29,7 @@ Image::Image(std::shared_ptr<Context> context, const vk::ImageCreateInfo &imageI
     mSamples = imageInfo.samples;
     mMipLevels = imageInfo.mipLevels;
     mArrayLayers = imageInfo.arrayLayers;
+    mCurrentLayout = imageInfo.initialLayout;
 }
 
 Image::Image(Image &&other) noexcept
@@ -106,6 +107,10 @@ uint32_t Image::GetMipLevels() const
 uint32_t Image::GetArrayLayers() const
 {
     return mArrayLayers;
+}
+vk::ImageLayout Image::GetCurrentLayout() const
+{
+    return mCurrentLayout;
 }
 void Image::Release()
 {

@@ -10,6 +10,8 @@ namespace MEngine
 {
 class Image final
 {
+    friend class ImageFactory;
+
   private:
     // DI
     std::shared_ptr<Context> mContext;
@@ -27,6 +29,7 @@ class Image final
     vk::SampleCountFlagBits mSamples;
     uint32_t mMipLevels;
     uint32_t mArrayLayers;
+    vk::ImageLayout mCurrentLayout;
 
   public:
     Image(std::shared_ptr<Context> context, const vk::ImageCreateInfo &imageInfo, VmaMemoryUsage memoryUsage,
@@ -49,6 +52,7 @@ class Image final
     vk::SampleCountFlagBits GetSamples() const;
     uint32_t GetMipLevels() const;
     uint32_t GetArrayLayers() const;
+    vk::ImageLayout GetCurrentLayout() const;
 
   private:
     void Release();

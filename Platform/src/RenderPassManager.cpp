@@ -1,4 +1,5 @@
 #include "RenderPassManager.hpp"
+#include <vulkan/vulkan_structs.hpp>
 
 namespace MEngine
 {
@@ -41,69 +42,9 @@ void RenderPassManager::CreateForwardCompositionRenderPass()
             .setStoreOp(vk::AttachmentStoreOp::eStore)
             .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
             .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
-            .setInitialLayout(vk::ImageLayout::eUndefined)
-            .setFinalLayout(vk::ImageLayout::eShaderReadOnlyOptimal),
-        // 1: Render Target: Albedo
-        vk::AttachmentDescription()
-            .setFormat(mImageFactory->GetRenderTargetFormat())
-            .setSamples(vk::SampleCountFlagBits::e1)
-            .setLoadOp(vk::AttachmentLoadOp::eDontCare)
-            .setStoreOp(vk::AttachmentStoreOp::eStore)
-            .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
-            .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
-            .setInitialLayout(vk::ImageLayout::eUndefined)
-            .setFinalLayout(vk::ImageLayout::eShaderReadOnlyOptimal),
-        // 2: Render Target: Position
-        vk::AttachmentDescription()
-            .setFormat(mImageFactory->GetRenderTargetFormat())
-            .setSamples(vk::SampleCountFlagBits::e1)
-            .setLoadOp(vk::AttachmentLoadOp::eDontCare)
-            .setStoreOp(vk::AttachmentStoreOp::eStore)
-            .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
-            .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
-            .setInitialLayout(vk::ImageLayout::eUndefined)
-            .setFinalLayout(vk::ImageLayout::eShaderReadOnlyOptimal),
-        // 3: Render Target: Normal
-        vk::AttachmentDescription()
-            .setFormat(mImageFactory->GetRenderTargetFormat())
-            .setSamples(vk::SampleCountFlagBits::e1)
-            .setLoadOp(vk::AttachmentLoadOp::eDontCare)
-            .setStoreOp(vk::AttachmentStoreOp::eStore)
-            .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
-            .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
-            .setInitialLayout(vk::ImageLayout::eUndefined)
-            .setFinalLayout(vk::ImageLayout::eShaderReadOnlyOptimal),
-        // 4: Render Target: Metalness/Roughness
-        vk::AttachmentDescription()
-            .setFormat(mImageFactory->GetRenderTargetFormat())
-            .setSamples(vk::SampleCountFlagBits::e1)
-            .setLoadOp(vk::AttachmentLoadOp::eDontCare)
-            .setStoreOp(vk::AttachmentStoreOp::eStore)
-            .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
-            .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
-            .setInitialLayout(vk::ImageLayout::eUndefined)
-            .setFinalLayout(vk::ImageLayout::eShaderReadOnlyOptimal),
-        // 5: Render Target: AO
-        vk::AttachmentDescription()
-            .setFormat(mImageFactory->GetRenderTargetFormat())
-            .setSamples(vk::SampleCountFlagBits::e1)
-            .setLoadOp(vk::AttachmentLoadOp::eDontCare)
-            .setStoreOp(vk::AttachmentStoreOp::eStore)
-            .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
-            .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
-            .setInitialLayout(vk::ImageLayout::eUndefined)
-            .setFinalLayout(vk::ImageLayout::eShaderReadOnlyOptimal),
-        // 6: Render Target: Emissive
-        vk::AttachmentDescription()
-            .setFormat(mImageFactory->GetRenderTargetFormat())
-            .setSamples(vk::SampleCountFlagBits::e1)
-            .setLoadOp(vk::AttachmentLoadOp::eDontCare)
-            .setStoreOp(vk::AttachmentStoreOp::eStore)
-            .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
-            .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
-            .setInitialLayout(vk::ImageLayout::eUndefined)
-            .setFinalLayout(vk::ImageLayout::eShaderReadOnlyOptimal),
-        // 7: Render Target: Depth
+            .setInitialLayout(vk::ImageLayout::eColorAttachmentOptimal)
+            .setFinalLayout(vk::ImageLayout::eColorAttachmentOptimal),
+        // 1: Render Target: Depth
         vk::AttachmentDescription()
             .setFormat(mImageFactory->GetDepthStencilFormat()) // 32位深度+8位模板存储
             .setSamples(vk::SampleCountFlagBits::e1)
@@ -114,6 +55,47 @@ void RenderPassManager::CreateForwardCompositionRenderPass()
             .setInitialLayout(vk::ImageLayout::eUndefined)
             .setFinalLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal),
     };
+    // SubPass: 0 不透明物体
+    std::vector<vk::AttachmentReference> colorRefs{
+        vk::AttachmentReference(0, vk::ImageLayout::eColorAttachmentOptimal), // Render Target: Color
+    };
+    vk::AttachmentReference depthRef{
+        vk::AttachmentReference(1, vk::ImageLayout::eDepthStencilAttachmentOptimal), // Render Target: Depth
+    };
+    // SubPass: 1 透明物体
+    std::vector<vk::AttachmentReference> colorRefs1{
+        vk::AttachmentReference(0, vk::ImageLayout::eColorAttachmentOptimal), // Render Target: Color
+    };
+    vk::AttachmentReference depthRef1{
+        vk::AttachmentReference(1, vk::ImageLayout::eDepthStencilAttachmentOptimal), // Render Target: Depth
+    };
+    std::vector<vk::SubpassDescription> subpasses{vk::SubpassDescription()
+                                                      .setPipelineBindPoint(vk::PipelineBindPoint::eGraphics)
+                                                      .setColorAttachments(colorRefs)
+                                                      .setPDepthStencilAttachment(&depthRef),
+                                                  vk::SubpassDescription()
+                                                      .setPipelineBindPoint(vk::PipelineBindPoint::eGraphics)
+                                                      .setColorAttachments(colorRefs1)
+                                                      .setPDepthStencilAttachment(&depthRef1)};
+    // dependency
+    std::vector<vk::SubpassDependency> dependencies{
+        // subpass 0 -> subpass 1
+        vk::SubpassDependency()
+            .setSrcSubpass(0)
+            .setDstSubpass(1)
+            .setSrcStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
+            .setDstStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
+            .setSrcAccessMask(vk::AccessFlagBits::eColorAttachmentWrite)
+            .setDstAccessMask(vk::AccessFlagBits::eColorAttachmentRead | vk::AccessFlagBits::eColorAttachmentWrite)};
+    vk::RenderPassCreateInfo renderPassCreateInfo{};
+    renderPassCreateInfo.setAttachments(attachments).setSubpasses(subpasses).setDependencies(dependencies);
+    auto renderPass = mContext->GetDevice().createRenderPassUnique(renderPassCreateInfo);
+    if (!renderPass)
+    {
+        mLogger->Error("Failed to create Forward render pass");
+    }
+    mRenderPasses[RenderPassType::ForwardComposition] = std::move(renderPass);
+    mLogger->Info("Forward render pass created successfully");
 }
 void RenderPassManager::CreateSkyRenderPass()
 {
@@ -204,6 +186,45 @@ void RenderPassManager::CreateDeferredCompositionFrameBuffer()
 }
 void RenderPassManager::CreateForwardCompositionFrameBuffer()
 {
+    mFrameBuffers[RenderPassType::ForwardComposition].clear();
+    mForwardFrameResources.clear();
+    auto frameCount = mContext->GetSwapchainImages().size();
+    auto extent = vk::Extent2D{mWidth, mHeight};
+    auto renderPass = mRenderPasses[RenderPassType::ForwardComposition].get();
+    for (size_t i = 0; i < frameCount; i++)
+    {
+        auto forwardFrameResource = std::make_shared<ForwardFrameResource>();
+        // Render Target
+        auto renderTargetImage = mImageFactory->CreateImage(ImageType::RenderTarget, vk::Extent3D(extent, 1));
+        auto renderTargetImageView = mImageFactory->CreateImageView(renderTargetImage.get());
+        forwardFrameResource->renderTargetImage = std::move(renderTargetImage);
+        forwardFrameResource->renderTargetImageView = std::move(renderTargetImageView);
+        // Depth Stencil
+        auto depthImage = mImageFactory->CreateImage(ImageType::DepthStencil, vk::Extent3D(extent, 1));
+        auto depthImageView = mImageFactory->CreateImageView(depthImage.get());
+        forwardFrameResource->depthStencilImage = std::move(depthImage);
+        forwardFrameResource->depthStencilImageView = std::move(depthImageView);
+        // 保存资源
+        mForwardFrameResources.push_back(forwardFrameResource);
+        // 创建帧缓冲
+        std::array<vk::ImageView, 2> attachments{
+            forwardFrameResource->renderTargetImageView.get(),
+            forwardFrameResource->depthStencilImageView.get(),
+        };
+        vk::FramebufferCreateInfo framebufferCreateInfo;
+        framebufferCreateInfo.setRenderPass(renderPass)
+            .setAttachments(attachments)
+            .setWidth(extent.width)
+            .setHeight(extent.height)
+            .setLayers(1);
+        auto framebuffer = mContext->GetDevice().createFramebufferUnique(framebufferCreateInfo);
+        if (!framebuffer)
+        {
+            mLogger->Error("Failed to create framebuffer for Forward render pass");
+        }
+        mFrameBuffers[RenderPassType::ForwardComposition].push_back(std::move(framebuffer));
+        mLogger->Info("Framebuffer {} for Forward render pass created successfully", i);
+    }
 }
 void RenderPassManager::CreateSkyFrameBuffer()
 {
