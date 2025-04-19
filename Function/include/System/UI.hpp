@@ -2,7 +2,7 @@
 #include "CommandBuffeManager.hpp"
 #include "Context.hpp"
 #include "Entity/PBRMaterial.hpp"
-#include "Entity/Texture.hpp"
+#include "Entity/Texture2D.hpp"
 #include "Image.hpp"
 #include "ImageFactory.hpp"
 #include "Interface/ILogger.hpp"
@@ -48,7 +48,7 @@ class UI
     std::shared_ptr<SamplerManager> mSamplerManager;
     std::shared_ptr<entt::registry> mRegistry;
     std::shared_ptr<IRepository<PBRMaterial>> mPBRMaterialRepository;
-    std::shared_ptr<IRepository<Texture>> mTextureRepository;
+    std::shared_ptr<IRepository<Texture2D>> mTexture2DRepository;
 
   private:
     // ImGUI 相关
@@ -132,7 +132,8 @@ class UI
     void CollectEntity();
 
   private:
-    void ShowTexture(const std::string &name, std::shared_ptr<Texture> texture = nullptr, ImVec2 size = ImVec2(50, 50));
+    void ShowTexture(const std::string &name, std::shared_ptr<Texture2D> texture = nullptr,
+                     ImVec2 size = ImVec2(50, 50));
 
   public:
     UI(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context, std::shared_ptr<IWindow> window,
@@ -140,7 +141,7 @@ class UI
        std::shared_ptr<CommandBufferManager> commandBufferManager,
        std::shared_ptr<SyncPrimitiveManager> syncPrimitiveManager, std::shared_ptr<SamplerManager> samplerManager,
        std::shared_ptr<entt::registry> registry, std::shared_ptr<IRepository<PBRMaterial>> pbrMaterialRepository,
-       std::shared_ptr<IRepository<Texture>> textureRepository);
+       std::shared_ptr<IRepository<Texture2D>> texture2DRepository);
     ~UI();
     void ProcessEvent(const SDL_Event *event);
     void RenderUI();

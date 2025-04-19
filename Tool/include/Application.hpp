@@ -11,7 +11,7 @@
 #include "Entity/Interface/IMaterial.hpp"
 #include "Entity/Interface/ITexture.hpp"
 #include "Entity/PBRMaterial.hpp"
-#include "Entity/Texture.hpp"
+#include "Entity/Texture2D.hpp"
 #include "ImageFactory.hpp"
 #include "Interface/ILogger.hpp"
 #include "Interface/IWindow.hpp"
@@ -30,7 +30,7 @@
 #include "SpdLogger.hpp"
 
 #include "Configure.hpp"
-#include "Repository/TextureRepository.hpp"
+#include "Repository/Texture2DRepository.hpp"
 #include "SyncPrimitiveManager.hpp"
 #include "System/CameraSystem.hpp"
 #include "System/ISystem.hpp"
@@ -66,7 +66,7 @@ class Application final : public NoCopyable
         DI::bind<BufferFactory>().to<BufferFactory>().in(DI::singleton),
         DI::bind<ImageFactory>().to<ImageFactory>().in(DI::singleton),
         DI::bind<RenderPassManager>().to<RenderPassManager>().in(DI::singleton),
-        DI::bind<IRepository<Texture>>().to<TextureRepository>().in(DI::singleton),
+        DI::bind<IRepository<Texture2D>>().to<Texture2DRepository>().in(DI::singleton),
         DI::bind<IRepository<PBRMaterial>>().to<PBRMaterialRepository>().in(DI::singleton),
         DI::bind<BasicGeometryFactory>().to<BasicGeometryFactory>().in(DI::singleton),
         DI::bind<BasicGeometryEntityManager>().to<BasicGeometryEntityManager>().in(DI::singleton),

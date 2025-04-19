@@ -7,11 +7,11 @@ UI::UI(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context, std::s
        std::shared_ptr<CommandBufferManager> commandBufferManager,
        std::shared_ptr<SyncPrimitiveManager> syncPrimitiveManager, std::shared_ptr<SamplerManager> samplerManager,
        std::shared_ptr<entt::registry> registry, std::shared_ptr<IRepository<PBRMaterial>> pbrMaterialRepository,
-       std::shared_ptr<IRepository<Texture>> textureRepository)
+       std::shared_ptr<IRepository<Texture2D>> texture2DRepository)
     : mLogger(logger), mContext(context), mWindow(window), mRenderPassManager(renderPassManager),
       mImageFactory(imageFactory), mCommandBufferManager(commandBufferManager),
       mSyncPrimitiveManager(syncPrimitiveManager), mSamplerManager(samplerManager), mRegistry(registry),
-      mPBRMaterialRepository(pbrMaterialRepository), mTextureRepository(textureRepository)
+      mPBRMaterialRepository(pbrMaterialRepository), mTexture2DRepository(texture2DRepository)
 {
     mIconTransitionCommandBuffer = mCommandBufferManager->CreatePrimaryCommandBuffer(CommandBufferType::Graphic);
     mIconSampler = mSamplerManager->CreateUniqueSampler(vk::Filter::eLinear, vk::Filter::eLinear);
@@ -261,7 +261,7 @@ void UI::HierarchyWindow()
     }
     ImGui::End();
 }
-void UI::ShowTexture(const std::string &name, std::shared_ptr<Texture> texture, ImVec2 size)
+void UI::ShowTexture(const std::string &name, std::shared_ptr<Texture2D> texture, ImVec2 size)
 {
 
     ImGui::Columns(2, nullptr, false); // 创建两列布局，不显示分隔线

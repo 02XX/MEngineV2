@@ -8,12 +8,12 @@ BasicGeometryEntityManager::BasicGeometryEntityManager(
     std::shared_ptr<DescriptorManager> descriptorManager, std::shared_ptr<SamplerManager> samplerManager,
     std::shared_ptr<IRepository<PBRMaterial>> pbrMaterialRepository, std::shared_ptr<ImageFactory> imageFactory,
     std::shared_ptr<BufferFactory> bufferFactory, std::shared_ptr<BasicGeometryFactory> basicGeometryFactory,
-    std::shared_ptr<IRepository<Texture>> textureRepository)
+    std::shared_ptr<IRepository<Texture2D>> texture2DRepository)
     : mLogger(mLogger), mContext(context), mPipelineManager(pipelineManager),
       mPipelineLayoutManager(pipelineLayoutManager), mDescriptorManager(descriptorManager),
       mSamplerManager(samplerManager), mImageFactory(imageFactory), mBufferFactory(bufferFactory),
       mBasicGeometryFactory(basicGeometryFactory), mPBRMaterialRepository(pbrMaterialRepository),
-      mTextureRepository(textureRepository)
+      mTexture2DRepository(texture2DRepository)
 
 {
 }
@@ -55,10 +55,12 @@ entt::entity BasicGeometryEntityManager::CreateQuad(std::shared_ptr<entt::regist
     return entt::null;
 }
 entt::entity BasicGeometryEntityManager::CreateCylinder(std::shared_ptr<entt::registry> registry)
-{ return entt::null;
+{
+    return entt::null;
 }
 entt::entity BasicGeometryEntityManager::CreateSphere(std::shared_ptr<entt::registry> registry)
-{ return entt::null;
+{
+    return entt::null;
 }
 
 } // namespace MEngine

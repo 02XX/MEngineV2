@@ -15,10 +15,10 @@
 
 namespace MEngine
 {
-class Texture final : public Entity<UUID>, public ITexture
+class Texture2D final : public Entity<UUID>, public ITexture
 {
-    friend nlohmann::adl_serializer<MEngine::Texture>;
-    friend class TextureRepository;
+    friend nlohmann::adl_serializer<MEngine::Texture2D>;
+    friend class Texture2DRepository;
 
   private:
     std::filesystem::path imagePath{};
@@ -31,7 +31,7 @@ class Texture final : public Entity<UUID>, public ITexture
     vk::UniqueSampler mSampler;     // Vulkan 纹理采样器
 
   public:
-    Texture();
+    Texture2D();
     // Getters
     inline vk::Image GetImage() const override
     {
@@ -71,9 +71,9 @@ class Texture final : public Entity<UUID>, public ITexture
 
 namespace nlohmann
 {
-template <> struct adl_serializer<MEngine::Texture>
+template <> struct adl_serializer<MEngine::Texture2D>
 {
-    static void to_json(json &j, const MEngine::Texture &texture)
+    static void to_json(json &j, const MEngine::Texture2D &texture)
     {
         auto &entity = static_cast<const MEngine::ITexture &>(texture);
         j = entity;
@@ -83,7 +83,7 @@ template <> struct adl_serializer<MEngine::Texture>
         j["height"] = texture.GetHeight();
         j["channels"] = texture.GetChannels();
     }
-    static void from_json(const json &j, MEngine::Texture &texture)
+    static void from_json(const json &j, MEngine::Texture2D &texture)
     {
         auto &entity = static_cast<MEngine::ITexture &>(texture);
         j.get_to(entity);

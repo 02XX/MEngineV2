@@ -1,6 +1,4 @@
 #include "System/RenderSystem.hpp"
-#include <vulkan/vulkan_enums.hpp>
-#include <vulkan/vulkan_structs.hpp>
 
 namespace MEngine
 {
@@ -128,18 +126,18 @@ void RenderSystem::CollectMainCamera()
 }
 void RenderSystem::Tick(float deltaTime)
 {
-    // TickRotationMatrix();
-    Prepare(); // Prepare
     mUI->RenderUI();
+    // TickRotationMatrix();
+    Prepare();               // Prepare
     CollectRenderEntities(); // Collect same material render entities
     CollectMainCamera();
     // RenderShadowDepthPass();  // Shadow pass
     // RenderMainPass();       // Deffer pass
     // RenderSkyPass();          // Sky pass
-    RenderTranslucencyPass(); // Translucency pass
+    // RenderTranslucencyPass(); // Translucency pass
     // RenderPostProcessPass();  // Post process pass
     RenderUIPass(deltaTime); // UI pass
-    Present(); // Present
+    Present();               // Present
 }
 
 void RenderSystem::Prepare()
@@ -169,13 +167,6 @@ void RenderSystem::Prepare()
         throw std::runtime_error("Failed to acquire next image");
     }
     mImageIndex = resultValue.value;
-    //  ReCreateFrameBuffer
-    // if (mUI->IsSceneViewPortChanged())
-    // {
-    //     auto width = mUI->GetSceneWidth();
-    //     auto height = mUI->GetSceneHeight();
-
-    // }
     mDescriptorManager->UpdateUniformDescriptorSet({mVPUBO.get()}, 0, mGlobalDescriptorSets[mFrameIndex].get());
     vk::CommandBufferBeginInfo beginInfo;
     beginInfo.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);

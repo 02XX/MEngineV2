@@ -6,10 +6,10 @@ PBRMaterialRepository::PBRMaterialRepository(
     std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context, std::shared_ptr<IConfigure> configure,
     std::shared_ptr<PipelineManager> pipelineManager, std::shared_ptr<PipelineLayoutManager> pipelineLayoutManager,
     std::shared_ptr<DescriptorManager> descriptorManager, std::shared_ptr<SamplerManager> samplerManager,
-    std::shared_ptr<TextureRepository> textureManager, std::shared_ptr<BufferFactory> bufferFactory)
+    std::shared_ptr<Texture2DRepository> textureManager, std::shared_ptr<BufferFactory> bufferFactory)
     : Repository<PBRMaterial>(logger, context, configure), mPipelineManager(pipelineManager),
       mPipelineLayoutManager(pipelineLayoutManager), mDescriptorManager(descriptorManager),
-      mSamplerManager(samplerManager), mTextureRepository(textureManager), mBufferFactory(bufferFactory)
+      mSamplerManager(samplerManager), mTexture2DRepository(textureManager), mBufferFactory(bufferFactory)
 {
 }
 bool PBRMaterialRepository::Update(const UUID &id, const PBRMaterial &delta)
@@ -63,8 +63,8 @@ bool PBRMaterialRepository::Update(const UUID &id, const PBRMaterial &delta)
         // Albedo Map
         vk::DescriptorImageInfo AlbedoImageInfo;
         AlbedoImageInfo.setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
-            .setImageView(mTextureRepository->Get(material->mAlbedoMapID)->GetImageView())
-            .setSampler(mTextureRepository->Get(material->mAlbedoMapID)->GetSampler());
+            .setImageView(mTexture2DRepository->Get(material->mAlbedoMapID)->GetImageView())
+            .setSampler(mTexture2DRepository->Get(material->mAlbedoMapID)->GetSampler());
         vk::WriteDescriptorSet AlbedoWriter;
         AlbedoWriter.setDstSet(material->mMaterialDescriptorSet.get())
             .setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
@@ -76,8 +76,8 @@ bool PBRMaterialRepository::Update(const UUID &id, const PBRMaterial &delta)
         // Normal Map
         vk::DescriptorImageInfo NormalImageInfo;
         NormalImageInfo.setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
-            .setImageView(mTextureRepository->Get(material->mNormalMapID)->GetImageView())
-            .setSampler(mTextureRepository->Get(material->mNormalMapID)->GetSampler());
+            .setImageView(mTexture2DRepository->Get(material->mNormalMapID)->GetImageView())
+            .setSampler(mTexture2DRepository->Get(material->mNormalMapID)->GetSampler());
         vk::WriteDescriptorSet NormalWriter;
         NormalWriter.setDstSet(material->mMaterialDescriptorSet.get())
             .setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
@@ -89,8 +89,8 @@ bool PBRMaterialRepository::Update(const UUID &id, const PBRMaterial &delta)
         // MetallicRoughness Map
         vk::DescriptorImageInfo MetallicRoughnessImageInfo;
         MetallicRoughnessImageInfo.setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
-            .setImageView(mTextureRepository->Get(material->mMetallicRoughnessMapID)->GetImageView())
-            .setSampler(mTextureRepository->Get(material->mMetallicRoughnessMapID)->GetSampler());
+            .setImageView(mTexture2DRepository->Get(material->mMetallicRoughnessMapID)->GetImageView())
+            .setSampler(mTexture2DRepository->Get(material->mMetallicRoughnessMapID)->GetSampler());
         vk::WriteDescriptorSet MetallicRoughnessWriter;
         MetallicRoughnessWriter.setDstSet(material->mMaterialDescriptorSet.get())
             .setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
@@ -101,8 +101,8 @@ bool PBRMaterialRepository::Update(const UUID &id, const PBRMaterial &delta)
         // AO Map
         vk::DescriptorImageInfo AOImageInfo;
         AOImageInfo.setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
-            .setImageView(mTextureRepository->Get(material->mAOMapID)->GetImageView())
-            .setSampler(mTextureRepository->Get(material->mAOMapID)->GetSampler());
+            .setImageView(mTexture2DRepository->Get(material->mAOMapID)->GetImageView())
+            .setSampler(mTexture2DRepository->Get(material->mAOMapID)->GetSampler());
         vk::WriteDescriptorSet AOWriter;
         AOWriter.setDstSet(material->mMaterialDescriptorSet.get())
             .setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
@@ -113,8 +113,8 @@ bool PBRMaterialRepository::Update(const UUID &id, const PBRMaterial &delta)
         // Emissive Map
         vk::DescriptorImageInfo EmissiveImageInfo;
         EmissiveImageInfo.setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
-            .setImageView(mTextureRepository->Get(material->mEmissiveMapID)->GetImageView())
-            .setSampler(mTextureRepository->Get(material->mEmissiveMapID)->GetSampler());
+            .setImageView(mTexture2DRepository->Get(material->mEmissiveMapID)->GetImageView())
+            .setSampler(mTexture2DRepository->Get(material->mEmissiveMapID)->GetSampler());
         vk::WriteDescriptorSet EmissiveWriter;
         EmissiveWriter.setDstSet(material->mMaterialDescriptorSet.get())
             .setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
@@ -251,7 +251,7 @@ bool PBRMaterialRepository::CheckValidate(const PBRMaterial &delta) const
 //     auto id = std::hash<std::string>{}(materialPath.string());
 
 //     std::shared_ptr<IMaterial> material =
-//         std::make_shared<PBRMaterial>(mContext, mTextureRepository, mBufferFactory, mPipelineLayoutManager,
+//         std::make_shared<PBRMaterial>(mContext, mTexture2DRepository, mBufferFactory, mPipelineLayoutManager,
 //                                       mDescriptorManager, materialPath.stem().string(), id, materialPath);
 //     mMaterials[id] = material;
 //     SaveMaterial(materialPath, material);
@@ -298,7 +298,7 @@ bool PBRMaterialRepository::CheckValidate(const PBRMaterial &delta) const
 //     case PipelineType::DeferredGBuffer:
 //     case PipelineType::DeferredLighting: {
 //         PBRMaterialParams pbrMaterialParams = materialJson.get<PBRMaterialParams>();
-//         material = std::make_shared<PBRMaterial>(mContext, mTextureRepository, mBufferFactory,
+//         material = std::make_shared<PBRMaterial>(mContext, mTexture2DRepository, mBufferFactory,
 //         mPipelineLayoutManager,
 //                                                  mDescriptorManager, pbrMaterialParams);
 //         material->Update();

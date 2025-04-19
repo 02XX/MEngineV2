@@ -18,7 +18,7 @@ Application::Application()
           DI::bind<BufferFactory>().to<BufferFactory>().in(DI::singleton),
           DI::bind<ImageFactory>().to<ImageFactory>().in(DI::singleton),
           DI::bind<RenderPassManager>().to<RenderPassManager>().in(DI::singleton),
-          DI::bind<IRepository<Texture>>().to<TextureRepository>().in(DI::singleton),
+          DI::bind<IRepository<Texture2D>>().to<Texture2DRepository>().in(DI::singleton),
           DI::bind<IRepository<PBRMaterial>>().to<PBRMaterialRepository>().in(DI::singleton),
           DI::bind<BasicGeometryFactory>().to<BasicGeometryFactory>().in(DI::singleton),
           DI::bind<BasicGeometryEntityManager>().to<BasicGeometryEntityManager>().in(DI::singleton),

@@ -8,7 +8,7 @@
 #include "Entity/Interface/IMaterial.hpp"
 #include "Entity/Interface/ITexture.hpp"
 #include "Entity/PBRMaterial.hpp"
-#include "Entity/Texture.hpp"
+#include "Entity/Texture2D.hpp"
 #include "NoCopyable.hpp"
 #include "PipelineLayoutManager.hpp"
 #include "PipelineManager.hpp"
@@ -34,7 +34,7 @@ class BasicGeometryEntityManager : public NoCopyable
     std::shared_ptr<ImageFactory> mImageFactory;
     std::shared_ptr<BufferFactory> mBufferFactory;
     std::shared_ptr<BasicGeometryFactory> mBasicGeometryFactory;
-    std::shared_ptr<IRepository<Texture>> mTextureRepository;
+    std::shared_ptr<IRepository<Texture2D>> mTexture2DRepository;
 
   private:
   public:
@@ -46,7 +46,7 @@ class BasicGeometryEntityManager : public NoCopyable
                                std::shared_ptr<IRepository<PBRMaterial>> pbrMaterialRepository,
                                std::shared_ptr<ImageFactory> imageFactory, std::shared_ptr<BufferFactory> bufferFactory,
                                std::shared_ptr<BasicGeometryFactory> basicGeometryFactory,
-                               std::shared_ptr<IRepository<Texture>> textureRepository);
+                               std::shared_ptr<IRepository<Texture2D>> texture2DRepository);
     entt::entity CreateCube(std::shared_ptr<entt::registry> registry);
     entt::entity CreateCylinder(std::shared_ptr<entt::registry> registry);
     entt::entity CreateSphere(std::shared_ptr<entt::registry> registry);

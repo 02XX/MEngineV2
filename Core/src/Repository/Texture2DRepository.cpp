@@ -1,19 +1,20 @@
-#include "Repository/TextureRepository.hpp"
+#include "Repository/Texture2DRepository.hpp"
 
 namespace MEngine
 {
-TextureRepository::TextureRepository(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context,
-                                     std::shared_ptr<IConfigure> configure, std::shared_ptr<ImageFactory> imageFactory,
-                                     std::shared_ptr<SamplerManager> samplerManager)
-    : Repository<Texture>(logger, context, configure), mImageFactory(imageFactory), mSamplerManager(samplerManager)
+Texture2DRepository::Texture2DRepository(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context,
+                                         std::shared_ptr<IConfigure> configure,
+                                         std::shared_ptr<ImageFactory> imageFactory,
+                                         std::shared_ptr<SamplerManager> samplerManager)
+    : Repository<Texture2D>(logger, context, configure), mImageFactory(imageFactory), mSamplerManager(samplerManager)
 {
     mCheckBoardData = CheckBoard();
-    auto defaultTexture = std::unique_ptr<Texture>(Create());
+    auto defaultTexture = std::unique_ptr<Texture2D>(Create());
     mEntities[UUID{}] = std::move(defaultTexture);
 }
-Texture *TextureRepository::Create()
+Texture2D *Texture2DRepository::Create()
 {
-    auto texture = std::make_unique<Texture>();
+    auto texture = std::make_unique<Texture2D>();
     texture->mWidth = 4096;
     texture->mHeight = 4096;
     texture->mChannels = 4;
@@ -26,7 +27,7 @@ Texture *TextureRepository::Create()
     mEntities[id] = std::move(texture);
     return mEntities[id].get();
 }
-bool TextureRepository::Update(const UUID &id, const Texture &delta)
+bool Texture2DRepository::Update(const UUID &id, const Texture2D &delta)
 {
     if (!CheckValidate(delta))
     {
@@ -59,7 +60,7 @@ bool TextureRepository::Update(const UUID &id, const Texture &delta)
     mLogger->Info("Texture with ID {} not exist", id);
     return false;
 }
-bool TextureRepository::CheckValidate(const std::filesystem::path &filePath) const
+bool Texture2DRepository::CheckValidate(const std::filesystem::path &filePath) const
 {
     if (filePath.empty())
     {
@@ -83,13 +84,13 @@ bool TextureRepository::CheckValidate(const std::filesystem::path &filePath) con
     }
     return true;
 }
-bool TextureRepository::CheckValidate(const Texture &delta) const
+bool Texture2DRepository::CheckValidate(const Texture2D &delta) const
 {
     // Check imagePath
     return CheckValidate(delta.imagePath);
     // TODO: CheckValidate other members
 }
-std::vector<unsigned char> TextureRepository::CheckBoard()
+std::vector<unsigned char> Texture2DRepository::CheckBoard()
 {
     // 4k
     int width = 4096;
