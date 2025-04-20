@@ -1,5 +1,4 @@
 #include "System/EditorRenderSystem.hpp"
-#include "System/RenderSystem.hpp"
 namespace MEngine
 {
 EditorRenderSystem::EditorRenderSystem(
@@ -20,6 +19,8 @@ EditorRenderSystem::EditorRenderSystem(
 }
 void EditorRenderSystem::Init()
 {
+    RenderSystem::Init();
+    InitialEditorRenderTargetImageLayout();
     mIconTransitionCommandBuffer = mCommandBufferManager->CreatePrimaryCommandBuffer(CommandBufferType::Graphic);
     mIconSampler = mSamplerManager->CreateUniqueSampler(vk::Filter::eLinear, vk::Filter::eLinear);
     mSceneSampler = mSamplerManager->CreateUniqueSampler(vk::Filter::eLinear, vk::Filter::eLinear);
@@ -72,6 +73,10 @@ void EditorRenderSystem::Init()
 }
 void EditorRenderSystem::Tick(float deltaTime)
 {
+    Prepare();
+    // TickRotationMatrix();
+    CollectRenderEntities(); // Collect same material render entities
+    CollectMainCamera();
     ImGui_ImplSDL3_NewFrame();
     ImGui_ImplVulkan_NewFrame();
     ImGui::NewFrame();
@@ -88,11 +93,6 @@ void EditorRenderSystem::Tick(float deltaTime)
     AssetWindow();
     SceneViewWindow();
     ToolbarWindow();
-
-    Prepare();
-    // TickRotationMatrix();
-    CollectRenderEntities(); // Collect same material render entities
-    CollectMainCamera();
     // RenderShadowDepthPass();  // Shadow pass
     // void RenderDeferred();
     RenderForward();
@@ -105,10 +105,47 @@ void EditorRenderSystem::Tick(float deltaTime)
     bool isMinimized = (drawData->DisplaySize.x <= 0.0f || drawData->DisplaySize.y <= 0.0f);
     if (!isMinimized)
     {
+        // 将Scene转为ShaderReadOnlyOptimal布局
+        auto renderTargets = mRenderPassManager->GetRenderTargets();
+        vk::ImageMemoryBarrier preBarrier;
+        preBarrier.setImage(renderTargets[mFrameIndex].colorImage->GetHandle())
+            .setOldLayout(vk::ImageLayout::eColorAttachmentOptimal)
+            .setNewLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
+            .setSrcQueueFamilyIndex(mContext->GetQueueFamilyIndicates().graphicsFamily.value())
+            .setDstQueueFamilyIndex(mContext->GetQueueFamilyIndicates().graphicsFamily.value())
+            .setSubresourceRange(vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1))
+            .setSrcAccessMask(vk::AccessFlagBits::eColorAttachmentWrite)
+            .setDstAccessMask(vk::AccessFlagBits::eShaderRead);
+        mGraphicCommandBuffers[mFrameIndex]->pipelineBarrier(vk::PipelineStageFlagBits::eColorAttachmentOutput,
+                                                             vk::PipelineStageFlagBits::eFragmentShader, {}, {}, {},
+                                                             preBarrier);
+        vk::ClearValue clearValue(std::array<float, 4>{0.1f, 0.1f, 0.1f, 1.0f});
+        vk::RenderPassBeginInfo renderPassBeginInfo;
+        auto editorFrameBuffers = mRenderPassManager->GetFrameBuffer(RenderPassType::EditorUI);
+        auto renderPass = mRenderPassManager->GetRenderPass(RenderPassType::EditorUI);
+        auto editorFrameResources = mRenderPassManager->GetEditorRenderTargets();
+        renderPassBeginInfo.setRenderPass(renderPass)
+            .setFramebuffer(editorFrameBuffers[mFrameIndex])
+            .setRenderArea(vk::Rect2D({0, 0}, mContext->GetSurfaceInfo().extent))
+            .setClearValues(clearValue);
+        mGraphicCommandBuffers[mFrameIndex]->beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);
         ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), mGraphicCommandBuffers[mFrameIndex].get());
+        mGraphicCommandBuffers[mFrameIndex]->endRenderPass();
+        // 将Scene转为ColorAttachmentOptimal布局
+        vk::ImageMemoryBarrier postBarrier;
+        postBarrier.setImage(renderTargets[mFrameIndex].colorImage->GetHandle())
+            .setOldLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
+            .setNewLayout(vk::ImageLayout::eColorAttachmentOptimal)
+            .setSrcQueueFamilyIndex(mContext->GetQueueFamilyIndicates().graphicsFamily.value())
+            .setDstQueueFamilyIndex(mContext->GetQueueFamilyIndicates().graphicsFamily.value())
+            .setSubresourceRange(vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1))
+            .setSrcAccessMask(vk::AccessFlagBits::eShaderRead)
+            .setDstAccessMask(vk::AccessFlagBits::eColorAttachmentWrite);
+        mGraphicCommandBuffers[mFrameIndex]->pipelineBarrier(vk::PipelineStageFlagBits::eFragmentShader,
+                                                             vk::PipelineStageFlagBits::eColorAttachmentOutput, {}, {},
+                                                             {}, postBarrier);
     }
-    CopyColorAttachmentToSwapchainImage(
-        mRenderPassManager->GetEditorRenderTargets()[mFrameIndex].colorImage->GetHandle());
+    CopyColorAttachmentToSwapchainImage(*mRenderPassManager->GetEditorRenderTargets()[mFrameIndex].colorImage);
     Present();
 }
 void EditorRenderSystem::Shutdown()
@@ -125,7 +162,51 @@ void EditorRenderSystem::Shutdown()
 void EditorRenderSystem::HandleSwapchainOutOfDate()
 {
     RenderSystem::HandleSwapchainOutOfDate();
+    auto extent = mContext->GetSurfaceInfo().extent;
+    mRenderPassManager->RecreateEditorRenderTargetFrameBuffer(extent.width, extent.height);
+    mSceneViewPortWidth = extent.width;
+    mSceneViewPortHeight = extent.height;
+    InitialEditorRenderTargetImageLayout();
     CreateSceneView();
+}
+void EditorRenderSystem::InitialEditorRenderTargetImageLayout()
+{
+    auto fence = mSyncPrimitiveManager->CreateFence();
+    std::vector<vk::SubmitInfo> submitInfos;
+    auto commandBuffer = mCommandBufferManager->CreatePrimaryCommandBuffer(CommandBufferType::Graphic);
+    commandBuffer->reset();
+    // RenderTarget ImageLayout
+    {
+        commandBuffer->begin(vk::CommandBufferBeginInfo{vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
+        auto renderTargetImages = mRenderPassManager->GetEditorRenderTargets();
+        for (auto &renderTarget : renderTargetImages)
+        {
+            // Render Target ImageLayout
+            vk::ImageMemoryBarrier editorUIImageMemoryBarrier;
+            editorUIImageMemoryBarrier.setImage(renderTarget.colorImage->GetHandle())
+                .setOldLayout(vk::ImageLayout::eUndefined)
+                .setNewLayout(vk::ImageLayout::eColorAttachmentOptimal)
+                .setSrcAccessMask(vk::AccessFlagBits::eNone)
+                .setDstAccessMask(vk::AccessFlagBits::eColorAttachmentWrite)
+                .setSubresourceRange(vk::ImageSubresourceRange{vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1});
+            commandBuffer->pipelineBarrier(vk::PipelineStageFlagBits::eTopOfPipe,
+                                           vk::PipelineStageFlagBits::eColorAttachmentOutput, {}, {}, {},
+                                           editorUIImageMemoryBarrier);
+        }
+        commandBuffer->end();
+        vk::SubmitInfo submitInfo;
+        submitInfo.setCommandBuffers({commandBuffer.get()});
+        submitInfos.push_back(submitInfo);
+    }
+    // 提交命令缓冲区
+    mContext->SubmitToGraphicQueue(submitInfos, fence.get());
+    auto result = mContext->GetDevice().waitForFences({fence.get()}, VK_TRUE, 1000000000); // 1s
+    if (result != vk::Result::eSuccess)
+    {
+        mLogger->Error("Failed to transition editor render target image layout");
+        throw std::runtime_error("Failed to transition editor render target image layout");
+    }
+    mLogger->Info("Editor rendertarget image layout transition completed");
 }
 void EditorRenderSystem::CreateSceneView()
 {
@@ -134,7 +215,7 @@ void EditorRenderSystem::CreateSceneView()
         ImGui_ImplVulkan_RemoveTexture(sceneDescriptorSet);
     }
     mSceneDescriptorSets.clear();
-    auto editorRenderTargets = mRenderPassManager->GetEditorRenderTargets();
+    auto editorRenderTargets = mRenderPassManager->GetRenderTargets();
     for (size_t i = 0; i < editorRenderTargets.size(); ++i)
     {
         mSceneDescriptorSets.push_back(
@@ -543,7 +624,7 @@ void EditorRenderSystem::SceneViewWindow()
     uint32_t height = static_cast<uint32_t>(windowSize.y);
     mIsSceneViewPortChanged = false;
     // 获取Camera
-    auto &camera = mRegistry->get<CameraComponent>(mMainCamera);
+    auto &camera = mRegistry->get<CameraComponent>(mMainCameraEntity);
     camera.aspectRatio = static_cast<float>(width) / static_cast<float>(height);
     if (width != mSceneViewPortWidth || height != mSceneViewPortHeight)
     {
@@ -552,7 +633,9 @@ void EditorRenderSystem::SceneViewWindow()
         if (mSceneViewPortWidth != 0 && mSceneViewPortHeight != 0)
         {
             mContext->GetDevice().waitIdle();
-            mRenderPassManager->RecreateFrameBuffer(width, height);
+            mRenderPassManager->RecreateRenderTargetFrameBuffer(width, height);
+            InitialRenderTargetImageLayout();
+            CreateSceneView();
         }
     }
     else
@@ -561,7 +644,7 @@ void EditorRenderSystem::SceneViewWindow()
         if (!mSceneDescriptorSets.empty())
         {
             ImTextureID textureId =
-                reinterpret_cast<ImTextureID>(static_cast<VkDescriptorSet>(mSceneDescriptorSets[mImageIndex]));
+                reinterpret_cast<ImTextureID>(static_cast<VkDescriptorSet>(mSceneDescriptorSets[mFrameIndex]));
             ImGui::Image(textureId, ImVec2(mSceneViewPortWidth, mSceneViewPortHeight), ImVec2(0, 1), ImVec2(1, 0));
         }
         // 3. imGuizmo

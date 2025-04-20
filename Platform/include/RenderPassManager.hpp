@@ -17,6 +17,7 @@
 #include <unordered_map>
 #include <vector>
 #include <vulkan/vulkan.hpp>
+#include <vulkan/vulkan_structs.hpp>
 
 struct RenderSetting
 {
@@ -83,8 +84,10 @@ class RenderPassManager final : public NoCopyable
   private:
     std::unordered_map<RenderPassType, vk::UniqueRenderPass> mRenderPasses;
     std::unordered_map<RenderPassType, std::vector<vk::UniqueFramebuffer>> mFrameBuffers;
-    uint32_t mWidth = 800;
-    uint32_t mHeight = 600;
+    uint32_t mRenderTargetWidth;
+    uint32_t mRenderTargetHeight;
+    uint32_t mEditorRenderTargetWidth;
+    uint32_t mEditorRenderTargetHeight;
 
   private:
     std::vector<std::unique_ptr<RenderTarget>> mRenderTargets;
@@ -117,10 +120,15 @@ class RenderPassManager final : public NoCopyable
                       std::shared_ptr<IConfigure> configure, std::shared_ptr<ImageFactory> imageFactory);
     vk::RenderPass GetRenderPass(RenderPassType type) const;
     std::vector<vk::Framebuffer> GetFrameBuffer(RenderPassType type) const;
-    void RecreateFrameBuffer(uint32_t width, uint32_t height);
-    vk::Extent2D GetExtent() const
+    void RecreateRenderTargetFrameBuffer(uint32_t width, uint32_t height);
+    void RecreateEditorRenderTargetFrameBuffer(uint32_t width, uint32_t height);
+    vk::Extent2D GetRenderTargetExtent() const
     {
-        return vk::Extent2D(mWidth, mHeight);
+        return vk::Extent2D{mRenderTargetWidth, mRenderTargetHeight};
+    }
+    vk::Extent2D GetEditorRenderTargetExtent() const
+    {
+        return vk::Extent2D{mEditorRenderTargetWidth, mEditorRenderTargetHeight};
     }
 
   public:

@@ -6,8 +6,10 @@ RenderPassManager::RenderPassManager(std::shared_ptr<ILogger> logger, std::share
                                      std::shared_ptr<IConfigure> configure, std::shared_ptr<ImageFactory> imageFactory)
     : mLogger(logger), mContext(context), mImageFactory(imageFactory), mConfigure(configure)
 {
-    mWidth = mContext->GetSurfaceInfo().extent.width;
-    mHeight = mContext->GetSurfaceInfo().extent.height;
+    mRenderTargetWidth = mContext->GetSurfaceInfo().extent.width;
+    mRenderTargetHeight = mContext->GetSurfaceInfo().extent.height;
+    mEditorRenderTargetWidth = mContext->GetSurfaceInfo().extent.width;
+    mEditorRenderTargetHeight = mContext->GetSurfaceInfo().extent.height;
     CreateShadowDepthRenderPass();
     CreateDeferredCompositionRenderPass();
     CreateForwardCompositionRenderPass();
@@ -189,7 +191,7 @@ void RenderPassManager::CreateEditorUIRenderPass()
         vk::AttachmentDescription()
             .setFormat(mImageFactory->GetRenderTargetFormat())
             .setSamples(vk::SampleCountFlagBits::e1)
-            .setLoadOp(vk::AttachmentLoadOp::eLoad)
+            .setLoadOp(vk::AttachmentLoadOp::eClear)
             .setStoreOp(vk::AttachmentStoreOp::eStore)
             .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
             .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
@@ -215,7 +217,7 @@ void RenderPassManager::CreateRenderTarget()
 {
     auto frameCount = mContext->GetSwapchainImages().size();
     mRenderTargets.clear();
-    auto extent = vk::Extent3D(mWidth, mHeight, 1);
+    auto extent = vk::Extent3D(mRenderTargetWidth, mRenderTargetHeight, 1);
     for (size_t i = 0; i < frameCount; i++)
     {
         // Render Target 0: Color
@@ -264,7 +266,7 @@ void RenderPassManager::CreateEditorRenderTarget()
 {
     auto frameCount = mContext->GetSwapchainImages().size();
     mEditorRenderTargets.clear();
-    auto extent = vk::Extent3D(mWidth, mHeight, 1);
+    auto extent = vk::Extent3D(mEditorRenderTargetWidth, mEditorRenderTargetHeight, 1);
     for (size_t i = 0; i < frameCount; i++)
     {
         // Render Target 0: Color
@@ -289,7 +291,7 @@ void RenderPassManager::CreateForwardCompositionFrameBuffer()
 {
     mFrameBuffers[RenderPassType::ForwardComposition].clear();
     auto frameCount = mContext->GetSwapchainImages().size();
-    auto extent = vk::Extent2D{mWidth, mHeight};
+    auto extent = vk::Extent2D{mRenderTargetWidth, mRenderTargetHeight};
     auto renderPass = mRenderPasses[RenderPassType::ForwardComposition].get();
     for (size_t i = 0; i < frameCount; i++)
     {
@@ -322,7 +324,7 @@ void RenderPassManager::CreateTransparentFrameBuffer()
 
     auto swapchainImages = mContext->GetSwapchainImages();
     auto swapchainImageViews = mContext->GetSwapchainImageViews();
-    auto extent = vk::Extent2D{mWidth, mHeight};
+    auto extent = vk::Extent2D{mRenderTargetWidth, mRenderTargetHeight};
     auto renderPass = mRenderPasses[RenderPassType::Transparent].get();
 
     for (size_t i = 0; i < swapchainImageViews.size(); ++i)
@@ -356,7 +358,7 @@ void RenderPassManager::CreateUIFrameBuffer()
 void RenderPassManager::CreateEditorUIFrameBuffer()
 {
     mFrameBuffers[RenderPassType::EditorUI].clear();
-    auto extent = vk::Extent2D{mWidth, mHeight};
+    auto extent = vk::Extent2D{mEditorRenderTargetWidth, mEditorRenderTargetHeight};
     auto swapchainImages = mContext->GetSwapchainImages();
     auto swapchainImageViews = mContext->GetSwapchainImageViews();
     auto renderPass = mRenderPasses[RenderPassType::EditorUI].get();
@@ -413,13 +415,12 @@ std::vector<vk::Framebuffer> RenderPassManager::GetFrameBuffer(RenderPassType ty
     }
     return framebuffers;
 }
-void RenderPassManager::RecreateFrameBuffer(uint32_t width, uint32_t height)
+void RenderPassManager::RecreateRenderTargetFrameBuffer(uint32_t width, uint32_t height)
 {
-    mWidth = width;
-    mHeight = height;
+    mRenderTargetWidth = width;
+    mRenderTargetHeight = height;
     mContext->GetDevice().waitIdle();
     CreateRenderTarget();
-    CreateEditorRenderTarget();
 
     CreateShadowDepthFrameBuffer();
     CreateDeferredCompositionFrameBuffer();
@@ -428,7 +429,16 @@ void RenderPassManager::RecreateFrameBuffer(uint32_t width, uint32_t height)
     CreateTransparentFrameBuffer();
     CreatePostProcessFrameBuffer();
     CreateUIFrameBuffer();
+    mLogger->Info("Render target frame buffers recreated with {}x{} successfully", width, height);
+}
+
+void RenderPassManager::RecreateEditorRenderTargetFrameBuffer(uint32_t width, uint32_t height)
+{
+    mEditorRenderTargetWidth = width;
+    mEditorRenderTargetHeight = height;
+    mContext->GetDevice().waitIdle();
+    CreateEditorRenderTarget();
     CreateEditorUIFrameBuffer();
-    mLogger->Info("Frame buffers recreated with {}x{} successfully", width, height);
+    mLogger->Info("Editor render target frame buffers recreated with {}x{} successfully", width, height);
 }
 } // namespace MEngine

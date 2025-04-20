@@ -53,7 +53,6 @@ class RenderSystem : public System
     std::vector<vk::UniqueSemaphore> mImageAvailableSemaphores;
     std::vector<vk::UniqueSemaphore> mRenderFinishedSemaphores;
     std::vector<vk::UniqueFence> mInFlightFences;
-    vk::UniqueFence mUIUpdateFence;
 
     uint32_t mFrameIndex;
     uint32_t mFrameCount;
@@ -73,7 +72,8 @@ class RenderSystem : public System
     } mVPUniform;
 
   protected:
-    void InitialTransitionImageLayout();
+    void InitialRenderTargetImageLayout();
+    void InitialSwapchainImageLayout();
     void CollectRenderEntities();
     void CollectMainCamera();
     void Prepare();
@@ -86,9 +86,8 @@ class RenderSystem : public System
     void RenderUIPass(float deltaTime);
     void Present();
 
-    void TransitionSwapchainImageLayout();
     virtual void HandleSwapchainOutOfDate();
-    virtual void CopyColorAttachmentToSwapchainImage(vk::Image colorAttachment);
+    virtual void CopyColorAttachmentToSwapchainImage(Image &image);
 
   public:
     RenderSystem(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context,

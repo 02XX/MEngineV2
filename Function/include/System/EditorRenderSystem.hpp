@@ -43,9 +43,6 @@ class EditorRenderSystem : public RenderSystem
 {
   private:
     std::shared_ptr<IWindow> mWindow;
-    std::shared_ptr<ImageFactory> mImageFactory;
-    std::shared_ptr<CommandBufferManager> mCommandBufferManager;
-    std::shared_ptr<SyncPrimitiveManager> mSyncPrimitiveManager;
     std::shared_ptr<SamplerManager> mSamplerManager;
     std::shared_ptr<IRepository<PBRMaterial>> mPBRMaterialRepository;
     std::shared_ptr<IRepository<Texture2D>> mTexture2DRepository;
@@ -105,13 +102,12 @@ class EditorRenderSystem : public RenderSystem
     void InspectorMaterial(MaterialComponent &materialComponent);
 
   private:
-    entt::entity mMainCamera;
-
     entt::entity mSelectedEntity = entt::null;
     entt::entity mHoveredEntity = entt::null;
 
   private:
     void HandleSwapchainOutOfDate() override;
+    void InitialEditorRenderTargetImageLayout();
 
   private:
     void SetDefaultWindowLayout();

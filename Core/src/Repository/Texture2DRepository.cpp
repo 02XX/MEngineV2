@@ -11,7 +11,9 @@ Texture2DRepository::Texture2DRepository(std::shared_ptr<ILogger> logger, std::s
 {
     mCheckBoardData = CheckBoard();
     auto defaultTexture = Create();
-    std::swap(mEntities[defaultTexture->GetID()], mEntities[UUID{}]);
+    auto id = defaultTexture->GetID();
+    std::swap(mEntities[id], mEntities[UUID{}]);
+    mEntities.erase(id); // 交换后记得删除原ID，因为[]会默认创建一个键值对{UUID, nullptr}
 }
 Texture2D *Texture2DRepository::Create()
 {
