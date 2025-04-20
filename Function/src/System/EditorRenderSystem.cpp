@@ -156,6 +156,7 @@ void EditorRenderSystem::Shutdown()
     ImGui_ImplVulkan_Shutdown();
     ImGui_ImplSDL3_Shutdown();
     ImGui::DestroyContext();
+    RenderSystem::Shutdown();
     mIsShutdown = true;
     mLogger->Info("EditorRenderSystem Shutdown");
 }
