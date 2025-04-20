@@ -2,18 +2,14 @@
 
 namespace MEngine
 {
-BasicGeometryEntityManager::BasicGeometryEntityManager(
-    std::shared_ptr<ILogger> mLogger, std::shared_ptr<Context> context,
-    std::shared_ptr<PipelineManager> pipelineManager, std::shared_ptr<PipelineLayoutManager> pipelineLayoutManager,
-    std::shared_ptr<DescriptorManager> descriptorManager, std::shared_ptr<SamplerManager> samplerManager,
-    std::shared_ptr<IRepository<PBRMaterial>> pbrMaterialRepository, std::shared_ptr<ImageFactory> imageFactory,
-    std::shared_ptr<BufferFactory> bufferFactory, std::shared_ptr<BasicGeometryFactory> basicGeometryFactory,
-    std::shared_ptr<IRepository<Texture2D>> texture2DRepository)
-    : mLogger(mLogger), mContext(context), mPipelineManager(pipelineManager),
-      mPipelineLayoutManager(pipelineLayoutManager), mDescriptorManager(descriptorManager),
-      mSamplerManager(samplerManager), mImageFactory(imageFactory), mBufferFactory(bufferFactory),
-      mBasicGeometryFactory(basicGeometryFactory), mPBRMaterialRepository(pbrMaterialRepository),
-      mTexture2DRepository(texture2DRepository)
+BasicGeometryEntityManager::BasicGeometryEntityManager(std::shared_ptr<ILogger> mLogger,
+                                                       std::shared_ptr<Context> context,
+                                                       std::shared_ptr<IRepository<PBRMaterial>> pbrMaterialRepository,
+                                                       std::shared_ptr<BufferFactory> bufferFactory,
+                                                       std::shared_ptr<BasicGeometryFactory> basicGeometryFactory,
+                                                       std::shared_ptr<IRepository<Texture2D>> texture2DRepository)
+    : mLogger(mLogger), mContext(context), mBufferFactory(bufferFactory), mBasicGeometryFactory(basicGeometryFactory),
+      mPBRMaterialRepository(pbrMaterialRepository), mTexture2DRepository(texture2DRepository)
 
 {
 }

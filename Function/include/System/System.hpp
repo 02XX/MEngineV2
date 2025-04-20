@@ -27,13 +27,6 @@ class System : public ISystem
     {
     }
     virtual ~System() = default;
-    // auto GetEntitiesView()
-    // {
-    //     return mRegistry->view<Component...>();
-    // };
-    virtual void Init() override {};
-    virtual void Tick(float deltaTime) override {};
-    virtual void Shutdown() override {};
     inline virtual bool IsInit() const
     {
         return mIsInit;

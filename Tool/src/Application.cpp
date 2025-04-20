@@ -2,39 +2,38 @@
 
 namespace MEngine
 {
+auto injector = make_injector(
+    DI::bind<IConfigure>().to<Configure>().in(DI::singleton), DI::bind<ILogger>().to<SpdLogger>().in(DI::singleton),
+    DI::bind<IWindow>().to<SDLWindow>().in(DI::singleton), DI::bind<Context>().to<Context>().in(DI::singleton),
+    DI::bind<entt::registry>().to<entt::registry>().in(DI::singleton),
+    DI::bind<CommandBufferManager>().to<CommandBufferManager>().in(DI::singleton),
+    DI::bind<SyncPrimitiveManager>().to<SyncPrimitiveManager>().in(DI::singleton),
+    DI::bind<PipelineManager>().to<PipelineManager>().in(DI::singleton),
+    DI::bind<PipelineLayoutManager>().to<PipelineLayoutManager>().in(DI::singleton),
+    DI::bind<ShaderManager>().to<ShaderManager>().in(DI::singleton),
+    DI::bind<DescriptorManager>().to<DescriptorManager>().in(DI::singleton),
+    DI::bind<SamplerManager>().to<SamplerManager>().in(DI::singleton),
+    DI::bind<BufferFactory>().to<BufferFactory>().in(DI::singleton),
+    DI::bind<ImageFactory>().to<ImageFactory>().in(DI::singleton),
+    DI::bind<RenderPassManager>().to<RenderPassManager>().in(DI::singleton),
+    DI::bind<IRepository<Texture2D>>().to<Texture2DRepository>().in(DI::singleton),
+    DI::bind<IRepository<PBRMaterial>>().to<PBRMaterialRepository>().in(DI::singleton),
+    DI::bind<BasicGeometryFactory>().to<BasicGeometryFactory>().in(DI::singleton),
+    DI::bind<BasicGeometryEntityManager>().to<BasicGeometryEntityManager>().in(DI::singleton),
+    DI::bind<CameraSystem>().to<CameraSystem>().in(DI::singleton),
+    DI::bind<RenderSystem>().to<EditorRenderSystem>().in(DI::singleton),
+    DI::bind<TransformSystem>().to<TransformSystem>().in(DI::singleton));
+
 Application::Application()
-    : mInjector(make_injector(
-          DI::bind<IConfigure>().to<Configure>().in(DI::singleton),
-          DI::bind<ILogger>().to<SpdLogger>().in(DI::singleton), DI::bind<IWindow>().to<SDLWindow>().in(DI::singleton),
-          DI::bind<Context>().to<Context>().in(DI::singleton),
-          DI::bind<entt::registry>().to<entt::registry>().in(DI::singleton),
-          DI::bind<CommandBufferManager>().to<CommandBufferManager>().in(DI::singleton),
-          DI::bind<SyncPrimitiveManager>().to<SyncPrimitiveManager>().in(DI::singleton),
-          DI::bind<PipelineManager>().to<PipelineManager>().in(DI::singleton),
-          DI::bind<PipelineLayoutManager>().to<PipelineLayoutManager>().in(DI::singleton),
-          DI::bind<ShaderManager>().to<ShaderManager>().in(DI::singleton),
-          DI::bind<DescriptorManager>().to<DescriptorManager>().in(DI::singleton),
-          DI::bind<SamplerManager>().to<SamplerManager>().in(DI::singleton),
-          DI::bind<BufferFactory>().to<BufferFactory>().in(DI::singleton),
-          DI::bind<ImageFactory>().to<ImageFactory>().in(DI::singleton),
-          DI::bind<RenderPassManager>().to<RenderPassManager>().in(DI::singleton),
-          DI::bind<IRepository<Texture2D>>().to<Texture2DRepository>().in(DI::singleton),
-          DI::bind<IRepository<PBRMaterial>>().to<PBRMaterialRepository>().in(DI::singleton),
-          DI::bind<BasicGeometryFactory>().to<BasicGeometryFactory>().in(DI::singleton),
-          DI::bind<BasicGeometryEntityManager>().to<BasicGeometryEntityManager>().in(DI::singleton),
-          DI::bind<CameraSystem>().to<CameraSystem>().in(DI::singleton), DI::bind<UI>().to<UI>().in(DI::singleton),
-          DI::bind<RenderSystem>().to<RenderSystem>().in(DI::singleton),
-          DI::bind<TransformSystem>().to<TransformSystem>().in(DI::singleton)))
 {
     // DI
-    // mConfigure = mInjector.create<std::shared_ptr<IConfigure>>();
-    mLogger = mInjector.create<std::shared_ptr<ILogger>>();
+    // mConfigure = injector.create<std::shared_ptr<IConfigure>>();
+    mLogger = injector.create<std::shared_ptr<ILogger>>();
     mLogger->Info("Application Started");
-    mWindow = mInjector.create<std::shared_ptr<IWindow>>();
-    mContext = mInjector.create<std::shared_ptr<Context>>();
-    mRegistry = mInjector.create<std::shared_ptr<entt::registry>>();
-    mBasicGeometryEntityManager = mInjector.create<std::shared_ptr<BasicGeometryEntityManager>>();
-    mUI = mInjector.create<std::shared_ptr<UI>>();
+    mWindow = injector.create<std::shared_ptr<IWindow>>();
+    mContext = injector.create<std::shared_ptr<Context>>();
+    mRegistry = injector.create<std::shared_ptr<entt::registry>>();
+    mBasicGeometryEntityManager = injector.create<std::shared_ptr<BasicGeometryEntityManager>>();
 
     mBasicGeometryEntityManager->CreateCube(mRegistry);
     auto camera = mRegistry->create();
@@ -46,13 +45,14 @@ Application::Application()
 }
 Application::~Application()
 {
+    mContext->GetDevice().waitIdle();
     mLogger->Info("Application Closed");
 }
 void Application::InitSystem()
 {
-    mRenderSystem = mInjector.create<std::shared_ptr<RenderSystem>>();
-    mCameraSystem = mInjector.create<std::shared_ptr<CameraSystem>>();
-    mTransformSystem = mInjector.create<std::shared_ptr<TransformSystem>>();
+    mRenderSystem = injector.create<std::shared_ptr<RenderSystem>>();
+    mCameraSystem = injector.create<std::shared_ptr<CameraSystem>>();
+    mTransformSystem = injector.create<std::shared_ptr<TransformSystem>>();
     mRenderSystem->Init();
     mCameraSystem->Init();
     mTransformSystem->Init();
@@ -82,7 +82,6 @@ void Application::Run()
         mCameraSystem->Tick(mDeltaTime);
         mTransformSystem->Tick(mDeltaTime);
         mRenderSystem->Tick(mDeltaTime);
-
         if (mDeltaTime < 1.0f / mTargetFPS)
         {
             auto sleepTime = (1.0f / mTargetFPS - mDeltaTime);

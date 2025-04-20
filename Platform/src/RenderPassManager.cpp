@@ -1,5 +1,4 @@
 #include "RenderPassManager.hpp"
-#include <vulkan/vulkan_structs.hpp>
 
 namespace MEngine
 {
@@ -7,8 +6,10 @@ RenderPassManager::RenderPassManager(std::shared_ptr<ILogger> logger, std::share
                                      std::shared_ptr<IConfigure> configure, std::shared_ptr<ImageFactory> imageFactory)
     : mLogger(logger), mContext(context), mImageFactory(imageFactory), mConfigure(configure)
 {
-    mWidth = mContext->GetSurfaceInfo().extent.width;
-    mHeight = mContext->GetSurfaceInfo().extent.height;
+    mRenderTargetWidth = mContext->GetSurfaceInfo().extent.width;
+    mRenderTargetHeight = mContext->GetSurfaceInfo().extent.height;
+    mEditorRenderTargetWidth = mContext->GetSurfaceInfo().extent.width;
+    mEditorRenderTargetHeight = mContext->GetSurfaceInfo().extent.height;
     CreateShadowDepthRenderPass();
     CreateDeferredCompositionRenderPass();
     CreateForwardCompositionRenderPass();
@@ -16,6 +17,10 @@ RenderPassManager::RenderPassManager(std::shared_ptr<ILogger> logger, std::share
     CreateTransparentRenderPass();
     CreatePostProcessRenderPass();
     CreateUIRenderPass();
+    CreateEditorUIRenderPass();
+
+    CreateRenderTarget();
+    CreateEditorRenderTarget();
 
     CreateShadowDepthFrameBuffer();
     CreateDeferredCompositionFrameBuffer();
@@ -24,6 +29,7 @@ RenderPassManager::RenderPassManager(std::shared_ptr<ILogger> logger, std::share
     CreateTransparentFrameBuffer();
     CreatePostProcessFrameBuffer();
     CreateUIFrameBuffer();
+    CreateEditorUIFrameBuffer();
 }
 void RenderPassManager::CreateShadowDepthRenderPass()
 {
@@ -178,6 +184,103 @@ void RenderPassManager::CreateUIRenderPass()
     mRenderPasses[RenderPassType::UI] = std::move(renderPass);
     mLogger->Info("UI render pass created successfully");
 }
+void RenderPassManager::CreateEditorUIRenderPass()
+{
+    std::vector<vk::AttachmentDescription> attachments{
+        // Render Target
+        vk::AttachmentDescription()
+            .setFormat(mImageFactory->GetRenderTargetFormat())
+            .setSamples(vk::SampleCountFlagBits::e1)
+            .setLoadOp(vk::AttachmentLoadOp::eClear)
+            .setStoreOp(vk::AttachmentStoreOp::eStore)
+            .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
+            .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
+            .setInitialLayout(vk::ImageLayout::eColorAttachmentOptimal)
+            .setFinalLayout(vk::ImageLayout::eColorAttachmentOptimal),
+    };
+    std::vector<vk::AttachmentReference> colorRefs = {
+        vk::AttachmentReference(0, vk::ImageLayout::eColorAttachmentOptimal)};
+    std::vector<vk::SubpassDescription> subpasses{
+        vk::SubpassDescription().setPipelineBindPoint(vk::PipelineBindPoint::eGraphics).setColorAttachments(colorRefs)};
+    vk::RenderPassCreateInfo renderPassCreateInfo;
+    renderPassCreateInfo.setAttachments(attachments).setSubpasses(subpasses);
+    auto renderPass = mContext->GetDevice().createRenderPassUnique(renderPassCreateInfo);
+    if (!renderPass)
+    {
+        mLogger->Error("Failed to create Editor UI render pass");
+    }
+    mRenderPasses[RenderPassType::EditorUI] = std::move(renderPass);
+    mLogger->Info("Editor UI render pass created successfully");
+}
+
+void RenderPassManager::CreateRenderTarget()
+{
+    auto frameCount = mContext->GetSwapchainImages().size();
+    mRenderTargets.clear();
+    auto extent = vk::Extent3D(mRenderTargetWidth, mRenderTargetHeight, 1);
+    for (size_t i = 0; i < frameCount; i++)
+    {
+        // Render Target 0: Color
+        auto renderTargetColorImage = mImageFactory->CreateImage(ImageType::RenderTarget, extent);
+        auto renderTargetColorImageView = mImageFactory->CreateImageView(renderTargetColorImage.get());
+        // Render Target 1: Depth/Stencil
+        auto renderTargetDepthImage = mImageFactory->CreateImage(ImageType::DepthStencil, extent);
+        auto renderTargetDepthImageView = mImageFactory->CreateImageView(renderTargetDepthImage.get());
+        // Render Target 2: Albedo
+        auto renderTargetAlbedoImage = mImageFactory->CreateImage(ImageType::RenderTarget, extent);
+        auto renderTargetAlbedoImageView = mImageFactory->CreateImageView(renderTargetAlbedoImage.get());
+        // Render Target 3: Normal
+        auto renderTargetNormalImage = mImageFactory->CreateImage(ImageType::RenderTarget, extent);
+        auto renderTargetNormalImageView = mImageFactory->CreateImageView(renderTargetNormalImage.get());
+        // Render Target 4: WorldPos
+        auto renderTargetWorldPosImage = mImageFactory->CreateImage(ImageType::RenderTarget, extent);
+        auto renderTargetWorldPosImageView = mImageFactory->CreateImageView(renderTargetWorldPosImage.get());
+        // Render Target 5: MetallicRoughness
+        auto renderTargetMetallicRoughnessImage = mImageFactory->CreateImage(ImageType::RenderTarget, extent);
+        auto renderTargetMetallicRoughnessImageView =
+            mImageFactory->CreateImageView(renderTargetMetallicRoughnessImage.get());
+        // Render Target 6: Emissive
+        auto renderTargetEmissiveImage = mImageFactory->CreateImage(ImageType::RenderTarget, extent);
+        auto renderTargetEmissiveImageView = mImageFactory->CreateImageView(renderTargetEmissiveImage.get());
+        // 保存资源
+        auto renderTarget = std::make_unique<RenderTarget>();
+        renderTarget->colorImage = std::move(renderTargetColorImage);
+        renderTarget->colorImageView = std::move(renderTargetColorImageView);
+        renderTarget->depthStencilImage = std::move(renderTargetDepthImage);
+        renderTarget->depthStencilImageView = std::move(renderTargetDepthImageView);
+        renderTarget->albedoImage = std::move(renderTargetAlbedoImage);
+        renderTarget->albedoImageView = std::move(renderTargetAlbedoImageView);
+        renderTarget->normalImage = std::move(renderTargetNormalImage);
+        renderTarget->normalImageView = std::move(renderTargetNormalImageView);
+        renderTarget->worldPosImage = std::move(renderTargetWorldPosImage);
+        renderTarget->worldPosImageView = std::move(renderTargetWorldPosImageView);
+        renderTarget->metallicRoughnessImage = std::move(renderTargetMetallicRoughnessImage);
+        renderTarget->metallicRoughnessImageView = std::move(renderTargetMetallicRoughnessImageView);
+        renderTarget->emissiveImage = std::move(renderTargetEmissiveImage);
+        renderTarget->emissiveImageView = std::move(renderTargetEmissiveImageView);
+        mRenderTargets.push_back(std::move(renderTarget));
+        mLogger->Info("Render target {} created successfully", i);
+    }
+}
+void RenderPassManager::CreateEditorRenderTarget()
+{
+    auto frameCount = mContext->GetSwapchainImages().size();
+    mEditorRenderTargets.clear();
+    auto extent = vk::Extent3D(mEditorRenderTargetWidth, mEditorRenderTargetHeight, 1);
+    for (size_t i = 0; i < frameCount; i++)
+    {
+        // Render Target 0: Color
+        auto renderTargetColorImage = mImageFactory->CreateImage(ImageType::RenderTarget, extent);
+        auto renderTargetColorImageView = mImageFactory->CreateImageView(renderTargetColorImage.get());
+        // 保存资源
+        auto renderTarget = std::make_unique<EditorRenderTarget>();
+        renderTarget->colorImage = std::move(renderTargetColorImage);
+        renderTarget->colorImageView = std::move(renderTargetColorImageView);
+        mEditorRenderTargets.push_back(std::move(renderTarget));
+        mLogger->Info("Editor render target {} created successfully", i);
+    }
+}
+
 void RenderPassManager::CreateShadowDepthFrameBuffer()
 {
 }
@@ -187,29 +290,15 @@ void RenderPassManager::CreateDeferredCompositionFrameBuffer()
 void RenderPassManager::CreateForwardCompositionFrameBuffer()
 {
     mFrameBuffers[RenderPassType::ForwardComposition].clear();
-    mForwardFrameResources.clear();
     auto frameCount = mContext->GetSwapchainImages().size();
-    auto extent = vk::Extent2D{mWidth, mHeight};
+    auto extent = vk::Extent2D{mRenderTargetWidth, mRenderTargetHeight};
     auto renderPass = mRenderPasses[RenderPassType::ForwardComposition].get();
     for (size_t i = 0; i < frameCount; i++)
     {
-        auto forwardFrameResource = std::make_shared<ForwardFrameResource>();
-        // Render Target
-        auto renderTargetImage = mImageFactory->CreateImage(ImageType::RenderTarget, vk::Extent3D(extent, 1));
-        auto renderTargetImageView = mImageFactory->CreateImageView(renderTargetImage.get());
-        forwardFrameResource->renderTargetImage = std::move(renderTargetImage);
-        forwardFrameResource->renderTargetImageView = std::move(renderTargetImageView);
-        // Depth Stencil
-        auto depthImage = mImageFactory->CreateImage(ImageType::DepthStencil, vk::Extent3D(extent, 1));
-        auto depthImageView = mImageFactory->CreateImageView(depthImage.get());
-        forwardFrameResource->depthStencilImage = std::move(depthImage);
-        forwardFrameResource->depthStencilImageView = std::move(depthImageView);
-        // 保存资源
-        mForwardFrameResources.push_back(forwardFrameResource);
         // 创建帧缓冲
-        std::array<vk::ImageView, 2> attachments{
-            forwardFrameResource->renderTargetImageView.get(),
-            forwardFrameResource->depthStencilImageView.get(),
+        std::vector<vk::ImageView> attachments{
+            mRenderTargets[i]->colorImageView.get(),        // Render Target: Color
+            mRenderTargets[i]->depthStencilImageView.get(), // Depth Stencil
         };
         vk::FramebufferCreateInfo framebufferCreateInfo;
         framebufferCreateInfo.setRenderPass(renderPass)
@@ -232,32 +321,18 @@ void RenderPassManager::CreateSkyFrameBuffer()
 void RenderPassManager::CreateTransparentFrameBuffer()
 {
     mFrameBuffers[RenderPassType::Transparent].clear();
-    mTransparentFrameResources.clear();
 
     auto swapchainImages = mContext->GetSwapchainImages();
     auto swapchainImageViews = mContext->GetSwapchainImageViews();
-    auto extent = vk::Extent2D{mWidth, mHeight};
+    auto extent = vk::Extent2D{mRenderTargetWidth, mRenderTargetHeight};
     auto renderPass = mRenderPasses[RenderPassType::Transparent].get();
 
     for (size_t i = 0; i < swapchainImageViews.size(); ++i)
     {
-        auto translucencyFrameResource = std::make_shared<TransparentFrameResource>();
-        // Render Target
-        auto renderTargetImage = mImageFactory->CreateImage(ImageType::RenderTarget, vk::Extent3D(extent, 1));
-        auto renderTargetImageView = mImageFactory->CreateImageView(renderTargetImage.get());
-        translucencyFrameResource->renderTargetImage = std::move(renderTargetImage);
-        translucencyFrameResource->renderTargetImageView = std::move(renderTargetImageView);
-        // Depth Stencil
-        auto depthImage = mImageFactory->CreateImage(ImageType::DepthStencil, vk::Extent3D(extent, 1));
-        auto depthImageView = mImageFactory->CreateImageView(depthImage.get());
-        translucencyFrameResource->depthStencilImage = std::move(depthImage);
-        translucencyFrameResource->depthStencilImageView = std::move(depthImageView);
-        // 保存资源
-        mTransparentFrameResources.push_back(translucencyFrameResource);
         // 创建帧缓冲
-        auto attachments = std::array<vk::ImageView, 2>{
-            translucencyFrameResource->renderTargetImageView.get(),
-            translucencyFrameResource->depthStencilImageView.get(),
+        std::vector<vk::ImageView> attachments{
+            mRenderTargets[i]->colorImageView.get(),        // Render Target: Color
+            mRenderTargets[i]->depthStencilImageView.get(), // Depth Stencil
         };
         vk::FramebufferCreateInfo framebufferCreateInfo;
         framebufferCreateInfo.setRenderPass(renderPass)
@@ -279,25 +354,22 @@ void RenderPassManager::CreatePostProcessFrameBuffer()
 }
 void RenderPassManager::CreateUIFrameBuffer()
 {
-    mFrameBuffers[RenderPassType::UI].clear();
-    mUIFrameResources.clear();
-    auto extent = vk::Extent2D{mWidth, mHeight};
+}
+void RenderPassManager::CreateEditorUIFrameBuffer()
+{
+    mFrameBuffers[RenderPassType::EditorUI].clear();
+    auto extent = vk::Extent2D{mEditorRenderTargetWidth, mEditorRenderTargetHeight};
     auto swapchainImages = mContext->GetSwapchainImages();
     auto swapchainImageViews = mContext->GetSwapchainImageViews();
+    auto renderPass = mRenderPasses[RenderPassType::EditorUI].get();
     for (size_t i = 0; i < swapchainImageViews.size(); ++i)
     {
-        auto uiFrameResource = std::make_shared<UIFrameResource>();
-        // Render Target
-        auto renderTargetImage = mImageFactory->CreateImage(ImageType::RenderTarget, vk::Extent3D(extent, 1));
-        auto renderTargetImageView = mImageFactory->CreateImageView(renderTargetImage.get());
-        uiFrameResource->renderTargetImage = std::move(renderTargetImage);
-        uiFrameResource->renderTargetImageView = std::move(renderTargetImageView);
-        // 保存资源
-        mUIFrameResources.push_back(uiFrameResource);
         // 创建帧缓冲
-        std::array<vk::ImageView, 1> attachments = {uiFrameResource->renderTargetImageView.get()};
+        std::vector<vk::ImageView> attachments{
+            mEditorRenderTargets[i]->colorImageView.get(), // Render Target: Color
+        };
         vk::FramebufferCreateInfo framebufferCreateInfo;
-        framebufferCreateInfo.setRenderPass(mRenderPasses[RenderPassType::UI].get())
+        framebufferCreateInfo.setRenderPass(renderPass)
             .setAttachments(attachments)
             .setWidth(extent.width)
             .setHeight(extent.height)
@@ -307,7 +379,7 @@ void RenderPassManager::CreateUIFrameBuffer()
         {
             mLogger->Error("Failed to create framebuffer for UI render pass");
         }
-        mFrameBuffers[RenderPassType::UI].push_back(std::move(framebuffer));
+        mFrameBuffers[RenderPassType::EditorUI].push_back(std::move(framebuffer));
         mLogger->Info("Framebuffer {} for UI render pass created successfully", i);
     }
 }
@@ -343,11 +415,13 @@ std::vector<vk::Framebuffer> RenderPassManager::GetFrameBuffer(RenderPassType ty
     }
     return framebuffers;
 }
-void RenderPassManager::RecreateFrameBuffer(uint32_t width, uint32_t height)
+void RenderPassManager::RecreateRenderTargetFrameBuffer(uint32_t width, uint32_t height)
 {
-    mWidth = width;
-    mHeight = height;
+    mRenderTargetWidth = width;
+    mRenderTargetHeight = height;
     mContext->GetDevice().waitIdle();
+    CreateRenderTarget();
+
     CreateShadowDepthFrameBuffer();
     CreateDeferredCompositionFrameBuffer();
     CreateForwardCompositionFrameBuffer();
@@ -355,6 +429,16 @@ void RenderPassManager::RecreateFrameBuffer(uint32_t width, uint32_t height)
     CreateTransparentFrameBuffer();
     CreatePostProcessFrameBuffer();
     CreateUIFrameBuffer();
-    mLogger->Info("Frame buffers recreated with {}x{} successfully", width, height);
+    mLogger->Info("Render target frame buffers recreated with {}x{} successfully", width, height);
+}
+
+void RenderPassManager::RecreateEditorRenderTargetFrameBuffer(uint32_t width, uint32_t height)
+{
+    mEditorRenderTargetWidth = width;
+    mEditorRenderTargetHeight = height;
+    mContext->GetDevice().waitIdle();
+    CreateEditorRenderTarget();
+    CreateEditorUIFrameBuffer();
+    mLogger->Info("Editor render target frame buffers recreated with {}x{} successfully", width, height);
 }
 } // namespace MEngine

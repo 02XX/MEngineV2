@@ -19,23 +19,20 @@
 #include "PipelineManager.hpp"
 #include "RenderPassManager.hpp"
 #include "ResourceManager.hpp"
-#include "SamplerManager.hpp"
 #include "ShaderManager.hpp"
 #include "SyncPrimitiveManager.hpp"
 #include "System.hpp"
-#include "System/UI.hpp"
 #include "TaskScheduler.hpp"
 #include "Vertex.hpp"
 #include "entt/entt.hpp"
 #include <cstdint>
 #include <memory>
 #include <vector>
-#include <vulkan/vulkan_handles.hpp>
 namespace MEngine
 {
-class RenderSystem final : public System
+class RenderSystem : public System
 {
-  private:
+  protected:
     // DI
     std::shared_ptr<RenderPassManager> mRenderPassManager;
     std::shared_ptr<PipelineLayoutManager> mPipelineLayoutManager;
@@ -44,30 +41,24 @@ class RenderSystem final : public System
     std::shared_ptr<CommandBufferManager> mCommandBufferManager;
     std::shared_ptr<SyncPrimitiveManager> mSyncPrimitiveManager;
     std::shared_ptr<DescriptorManager> mDescriptorManager;
-    std::shared_ptr<SamplerManager> mSamplerManager;
 
     std::shared_ptr<BufferFactory> mBufferFactory;
     std::shared_ptr<ImageFactory> mImageFactory;
 
     std::shared_ptr<IWindow> mWindow;
-    std::shared_ptr<UI> mUI;
 
-  private:
+  protected:
     std::map<RenderType, std::vector<entt::entity>> mRenderEntities;
 
-    int64_t mFrameIndex;
-    int64_t mFrameCount;
     std::vector<vk::UniqueSemaphore> mImageAvailableSemaphores;
     std::vector<vk::UniqueSemaphore> mRenderFinishedSemaphores;
     std::vector<vk::UniqueFence> mInFlightFences;
-    vk::UniqueFence mUIUpdateFence;
 
+    uint32_t mFrameIndex;
+    uint32_t mFrameCount;
     uint32_t mImageIndex;
     std::vector<std::vector<vk::UniqueCommandBuffer>> mSecondaryCommandBuffers;
     std::vector<vk::UniqueCommandBuffer> mGraphicCommandBuffers;
-
-    std::vector<UniqueImage *> mLastFrameImages;
-    std::vector<vk::ImageView> mLastFrameImageViews;
 
     // Global DescriptorSet
     std::vector<vk::UniqueDescriptorSet> mGlobalDescriptorSets;
@@ -80,9 +71,9 @@ class RenderSystem final : public System
         glm::mat4 projection;
     } mVPUniform;
 
-  private:
-    void InitialTransitionImageLayout();
-
+  protected:
+    void InitialRenderTargetImageLayout();
+    void InitialSwapchainImageLayout();
     void CollectRenderEntities();
     void CollectMainCamera();
     void Prepare();
@@ -95,7 +86,8 @@ class RenderSystem final : public System
     void RenderUIPass(float deltaTime);
     void Present();
 
-    void TransitionSwapchainImageLayout();
+    virtual void HandleSwapchainOutOfDate();
+    virtual void CopyColorAttachmentToSwapchainImage(Image &image);
 
   public:
     RenderSystem(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context,
@@ -105,12 +97,19 @@ class RenderSystem final : public System
                  std::shared_ptr<PipelineManager> pipelineManager,
                  std::shared_ptr<CommandBufferManager> commandBufferManager,
                  std::shared_ptr<SyncPrimitiveManager> syncPrimitiveManager,
-                 std::shared_ptr<DescriptorManager> descriptorManager, std::shared_ptr<SamplerManager> samplerManager,
-                 std::shared_ptr<BufferFactory> bufferFactory, std::shared_ptr<ImageFactory> imageFactory,
-                 std::shared_ptr<IWindow> window, std::shared_ptr<UI> ui);
+                 std::shared_ptr<DescriptorManager> descriptorManager, std::shared_ptr<BufferFactory> bufferFactory,
+                 std::shared_ptr<ImageFactory> imageFactory);
     ~RenderSystem();
-    void Init() override;
-    void Tick(float deltaTime) override;
-    void Shutdown() override;
+    inline auto BeginRender()
+    {
+        Prepare();
+    }
+    inline auto EndRender()
+    {
+        Present();
+    }
+    virtual void Init() override;
+    virtual void Tick(float deltaTime) override;
+    virtual void Shutdown() override;
 };
 } // namespace MEngine

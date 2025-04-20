@@ -3,8 +3,9 @@
 namespace MEngine
 {
 CameraSystem::CameraSystem(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context,
-                           std::shared_ptr<IConfigure> configure, std::shared_ptr<entt::registry> registry)
-    : System(logger, context, configure, registry)
+                           std::shared_ptr<IConfigure> configure, std::shared_ptr<entt::registry> registry,
+                           std::shared_ptr<RenderPassManager> renderPassManager)
+    : System(logger, context, configure, registry), mRenderPassManager(renderPassManager)
 {
 }
 void CameraSystem::Init()
@@ -17,8 +18,8 @@ void CameraSystem::Tick(float deltaTime)
     for (auto entity : entities)
     {
         auto &camera = entities.get<CameraComponent>(entity);
-        camera.aspectRatio = static_cast<float>(mContext->GetSurfaceInfo().extent.width * 1.0f) /
-                             mContext->GetSurfaceInfo().extent.height;
+        auto extent = mRenderPassManager->GetRenderTargetExtent();
+        camera.aspectRatio = static_cast<float>(extent.width * 1.0f) / extent.height;
         glm::mat4 viewMatrix = glm::lookAtRH(camera.position, camera.position + camera.front, camera.up);
         glm::mat4 pitchMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(camera.pitch), glm::vec3(1.0f, 0.0f, 0.0f));
         glm::mat4 yawMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(camera.yaw), glm::vec3(0.0f, 1.0f, 0.0f));

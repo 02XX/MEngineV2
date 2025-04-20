@@ -3,19 +3,19 @@
 namespace MEngine
 {
 
-RenderSystem::RenderSystem(
-    std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context, std::shared_ptr<IConfigure> configure,
-    std::shared_ptr<entt::registry> registry, std::shared_ptr<RenderPassManager> renderPassManager,
-    std::shared_ptr<PipelineLayoutManager> pipelineLayoutManager, std::shared_ptr<PipelineManager> pipelineManager,
-    std::shared_ptr<CommandBufferManager> commandBufferManager,
-    std::shared_ptr<SyncPrimitiveManager> syncPrimitiveManager, std::shared_ptr<DescriptorManager> descriptorManager,
-    std::shared_ptr<SamplerManager> samplerManager, std::shared_ptr<BufferFactory> bufferFactory,
-    std::shared_ptr<ImageFactory> imageFactory, std::shared_ptr<IWindow> window, std::shared_ptr<UI> ui)
+RenderSystem::RenderSystem(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context,
+                           std::shared_ptr<IConfigure> configure, std::shared_ptr<entt::registry> registry,
+                           std::shared_ptr<RenderPassManager> renderPassManager,
+                           std::shared_ptr<PipelineLayoutManager> pipelineLayoutManager,
+                           std::shared_ptr<PipelineManager> pipelineManager,
+                           std::shared_ptr<CommandBufferManager> commandBufferManager,
+                           std::shared_ptr<SyncPrimitiveManager> syncPrimitiveManager,
+                           std::shared_ptr<DescriptorManager> descriptorManager,
+                           std::shared_ptr<BufferFactory> bufferFactory, std::shared_ptr<ImageFactory> imageFactory)
     : System(logger, context, configure, registry), mRenderPassManager(renderPassManager),
       mPipelineLayoutManager(pipelineLayoutManager), mPipelineManager(pipelineManager),
       mCommandBufferManager(commandBufferManager), mSyncPrimitiveManager(syncPrimitiveManager),
-      mDescriptorManager(descriptorManager), mSamplerManager(samplerManager), mBufferFactory(bufferFactory),
-      mImageFactory(imageFactory), mWindow(window), mUI(ui)
+      mDescriptorManager(descriptorManager), mBufferFactory(bufferFactory), mImageFactory(imageFactory)
 {
 }
 void RenderSystem::Init()
@@ -36,7 +36,6 @@ void RenderSystem::Init()
         mRenderFinishedSemaphores.push_back(std::move(renderFinishedSemaphores));
         mInFlightFences.push_back(std::move(inFlightFence));
     }
-    mUIUpdateFence = mSyncPrimitiveManager->CreateFence(vk::FenceCreateFlagBits::eSignaled);
     // Uniform Buffer
     mVPUBO = mBufferFactory->CreateBuffer(BufferType::Uniform, sizeof(VPUniform));
     auto globalDescriptorSetLayout = mPipelineLayoutManager->GetGlobalDescriptorSetLayout();
@@ -45,10 +44,8 @@ void RenderSystem::Init()
         auto sets = mDescriptorManager->AllocateUniqueDescriptorSet({globalDescriptorSetLayout});
         mGlobalDescriptorSets.push_back(std::move(sets[0]));
     }
-    mLastFrameImages.resize(mFrameCount);
-    mLastFrameImageViews.resize(mFrameCount);
-    mWindow->SetEventCallback([this](const void *event) { mUI->ProcessEvent(static_cast<const SDL_Event *>(event)); });
-    InitialTransitionImageLayout();
+    InitialRenderTargetImageLayout();
+    InitialSwapchainImageLayout();
     mIsInit = true;
     mLogger->Info("RenderSystem Initialized");
 }
@@ -60,64 +57,59 @@ RenderSystem::~RenderSystem()
 }
 void RenderSystem::Shutdown()
 {
-
     mContext->GetDevice().waitIdle();
     mIsShutdown = true;
     mLogger->Info("RenderSystem Shutdown");
 }
-void RenderSystem::InitialTransitionImageLayout()
+void RenderSystem::InitialRenderTargetImageLayout()
 {
     auto fence = mSyncPrimitiveManager->CreateFence();
     std::vector<vk::SubmitInfo> submitInfos;
-    mGraphicCommandBuffers[mFrameIndex]->reset();
-
-    mGraphicCommandBuffers[mFrameIndex]->begin(
-        vk::CommandBufferBeginInfo{vk::CommandBufferUsageFlagBits::eSimultaneousUse});
-    // Shadow ImageLayout
+    auto renderTargetCommandBuffer = mCommandBufferManager->CreatePrimaryCommandBuffer(CommandBufferType::Graphic);
+    renderTargetCommandBuffer->reset();
+    // RenderTarget ImageLayout
+    renderTargetCommandBuffer->begin(vk::CommandBufferBeginInfo{vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
     {
-    }
-    // Deferred ImageLayout
-    {
-        //  MRT
-        //  Render Target Color ImageLayout
-        //  Render Target Albedo ImageLayout
-        //  Render Target WorldPos ImageLayout
-        //  Render Target Normal ImageLayout
-        //  Render Target MetallicRoughness ImageLayout
-        //  Render Target Emissive ImageLayout
-    }
-    // Froward ImageLayout
-    {
-        auto forwardFrameResources = mRenderPassManager->GetForwardFrameResources();
-        for (auto forwardFrameResource : forwardFrameResources)
+        auto renderTargetImages = mRenderPassManager->GetRenderTargets();
+        for (auto &renderTarget : renderTargetImages)
         {
             // Render Target ImageLayout
             vk::ImageMemoryBarrier forwardImageMemoryBarrier;
-            forwardImageMemoryBarrier.setImage(forwardFrameResource->renderTargetImage->GetHandle())
+            forwardImageMemoryBarrier.setImage(renderTarget.colorImage->GetHandle())
                 .setOldLayout(vk::ImageLayout::eUndefined)
                 .setNewLayout(vk::ImageLayout::eColorAttachmentOptimal)
                 .setSrcAccessMask(vk::AccessFlagBits::eNone)
                 .setDstAccessMask(vk::AccessFlagBits::eColorAttachmentWrite)
                 .setSubresourceRange(vk::ImageSubresourceRange{vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1});
-            mGraphicCommandBuffers[mFrameIndex]->pipelineBarrier(vk::PipelineStageFlagBits::eTopOfPipe,
-                                                                 vk::PipelineStageFlagBits::eColorAttachmentOutput, {},
-                                                                 {}, {}, forwardImageMemoryBarrier);
+            renderTargetCommandBuffer->pipelineBarrier(vk::PipelineStageFlagBits::eTopOfPipe,
+                                                       vk::PipelineStageFlagBits::eColorAttachmentOutput, {}, {}, {},
+                                                       forwardImageMemoryBarrier);
         }
-        vk::SubmitInfo submitInfo;
-        submitInfo.setCommandBuffers({mGraphicCommandBuffers[mFrameIndex].get()});
-        submitInfos.push_back(submitInfo);
     }
-    // Sky ImageLayout
+    renderTargetCommandBuffer->end();
+    vk::SubmitInfo submitInfo;
+    submitInfo.setCommandBuffers({renderTargetCommandBuffer.get()});
+    submitInfos.push_back(submitInfo);
+    // 提交命令缓冲区
+    mContext->SubmitToGraphicQueue(submitInfos, fence.get());
+    auto result = mContext->GetDevice().waitForFences({fence.get()}, VK_TRUE, 1000000000); // 1s
+    if (result != vk::Result::eSuccess)
     {
+        mLogger->Error("Failed to transition render target image layout");
+        throw std::runtime_error("Failed to transition render target image layout");
     }
-    // Translucency ImageLayout
-    {
-    }
-    // PostProcess ImageLayout
-    {
-    }
+    mLogger->Info("RenderTarget imageLayout transitioned successfully");
+}
+void RenderSystem::InitialSwapchainImageLayout()
+{
+    auto fence = mSyncPrimitiveManager->CreateFence();
+    std::vector<vk::SubmitInfo> submitInfos;
+    auto swapchainCommandBuffer = mCommandBufferManager->CreatePrimaryCommandBuffer(CommandBufferType::Graphic);
+    swapchainCommandBuffer->reset();
     // SwapchainImageLayout
+    swapchainCommandBuffer->begin(vk::CommandBufferBeginInfo{vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
     {
+
         auto swapchainImages = mContext->GetSwapchainImages();
         for (auto swapchainImage : swapchainImages)
         {
@@ -128,26 +120,25 @@ void RenderSystem::InitialTransitionImageLayout()
                 .setSrcAccessMask(vk::AccessFlagBits::eNone)
                 .setDstAccessMask(vk::AccessFlagBits::eNone)
                 .setSubresourceRange(vk::ImageSubresourceRange{vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1});
-            mGraphicCommandBuffers[mFrameIndex]->pipelineBarrier(vk::PipelineStageFlagBits::eTopOfPipe,
-                                                                 vk::PipelineStageFlagBits::eTopOfPipe, {}, {}, {},
-                                                                 swapchainImageMemoryBarrier);
+            swapchainCommandBuffer->pipelineBarrier(vk::PipelineStageFlagBits::eTopOfPipe,
+                                                    vk::PipelineStageFlagBits::eTopOfPipe, {}, {}, {},
+                                                    swapchainImageMemoryBarrier);
         }
-        vk::SubmitInfo submitInfo;
-        submitInfo.setCommandBuffers({mGraphicCommandBuffers[mFrameIndex].get()});
-        submitInfos.push_back(submitInfo);
     }
-    mGraphicCommandBuffers[mFrameIndex]->end();
+    swapchainCommandBuffer->end();
+    vk::SubmitInfo submitInfo;
+    submitInfo.setCommandBuffers({swapchainCommandBuffer.get()});
+    submitInfos.push_back(submitInfo);
     // 提交命令缓冲区
     mContext->SubmitToGraphicQueue(submitInfos, fence.get());
     auto result = mContext->GetDevice().waitForFences({fence.get()}, VK_TRUE, 1000000000); // 1s
     if (result != vk::Result::eSuccess)
     {
-        mLogger->Error("Failed to wait fence");
-        throw std::runtime_error("Failed to wait fence");
+        mLogger->Error("Failed to transition swapchain image layout");
+        throw std::runtime_error("Failed to transition swapchain image layout");
     }
-    mLogger->Info("InitialTransitionImageLayout completed");
+    mLogger->Info("Swapchain imageLayout transitioned successfully");
 }
-
 void RenderSystem::CollectRenderEntities()
 {
     mRenderEntities.clear();
@@ -178,9 +169,8 @@ void RenderSystem::CollectMainCamera()
 }
 void RenderSystem::Tick(float deltaTime)
 {
-    // mUI->RenderUI();
+    Prepare();
     // TickRotationMatrix();
-    Prepare();               // Prepare
     CollectRenderEntities(); // Collect same material render entities
     CollectMainCamera();
     // RenderShadowDepthPass();  // Shadow pass
@@ -190,7 +180,8 @@ void RenderSystem::Tick(float deltaTime)
     // RenderTranslucencyPass(); // Translucency pass
     // RenderPostProcessPass();  // Post process pass
     // RenderUIPass(deltaTime); // UI pass
-    Present(); // Present
+    CopyColorAttachmentToSwapchainImage(*mRenderPassManager->GetRenderTargets()[mFrameIndex].colorImage);
+    Present();
 }
 
 void RenderSystem::Prepare()
@@ -207,12 +198,7 @@ void RenderSystem::Prepare()
                                                                  mImageAvailableSemaphores[mFrameIndex].get(), nullptr);
     if (resultValue.result == vk::Result::eErrorOutOfDateKHR)
     {
-        mLogger->Error("Swapchain out of date, recreating swapchain");
-        mContext->GetDevice().waitIdle();
-        mContext->RecreateSwapchain();
-        auto width = mContext->GetSurfaceInfo().extent.width;
-        auto height = mContext->GetSurfaceInfo().extent.height;
-        mRenderPassManager->RecreateFrameBuffer(width, height);
+        HandleSwapchainOutOfDate();
     }
     else if (resultValue.result != vk::Result::eSuccess && resultValue.result != vk::Result::eSuboptimalKHR)
     {
@@ -232,9 +218,9 @@ void RenderSystem::RenderDeferred()
 }
 void RenderSystem::RenderForward()
 {
-    auto extent = mRenderPassManager->GetExtent();
     auto forwardFrameBuffers = mRenderPassManager->GetFrameBuffer(RenderPassType::ForwardComposition);
-    auto forwardFrameResources = mRenderPassManager->GetForwardFrameResources();
+    auto renderTargetImages = mRenderPassManager->GetRenderTargets();
+    auto extent = renderTargetImages[mFrameIndex].colorImage->GetExtent();
     vk::RenderPassBeginInfo renderPassBeginInfo;
     std::vector<vk::ClearValue> clearValues{
         vk::ClearValue(std::array<float, 4>{0.1f, 0.1f, 0.1f, 1.0f}), // 附件0: Render Target Color
@@ -242,7 +228,7 @@ void RenderSystem::RenderForward()
     };
     renderPassBeginInfo.setClearValues(clearValues)
         .setRenderPass(mRenderPassManager->GetRenderPass(RenderPassType::ForwardComposition))
-        .setFramebuffer(forwardFrameBuffers[mImageIndex])
+        .setFramebuffer(forwardFrameBuffers[mFrameIndex])
         .setRenderArea(vk::Rect2D({0, 0}, vk::Extent2D(extent.width, extent.height)));
     mGraphicCommandBuffers[mFrameIndex]->beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);
     // viewport
@@ -302,13 +288,11 @@ void RenderSystem::RenderForward()
     // Phong
 
     mGraphicCommandBuffers[mFrameIndex]->endRenderPass();
-    mLastFrameImages[mImageIndex] = &forwardFrameResources[mImageIndex]->renderTargetImage;
-    mLastFrameImageViews[mImageIndex] = forwardFrameResources[mImageIndex]->renderTargetImageView.get();
 }
 void RenderSystem::RenderTranslucencyPass()
 {
-    auto transparentFrameResources = mRenderPassManager->GetTransparentFrameResources();
-    auto extent = transparentFrameResources[mImageIndex]->renderTargetImage->GetExtent();
+    auto renderTargetImages = mRenderPassManager->GetRenderTargets();
+    auto extent = renderTargetImages[mFrameIndex].colorImage->GetExtent();
     // PBR
     auto forwardTransparentPBREntities = mRenderEntities[RenderType::ForwardTransparentPBR];
     auto pipelineLayout = mPipelineLayoutManager->GetPipelineLayout(PipelineLayoutType::PBR);
@@ -316,12 +300,12 @@ void RenderSystem::RenderTranslucencyPass()
     auto renderPass = mRenderPassManager->GetRenderPass(RenderPassType::Transparent);
     auto transparentFrameBuffers = mRenderPassManager->GetFrameBuffer(RenderPassType::Transparent);
     vk::RenderPassBeginInfo renderPassBeginInfo;
-    std::array<vk::ClearValue, 2> clearValues{
+    std::vector<vk::ClearValue> clearValues{
         vk::ClearValue(std::array<float, 4>{0.1f, 0.1f, 0.1f, 1.0f}), // 附件0: Render Target
         vk::ClearDepthStencilValue(1.0f, 0)                           // 附件1: Depth Stencil
     };
     renderPassBeginInfo.setRenderPass(renderPass)
-        .setFramebuffer(transparentFrameBuffers[mImageIndex])
+        .setFramebuffer(transparentFrameBuffers[mFrameIndex])
         .setRenderArea(vk::Rect2D({0, 0}, vk::Extent2D(extent.width, extent.height)))
         .setClearValues(clearValues);
     mGraphicCommandBuffers[mFrameIndex]->beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);
@@ -368,9 +352,6 @@ void RenderSystem::RenderTranslucencyPass()
         }
     }
     // Phong
-
-    mLastFrameImages[mImageIndex] = &transparentFrameResources[mImageIndex]->renderTargetImage;
-    mLastFrameImageViews[mImageIndex] = transparentFrameResources[mImageIndex]->renderTargetImageView.get();
     mGraphicCommandBuffers[mFrameIndex]->endRenderPass();
 }
 void RenderSystem::RenderPostProcessPass()
@@ -381,114 +362,10 @@ void RenderSystem::RenderSkyPass()
 }
 void RenderSystem::RenderUIPass(float deltaTime)
 {
-    vk::ImageMemoryBarrier lastFrameImageBarrier;
-    lastFrameImageBarrier.setImage(mLastFrameImages[mImageIndex]->get()->GetHandle())
-        .setOldLayout(vk::ImageLayout::eColorAttachmentOptimal)
-        .setNewLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
-        .setSrcAccessMask(vk::AccessFlagBits::eColorAttachmentWrite)
-        .setDstAccessMask(vk::AccessFlagBits::eShaderRead)
-        .setSubresourceRange(vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1));
-    mGraphicCommandBuffers[mFrameIndex]->pipelineBarrier(vk::PipelineStageFlagBits::eColorAttachmentOutput,
-                                                         vk::PipelineStageFlagBits::eFragmentShader, {}, {}, {},
-                                                         lastFrameImageBarrier);
-    mUI->SetSceneViewPort(mLastFrameImageViews);
-    mUI->SetImageIndex(mImageIndex);
-    auto queueFamilyIndices = mContext->GetQueueFamilyIndicates();
-    vk::ClearValue clearValue(std::array<float, 4>{0.1f, 0.1f, 0.1f, 1.0f});
-    vk::RenderPassBeginInfo renderPassBeginInfo;
-    auto uiframeBuffers = mRenderPassManager->GetFrameBuffer(RenderPassType::UI);
-    auto renderPass = mRenderPassManager->GetRenderPass(RenderPassType::UI);
-    auto &uiFrameResources = mRenderPassManager->GetUIFrameResources();
-    auto extent = uiFrameResources[mImageIndex]->renderTargetImage->GetExtent();
-    mLastFrameImages[mImageIndex] = &uiFrameResources[mImageIndex]->renderTargetImage;
-    // 渲染前的布局转换
-    vk::ImageMemoryBarrier preRenderBarrier;
-    preRenderBarrier.setImage(uiFrameResources[mImageIndex]->renderTargetImage->GetHandle())
-        .setOldLayout(vk::ImageLayout::eUndefined)
-        .setNewLayout(vk::ImageLayout::eColorAttachmentOptimal)
-        .setSrcQueueFamilyIndex(queueFamilyIndices.graphicsFamily.value())
-        .setDstQueueFamilyIndex(queueFamilyIndices.graphicsFamily.value())
-        .setSubresourceRange(vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1))
-        .setSrcAccessMask(vk::AccessFlagBits::eMemoryRead)
-        .setDstAccessMask(vk::AccessFlagBits::eColorAttachmentWrite);
-
-    mGraphicCommandBuffers[mFrameIndex]->pipelineBarrier(vk::PipelineStageFlagBits::eColorAttachmentOutput,
-                                                         vk::PipelineStageFlagBits::eColorAttachmentOutput, {}, {}, {},
-                                                         preRenderBarrier);
-
-    // 开始渲染
-    renderPassBeginInfo.setRenderPass(renderPass)
-        .setFramebuffer(uiframeBuffers[mImageIndex])
-        .setRenderArea(vk::Rect2D({0, 0}, vk::Extent2D(extent.width, extent.height)))
-        .setClearValues(clearValue);
-
-    mGraphicCommandBuffers[mFrameIndex]->beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);
-    mUI->RecordUICommandBuffer(mGraphicCommandBuffers[mFrameIndex].get());
-    mGraphicCommandBuffers[mFrameIndex]->endRenderPass();
-    mLastFrameImages[mImageIndex] = &uiFrameResources[mImageIndex]->renderTargetImage;
-    mLastFrameImageViews[mImageIndex] = uiFrameResources[mImageIndex]->renderTargetImageView.get();
 }
 void RenderSystem::Present()
 {
-    // 渲染完成的图像转换为可传输布局
-    vk::ImageMemoryBarrier lastFrameImagePreBarrier;
-    lastFrameImagePreBarrier.setImage(mLastFrameImages[mImageIndex]->get()->GetHandle())
-        .setOldLayout(vk::ImageLayout::eColorAttachmentOptimal)
-        .setNewLayout(vk::ImageLayout::eTransferSrcOptimal)
-        .setSubresourceRange(vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1))
-        .setSrcAccessMask(vk::AccessFlagBits::eColorAttachmentWrite)
-        .setDstAccessMask(vk::AccessFlagBits::eTransferRead);
-    mGraphicCommandBuffers[mFrameIndex]->pipelineBarrier(vk::PipelineStageFlagBits::eColorAttachmentOutput,
-                                                         vk::PipelineStageFlagBits::eTransfer, {}, {}, {},
-                                                         lastFrameImagePreBarrier);
-    // swapchain图像转换为可传输布局
-    vk::ImageMemoryBarrier swapchainPreBarrier;
-    swapchainPreBarrier.setImage(mContext->GetSwapchainImages()[mImageIndex])
-        .setOldLayout(vk::ImageLayout::ePresentSrcKHR)
-        .setNewLayout(vk::ImageLayout::eTransferDstOptimal)
-        .setSubresourceRange(vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1))
-        .setSrcAccessMask(vk::AccessFlagBits::eNone)
-        .setDstAccessMask(vk::AccessFlagBits::eTransferWrite);
-    mGraphicCommandBuffers[mFrameIndex]->pipelineBarrier(
-        vk::PipelineStageFlagBits::eTopOfPipe, vk::PipelineStageFlagBits::eTransfer, {}, {}, {}, swapchainPreBarrier);
 
-    // 拷贝渲染完成的图像到交换链图像
-    auto swapchainExtent = mContext->GetSurfaceInfo().extent;
-    auto renderTargetExtent = mLastFrameImages[mFrameIndex]->get()->GetExtent();
-    // auto offsetX = (swapchainExtent.width - renderTargetExtent.width) / 2;
-    // auto offsetY = (swapchainExtent.height - renderTargetExtent.height) / 2;
-    vk::ImageCopy imageCopy;
-    imageCopy.setSrcSubresource(vk::ImageSubresourceLayers{vk::ImageAspectFlagBits::eColor, 0, 0, 1})
-        .setSrcOffset({0, 0, 0})
-        .setDstSubresource(vk::ImageSubresourceLayers{vk::ImageAspectFlagBits::eColor, 0, 0, 1})
-        // .setDstOffset(vk::Offset3D{static_cast<int32_t>(offsetX), static_cast<int32_t>(offsetY), 0})
-        .setDstOffset({0, 0, 0})
-        .setExtent(vk::Extent3D(renderTargetExtent.width, renderTargetExtent.height, 1));
-    mGraphicCommandBuffers[mFrameIndex]->copyImage(
-        mLastFrameImages[mFrameIndex]->get()->GetHandle(), vk::ImageLayout::eTransferSrcOptimal,
-        mContext->GetSwapchainImages()[mImageIndex], vk::ImageLayout::eTransferDstOptimal, imageCopy);
-    // 交换链图像转换为可呈现布局
-    vk::ImageMemoryBarrier swapchainPostBarrier;
-    swapchainPostBarrier.setImage(mContext->GetSwapchainImages()[mImageIndex])
-        .setOldLayout(vk::ImageLayout::eTransferDstOptimal)
-        .setNewLayout(vk::ImageLayout::ePresentSrcKHR)
-        .setSubresourceRange(vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1))
-        .setSrcAccessMask(vk::AccessFlagBits::eTransferWrite)
-        .setDstAccessMask(vk::AccessFlagBits::eNone);
-    mGraphicCommandBuffers[mFrameIndex]->pipelineBarrier(vk::PipelineStageFlagBits::eTransfer,
-                                                         vk::PipelineStageFlagBits::eBottomOfPipe, {}, {}, {},
-                                                         swapchainPostBarrier);
-    // 将渲染的图像转回
-    vk::ImageMemoryBarrier lastFrameImagePostBarrier;
-    lastFrameImagePostBarrier.setImage(mLastFrameImages[mImageIndex]->get()->GetHandle())
-        .setOldLayout(vk::ImageLayout::eTransferSrcOptimal)
-        .setNewLayout(vk::ImageLayout::eColorAttachmentOptimal)
-        .setSubresourceRange(vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1))
-        .setSrcAccessMask(vk::AccessFlagBits::eTransferRead)
-        .setDstAccessMask(vk::AccessFlagBits::eColorAttachmentWrite);
-    mGraphicCommandBuffers[mFrameIndex]->pipelineBarrier(vk::PipelineStageFlagBits::eTransfer,
-                                                         vk::PipelineStageFlagBits::eColorAttachmentOutput, {}, {}, {},
-                                                         lastFrameImagePostBarrier);
     mGraphicCommandBuffers[mFrameIndex]->end();
 
     vk::SubmitInfo submitInfo;
@@ -510,13 +387,81 @@ void RenderSystem::Present()
     }
     catch (vk::OutOfDateKHRError &)
     {
-        mLogger->Error("Swapchain out of date, recreating swapchain");
-        mContext->GetDevice().waitIdle();
-        mContext->RecreateSwapchain();
-        auto width = mContext->GetSurfaceInfo().extent.width;
-        auto height = mContext->GetSurfaceInfo().extent.height;
-        mRenderPassManager->RecreateFrameBuffer(width, height);
+        HandleSwapchainOutOfDate();
     }
     mFrameIndex = (mFrameIndex + 1) % mFrameCount;
+}
+void RenderSystem::HandleSwapchainOutOfDate()
+{
+    mLogger->Info("Swapchain out of date, recreating swapchain");
+    mContext->GetDevice().waitIdle();
+    mContext->RecreateSwapchain();
+    auto width = mContext->GetSurfaceInfo().extent.width;
+    auto height = mContext->GetSurfaceInfo().extent.height;
+    mRenderPassManager->RecreateRenderTargetFrameBuffer(width, height);
+    InitialRenderTargetImageLayout();
+    InitialSwapchainImageLayout();
+}
+void RenderSystem::CopyColorAttachmentToSwapchainImage(Image &image)
+{
+    // 渲染完成的图像转换为可传输布局
+    vk::ImageMemoryBarrier lastFrameImagePreBarrier;
+    lastFrameImagePreBarrier.setImage(image.GetHandle())
+        .setOldLayout(vk::ImageLayout::eColorAttachmentOptimal)
+        .setNewLayout(vk::ImageLayout::eTransferSrcOptimal)
+        .setSubresourceRange(vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1))
+        .setSrcAccessMask(vk::AccessFlagBits::eColorAttachmentWrite)
+        .setDstAccessMask(vk::AccessFlagBits::eTransferRead);
+    mGraphicCommandBuffers[mFrameIndex]->pipelineBarrier(vk::PipelineStageFlagBits::eColorAttachmentOutput,
+                                                         vk::PipelineStageFlagBits::eTransfer, {}, {}, {},
+                                                         lastFrameImagePreBarrier);
+    // swapchain图像转换为可传输布局
+    vk::ImageMemoryBarrier swapchainPreBarrier;
+    swapchainPreBarrier.setImage(mContext->GetSwapchainImages()[mImageIndex])
+        .setOldLayout(vk::ImageLayout::ePresentSrcKHR)
+        .setNewLayout(vk::ImageLayout::eTransferDstOptimal)
+        .setSubresourceRange(vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1))
+        .setSrcAccessMask(vk::AccessFlagBits::eNone)
+        .setDstAccessMask(vk::AccessFlagBits::eTransferWrite);
+    mGraphicCommandBuffers[mFrameIndex]->pipelineBarrier(
+        vk::PipelineStageFlagBits::eTopOfPipe, vk::PipelineStageFlagBits::eTransfer, {}, {}, {}, swapchainPreBarrier);
+
+    // 拷贝渲染完成的图像到交换链图像
+    auto swapchainExtent = mContext->GetSurfaceInfo().extent;
+    auto renderTargetExtent = image.GetExtent();
+    // auto offsetX = (swapchainExtent.width - renderTargetExtent.width) / 2;
+    // auto offsetY = (swapchainExtent.height - renderTargetExtent.height) / 2;
+    vk::ImageCopy imageCopy;
+    imageCopy.setSrcSubresource(vk::ImageSubresourceLayers{vk::ImageAspectFlagBits::eColor, 0, 0, 1})
+        .setSrcOffset({0, 0, 0})
+        .setDstSubresource(vk::ImageSubresourceLayers{vk::ImageAspectFlagBits::eColor, 0, 0, 1})
+        // .setDstOffset(vk::Offset3D{static_cast<int32_t>(offsetX), static_cast<int32_t>(offsetY), 0})
+        .setDstOffset({0, 0, 0})
+        .setExtent(renderTargetExtent);
+    mGraphicCommandBuffers[mFrameIndex]->copyImage(image.GetHandle(), vk::ImageLayout::eTransferSrcOptimal,
+                                                   mContext->GetSwapchainImages()[mImageIndex],
+                                                   vk::ImageLayout::eTransferDstOptimal, imageCopy);
+    // 交换链图像转换为可呈现布局
+    vk::ImageMemoryBarrier swapchainPostBarrier;
+    swapchainPostBarrier.setImage(mContext->GetSwapchainImages()[mImageIndex])
+        .setOldLayout(vk::ImageLayout::eTransferDstOptimal)
+        .setNewLayout(vk::ImageLayout::ePresentSrcKHR)
+        .setSubresourceRange(vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1))
+        .setSrcAccessMask(vk::AccessFlagBits::eTransferWrite)
+        .setDstAccessMask(vk::AccessFlagBits::eNone);
+    mGraphicCommandBuffers[mFrameIndex]->pipelineBarrier(vk::PipelineStageFlagBits::eTransfer,
+                                                         vk::PipelineStageFlagBits::eBottomOfPipe, {}, {}, {},
+                                                         swapchainPostBarrier);
+    // 将渲染的图像转回
+    vk::ImageMemoryBarrier lastFrameImagePostBarrier;
+    lastFrameImagePostBarrier.setImage(image.GetHandle())
+        .setOldLayout(vk::ImageLayout::eTransferSrcOptimal)
+        .setNewLayout(vk::ImageLayout::eColorAttachmentOptimal)
+        .setSubresourceRange(vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1))
+        .setSrcAccessMask(vk::AccessFlagBits::eTransferRead)
+        .setDstAccessMask(vk::AccessFlagBits::eColorAttachmentWrite);
+    mGraphicCommandBuffers[mFrameIndex]->pipelineBarrier(vk::PipelineStageFlagBits::eTransfer,
+                                                         vk::PipelineStageFlagBits::eColorAttachmentOutput, {}, {}, {},
+                                                         lastFrameImagePostBarrier);
 }
 } // namespace MEngine

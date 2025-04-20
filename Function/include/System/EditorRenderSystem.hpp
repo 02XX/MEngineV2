@@ -5,6 +5,7 @@
 #include "Entity/Texture2D.hpp"
 #include "Image.hpp"
 #include "ImageFactory.hpp"
+#include "Interface/IConfigure.hpp"
 #include "Interface/ILogger.hpp"
 #include "Interface/IWindow.hpp"
 #include "RenderPassManager.hpp"
@@ -31,22 +32,18 @@
 #include "Math.hpp"
 #include "PipelineManager.hpp"
 #include "Repository/Interface/IRepository.hpp"
+#include "System/RenderSystem.hpp"
+#include "System/System.hpp"
 #include "stb_image.h"
+
 #undef max
 namespace MEngine
 {
-class UI
+class EditorRenderSystem : public RenderSystem
 {
   private:
-    std::shared_ptr<ILogger> mLogger;
-    std::shared_ptr<Context> mContext;
     std::shared_ptr<IWindow> mWindow;
-    std::shared_ptr<RenderPassManager> mRenderPassManager;
-    std::shared_ptr<ImageFactory> mImageFactory;
-    std::shared_ptr<CommandBufferManager> mCommandBufferManager;
-    std::shared_ptr<SyncPrimitiveManager> mSyncPrimitiveManager;
     std::shared_ptr<SamplerManager> mSamplerManager;
-    std::shared_ptr<entt::registry> mRegistry;
     std::shared_ptr<IRepository<PBRMaterial>> mPBRMaterialRepository;
     std::shared_ptr<IRepository<Texture2D>> mTexture2DRepository;
 
@@ -96,7 +93,6 @@ class UI
     vk::UniqueSampler mSceneSampler;
     std::vector<vk::DescriptorSet> mSceneDescriptorSets;
     uint32_t mImageIndex = 0;
-    std::vector<vk::ImageView> mSceneImageViews;
 
   private:
     // Inspector View
@@ -106,10 +102,12 @@ class UI
     void InspectorMaterial(MaterialComponent &materialComponent);
 
   private:
-    entt::entity mMainCamera;
-
     entt::entity mSelectedEntity = entt::null;
     entt::entity mHoveredEntity = entt::null;
+
+  private:
+    void HandleSwapchainOutOfDate() override;
+    void InitialEditorRenderTargetImageLayout();
 
   private:
     void SetDefaultWindowLayout();
@@ -122,49 +120,32 @@ class UI
     void AssetWindow();
     void EntryFolder(const std::filesystem::path &path);
     void UpdateAssetsView();
-    void OnAssetCreated(entt::registry &, entt::entity entity);
-    void OnAssetUpdated(entt::registry &, entt::entity);
-    void OnAssetDestroyed(entt::registry &, entt::entity entity);
     void ProcessAssets();
     void DisplayAssetEntity();
     void LoadUIIcon(const std::filesystem::path &iconPath, vk::DescriptorSet &descriptorSet);
-
-    void CollectEntity();
+    void CreateSceneView();
 
   private:
     void ShowTexture(const std::string &name, std::shared_ptr<Texture2D> texture = nullptr,
                      ImVec2 size = ImVec2(50, 50));
 
   public:
-    UI(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context, std::shared_ptr<IWindow> window,
-       std::shared_ptr<RenderPassManager> renderPassManager, std::shared_ptr<ImageFactory> imageFactory,
-       std::shared_ptr<CommandBufferManager> commandBufferManager,
-       std::shared_ptr<SyncPrimitiveManager> syncPrimitiveManager, std::shared_ptr<SamplerManager> samplerManager,
-       std::shared_ptr<entt::registry> registry, std::shared_ptr<IRepository<PBRMaterial>> pbrMaterialRepository,
-       std::shared_ptr<IRepository<Texture2D>> texture2DRepository);
-    ~UI();
-    void ProcessEvent(const SDL_Event *event);
-    void RenderUI();
-    void RecordUICommandBuffer(vk::CommandBuffer commandBuffer);
-    void SetSceneViewPort(std::vector<vk::ImageView> imageViews);
-
-  public:
-    inline bool IsSceneViewPortChanged() const
-    {
-        return mIsSceneViewPortChanged;
-    }
-    inline uint32_t GetSceneWidth() const
-    {
-        return mSceneViewPortWidth;
-    }
-    inline uint32_t GetSceneHeight() const
-    {
-        return mSceneViewPortHeight;
-    }
-    inline void SetImageIndex(uint32_t imageIndex)
-    {
-        mImageIndex = imageIndex;
-    }
+    EditorRenderSystem(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context,
+                       std::shared_ptr<IConfigure> configure, std::shared_ptr<entt::registry> registry,
+                       std::shared_ptr<RenderPassManager> renderPassManager,
+                       std::shared_ptr<PipelineLayoutManager> pipelineLayoutManager,
+                       std::shared_ptr<PipelineManager> pipelineManager,
+                       std::shared_ptr<CommandBufferManager> commandBufferManager,
+                       std::shared_ptr<SyncPrimitiveManager> syncPrimitiveManager,
+                       std::shared_ptr<DescriptorManager> descriptorManager,
+                       std::shared_ptr<SamplerManager> samplerManager, std::shared_ptr<BufferFactory> bufferFactory,
+                       std::shared_ptr<ImageFactory> imageFactory, std::shared_ptr<IWindow> window,
+                       std::shared_ptr<IRepository<PBRMaterial>> pbrMaterialRepository,
+                       std::shared_ptr<IRepository<Texture2D>> texture2DRepository);
+    ~EditorRenderSystem();
+    virtual void Init() override;
+    virtual void Tick(float deltaTime) override;
+    virtual void Shutdown() override;
 };
 
 } // namespace MEngine

@@ -25,26 +25,17 @@ class BasicGeometryEntityManager : public NoCopyable
     // DI
     std::shared_ptr<ILogger> mLogger;
     std::shared_ptr<Context> mContext;
-    std::shared_ptr<PipelineManager> mPipelineManager;
-    std::shared_ptr<PipelineLayoutManager> mPipelineLayoutManager;
-    std::shared_ptr<DescriptorManager> mDescriptorManager;
-    std::shared_ptr<SamplerManager> mSamplerManager;
-    std::shared_ptr<IRepository<PBRMaterial>> mPBRMaterialRepository;
 
-    std::shared_ptr<ImageFactory> mImageFactory;
     std::shared_ptr<BufferFactory> mBufferFactory;
     std::shared_ptr<BasicGeometryFactory> mBasicGeometryFactory;
     std::shared_ptr<IRepository<Texture2D>> mTexture2DRepository;
+    std::shared_ptr<IRepository<PBRMaterial>> mPBRMaterialRepository;
 
   private:
   public:
     BasicGeometryEntityManager(std::shared_ptr<ILogger> mLogger, std::shared_ptr<Context> context,
-                               std::shared_ptr<PipelineManager> pipelineManager,
-                               std::shared_ptr<PipelineLayoutManager> pipelineLayoutManager,
-                               std::shared_ptr<DescriptorManager> descriptorManager,
-                               std::shared_ptr<SamplerManager> samplerManager,
                                std::shared_ptr<IRepository<PBRMaterial>> pbrMaterialRepository,
-                               std::shared_ptr<ImageFactory> imageFactory, std::shared_ptr<BufferFactory> bufferFactory,
+                               std::shared_ptr<BufferFactory> bufferFactory,
                                std::shared_ptr<BasicGeometryFactory> basicGeometryFactory,
                                std::shared_ptr<IRepository<Texture2D>> texture2DRepository);
     entt::entity CreateCube(std::shared_ptr<entt::registry> registry);

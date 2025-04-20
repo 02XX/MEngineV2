@@ -33,10 +33,10 @@
 #include "Repository/Texture2DRepository.hpp"
 #include "SyncPrimitiveManager.hpp"
 #include "System/CameraSystem.hpp"
+#include "System/EditorRenderSystem.hpp"
 #include "System/ISystem.hpp"
 #include "System/RenderSystem.hpp"
 #include "System/TransformSystem.hpp"
-#include "System/UI.hpp"
 
 #define BOOST_DI_CFG_CTOR_LIMIT_SIZE 50 // 定义构造函数参数的最大数量
 #include "boost/di.hpp"
@@ -51,28 +51,6 @@ class Application final : public NoCopyable
 {
   private:
     bool mIsRunning;
-    // DI
-    decltype(make_injector(
-        DI::bind<IConfigure>().to<Configure>().in(DI::singleton), DI::bind<ILogger>().to<SpdLogger>().in(DI::singleton),
-        DI::bind<IWindow>().to<SDLWindow>().in(DI::singleton), DI::bind<Context>().to<Context>().in(DI::singleton),
-        DI::bind<entt::registry>().to<entt::registry>().in(DI::singleton),
-        DI::bind<CommandBufferManager>().to<CommandBufferManager>().in(DI::singleton),
-        DI::bind<SyncPrimitiveManager>().to<SyncPrimitiveManager>().in(DI::singleton),
-        DI::bind<PipelineManager>().to<PipelineManager>().in(DI::singleton),
-        DI::bind<PipelineLayoutManager>().to<PipelineLayoutManager>().in(DI::singleton),
-        DI::bind<ShaderManager>().to<ShaderManager>().in(DI::singleton),
-        DI::bind<DescriptorManager>().to<DescriptorManager>().in(DI::singleton),
-        DI::bind<SamplerManager>().to<SamplerManager>().in(DI::singleton),
-        DI::bind<BufferFactory>().to<BufferFactory>().in(DI::singleton),
-        DI::bind<ImageFactory>().to<ImageFactory>().in(DI::singleton),
-        DI::bind<RenderPassManager>().to<RenderPassManager>().in(DI::singleton),
-        DI::bind<IRepository<Texture2D>>().to<Texture2DRepository>().in(DI::singleton),
-        DI::bind<IRepository<PBRMaterial>>().to<PBRMaterialRepository>().in(DI::singleton),
-        DI::bind<BasicGeometryFactory>().to<BasicGeometryFactory>().in(DI::singleton),
-        DI::bind<BasicGeometryEntityManager>().to<BasicGeometryEntityManager>().in(DI::singleton),
-        DI::bind<CameraSystem>().to<CameraSystem>().in(DI::singleton), DI::bind<UI>().to<UI>().in(DI::singleton),
-        DI::bind<RenderSystem>().to<RenderSystem>().in(DI::singleton),
-        DI::bind<TransformSystem>().to<TransformSystem>().in(DI::singleton))) mInjector;
 
     // DI
     std::shared_ptr<ILogger> mLogger;
@@ -81,7 +59,6 @@ class Application final : public NoCopyable
     std::shared_ptr<Context> mContext;
     std::shared_ptr<entt::registry> mRegistry;
     std::shared_ptr<BasicGeometryEntityManager> mBasicGeometryEntityManager;
-    std::shared_ptr<UI> mUI;
     std::shared_ptr<ISystem> mRenderSystem;
     std::shared_ptr<ISystem> mCameraSystem;
     std::shared_ptr<ISystem> mTransformSystem;
