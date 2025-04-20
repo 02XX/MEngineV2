@@ -1,11 +1,12 @@
 #pragma once
-#include "MEngine.hpp"
+#include "Component/Interface/IComponent.hpp"
+#include "entt/entt.hpp"
+#include <concepts>
 namespace MEngine
 {
 class ISystem
 {
   public:
-    ISystem() = default;
     virtual ~ISystem() = default;
 
     virtual void Init() = 0;

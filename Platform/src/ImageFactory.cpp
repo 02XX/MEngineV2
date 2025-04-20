@@ -139,7 +139,6 @@ UniqueImage ImageFactory::CreateImage(ImageType type, vk::Extent3D extent, vk::D
         if (type != ImageType::DepthStencil)
         {
             mContext->GetDevice().resetFences({mFence.get()});
-            // 转换图像布局到eTransferDst
             mPreTransitionCommandBuffer->reset();
             mPreTransitionCommandBuffer->begin(vk::CommandBufferBeginInfo{});
             vk::ImageMemoryBarrier preBarrier{};
@@ -217,12 +216,10 @@ UniqueImage ImageFactory::CreateImage(ImageType type, vk::Extent3D extent, vk::D
     return image;
 }
 void ImageFactory::CopyBufferToImage(Buffer *srcBuffer, Image *dstImage,
-                                     vk::ImageSubresourceLayers imageSubresourceLayers,
-                                     const std::vector<vk::Semaphore> &waitSemaphores,
-                                     const std::vector<vk::Semaphore> &signalSemaphores,
-                                     const std::vector<vk::PipelineStageFlags> &waitDstStageMask, vk::Fence fences)
+                                     vk::ImageSubresourceLayers imageSubresourceLayers)
 {
-    mCopyCommandBuffer->reset();
+    auto fence = mSyncPrimitiveManager->CreateFence();
+    auto commandBuffer = mCommandBufferManager->CreatePrimaryCommandBuffer(CommandBufferType::Transfer);
     vk::BufferImageCopy region{};
     region.setBufferOffset(0)
         .setBufferRowLength(0)
@@ -232,17 +229,20 @@ void ImageFactory::CopyBufferToImage(Buffer *srcBuffer, Image *dstImage,
         .setImageSubresource(imageSubresourceLayers);
     vk::CommandBufferBeginInfo beginInfo;
     beginInfo.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
-    mCopyCommandBuffer->begin(beginInfo);
-    mCopyCommandBuffer->copyBufferToImage(srcBuffer->GetHandle(), dstImage->GetHandle(),
-                                          vk::ImageLayout::eTransferDstOptimal, {region});
-    mCopyCommandBuffer->end();
+    commandBuffer->begin(beginInfo);
+    commandBuffer->copyBufferToImage(srcBuffer->GetHandle(), dstImage->GetHandle(),
+                                     vk::ImageLayout::eTransferDstOptimal, {region});
+    commandBuffer->end();
 
     vk::SubmitInfo submitInfo;
-    submitInfo.setCommandBuffers(mCopyCommandBuffer.get())
-        .setWaitSemaphores(waitSemaphores)
-        .setSignalSemaphores(signalSemaphores)
-        .setWaitDstStageMask(waitDstStageMask);
-    mContext->SubmitToTransferQueue({submitInfo}, fences);
+    submitInfo.setCommandBuffers(commandBuffer.get());
+    mContext->SubmitToTransferQueue({submitInfo}, fence.get());
+    auto result = mContext->GetDevice().waitForFences(fence.get(), vk::True, 1'000'000'000);
+    if (result != vk::Result::eSuccess)
+    {
+        mLogger->Error("Copy buffer to image operation failed");
+        throw std::runtime_error("Copy buffer to image operation failed");
+    }
 }
 vk::Format ImageFactory::GetBestFormat(ImageType type)
 {
@@ -516,5 +516,39 @@ void ImageFactory::QueryImageFormat()
     mLogger->Info("RenderTarget format: {}", vk::to_string(mRenderTargetFormat));
     mLogger->Info("DepthStencil format: {}", vk::to_string(mDepthStencilFormat));
     mLogger->Info("Storage format: {}", vk::to_string(mStorageFormat));
+}
+void ImageFactory::TransitionImageLayout(Image *image, vk::ImageLayout newLayout, vk::PipelineStageFlagBits srcStage,
+                                         vk::PipelineStageFlagBits dstStage, vk::AccessFlags srcAccessMask,
+                                         vk::AccessFlags dstAccessMask, vk::ImageSubresourceRange subresourceRange)
+{
+    vk::UniqueFence fence = mSyncPrimitiveManager->CreateFence();
+    vk::UniqueCommandBuffer commandBuffer =
+        mCommandBufferManager->CreatePrimaryCommandBuffer(CommandBufferType::Transfer);
+    mLogger->Info("Using the provided command buffer for image layout transition. Ensure it is reset if necessary.");
+    mLogger->Info("Using the provided fence for image layout transition. Need to wait for the fence externally.");
+    commandBuffer->begin(vk::CommandBufferBeginInfo{});
+    vk::ImageMemoryBarrier barrier{};
+    barrier.setImage(image->GetHandle())
+        .setOldLayout(image->GetCurrentLayout())
+        .setNewLayout(newLayout)
+        .setSrcAccessMask(srcAccessMask)
+        .setDstAccessMask(dstAccessMask)
+        .setSrcQueueFamilyIndex(mContext->GetQueueFamilyIndicates().graphicsFamily.value())
+        .setDstQueueFamilyIndex(mContext->GetQueueFamilyIndicates().graphicsFamily.value())
+        .setSubresourceRange(subresourceRange);
+    commandBuffer->pipelineBarrier(srcStage, dstStage, {}, {}, {}, barrier);
+    commandBuffer->end();
+    vk::SubmitInfo submitInfo;
+    submitInfo.setCommandBuffers(commandBuffer.get());
+    mContext->SubmitToTransferQueue({submitInfo}, fence.get());
+    auto result = mContext->GetDevice().waitForFences(fence.get(), vk::True, 1'000'000'000);
+    if (result != vk::Result::eSuccess)
+    {
+        mLogger->Error("Transition image layout operation failed");
+        throw std::runtime_error("Transition image layout operation failed");
+    }
+    image->mCurrentLayout = newLayout;
+    mLogger->Info("Transition image layout from {} to {}", vk::to_string(image->GetCurrentLayout()),
+                  vk::to_string(newLayout));
 }
 } // namespace MEngine

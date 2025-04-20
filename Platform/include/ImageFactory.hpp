@@ -10,7 +10,6 @@
 #include <memory>
 #include <unordered_map>
 #include <vector>
-#include <vulkan/vulkan_handles.hpp>
 
 namespace MEngine
 {
@@ -67,14 +66,36 @@ class ImageFactory final : public NoCopyable
                             uint32_t mipLevels = 1, vk::SampleCountFlagBits samples = vk::SampleCountFlagBits::e1);
     vk::UniqueImageView CreateImageView(Image *image, vk::ImageAspectFlags aspectMask = {},
                                         vk::ComponentMapping components = {});
+    void TransitionImageLayout(Image *image, vk::ImageLayout newLayout, vk::PipelineStageFlagBits srcStage,
+                               vk::PipelineStageFlagBits dstStage, vk::AccessFlags srcAccessMask,
+                               vk::AccessFlags dstAccessMask, vk::ImageSubresourceRange subresourceRange);
+    void CopyBufferToImage(Buffer *srcBuffer, Image *dstImage, vk::ImageSubresourceLayers imageSubresourceLayers);
 
   private:
     void QueryImageFormat();
     vk::Format GetBestFormat(ImageType type);
     uint32_t GetFormatPixelSize(vk::Format format) const;
-    void CopyBufferToImage(Buffer *srcBuffer, Image *dstImage, vk::ImageSubresourceLayers imageSubresourceLayers,
-                           const std::vector<vk::Semaphore> &waitSemaphores,
-                           const std::vector<vk::Semaphore> &signalSemaphores,
-                           const std::vector<vk::PipelineStageFlags> &waitDstStageMask, vk::Fence fences);
+
+  public:
+    inline vk::Format GetTexture2DFormat() const
+    {
+        return mTexture2DFormat;
+    }
+    inline vk::Format GetTextureCubeFormat() const
+    {
+        return mTextureCubeFormat;
+    }
+    inline vk::Format GetRenderTargetFormat() const
+    {
+        return mRenderTargetFormat;
+    }
+    inline vk::Format GetDepthStencilFormat() const
+    {
+        return mDepthStencilFormat;
+    }
+    inline vk::Format GetStorageFormat() const
+    {
+        return mStorageFormat;
+    }
 };
 } // namespace MEngine

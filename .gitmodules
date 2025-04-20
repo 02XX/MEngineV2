@@ -22,15 +22,30 @@
 [submodule "3rdParty/magic_enum"]
 	path = 3rdParty/magic_enum
 	url = https://github.com/Neargye/magic_enum.git
-[submodule "fmt"]
-	path = fmt
-	url = https://github.com/fmtlib/fmt.git
-[submodule "3rdParty/fmt"]
-	path = 3rdParty/fmt
-	url = https://github.com/fmtlib/fmt.git
 [submodule "3rdParty/ImGuizmo"]
 	path = 3rdParty/ImGuizmo
 	url = https://github.com/CedricGuillemet/ImGuizmo.git
 [submodule "3rdParty/json"]
 	path = 3rdParty/json
 	url = https://github.com/nlohmann/json.git
+[submodule "3rdParty/di"]
+	path = 3rdParty/di
+	url = https://github.com/boost-ext/di.git
+[submodule "3rdParty/fmt"]
+	path = 3rdParty/fmt
+	url = https://github.com/fmtlib/fmt
+[submodule "3rdParty/uuid"]
+	path = 3rdParty/uuid
+	url = https://github.com/boostorg/uuid.git
+[submodule "3rdParty/rttr"]
+	path = 3rdParty/rttr
+	url = https://github.com/rttrorg/rttr.git
+[submodule "3rdParty/assert"]
+	path = 3rdParty/assert
+	url = https://github.com/boostorg/assert.git
+[submodule "3rdParty/config"]
+	path = 3rdParty/config
+	url = https://github.com/boostorg/config.git
+[submodule "3rdParty/boost"]
+	path = 3rdParty/boost
+	url = https://github.com/boostorg/boost.git

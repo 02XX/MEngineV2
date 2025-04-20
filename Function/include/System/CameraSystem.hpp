@@ -1,20 +1,19 @@
 #pragma once
-#include "Componet/CameraComponent.hpp"
+#include "Component/CameraComponent.hpp"
+#include "Component/TransformComponent.hpp"
 #include "Interface/ILogger.hpp"
+#include "System.hpp"
 #include "System/ISystem.hpp"
 #include "entt/entt.hpp"
 namespace MEngine
 {
-class CameraSystem final : public ISystem
+class CameraSystem final : public System
 {
-  private:
-    std::shared_ptr<ILogger> mLogger;
-    std::shared_ptr<entt::registry> mRegistry;
-
   public:
-    CameraSystem(std::shared_ptr<ILogger> logger, std::shared_ptr<entt::registry> registry);
-    virtual void Init() override;
-    virtual void Tick(float deltaTime) override;
-    virtual void Shutdown() override;
+    CameraSystem(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context,
+                 std::shared_ptr<IConfigure> configure, std::shared_ptr<entt::registry> registry);
+    void Init() override;
+    void Tick(float deltaTime) override;
+    void Shutdown() override;
 };
 } // namespace MEngine

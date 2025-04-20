@@ -3,26 +3,28 @@
 namespace MEngine
 {
 Application::Application()
-    : mInjector(
-          make_injector(bind<IConfigure>().to<Configure>().in(singleton), bind<ILogger>().to<SpdLogger>().in(singleton),
-                        bind<IWindow>().to<SDLWindow>().in(singleton), bind<Context>().to<Context>().in(singleton),
-                        bind<entt::registry>().to<entt::registry>().in(singleton),
-                        bind<CommandBufferManager>().to<CommandBufferManager>().in(singleton),
-                        bind<SyncPrimitiveManager>().to<SyncPrimitiveManager>().in(singleton),
-                        bind<PipelineLayoutManager>().to<PipelineLayoutManager>().in(singleton),
-                        bind<ShaderManager>().to<ShaderManager>().in(singleton),
-                        bind<DescriptorManager>().to<DescriptorManager>().in(singleton),
-                        bind<SamplerManager>().to<SamplerManager>().in(singleton),
-                        bind<BufferFactory>().to<BufferFactory>().in(singleton),
-                        bind<ImageFactory>().to<ImageFactory>().in(singleton),
-                        bind<RenderPassManager>().to<RenderPassManager>().in(singleton),
-                        bind<PipelineManager>().to<PipelineManager>().in(singleton),
-                        bind<TextureManager>().to<TextureManager>().in(singleton),
-                        bind<MaterialManager>().to<MaterialManager>().in(singleton),
-                        bind<BasicGeometryFactory>().to<BasicGeometryFactory>().in(singleton),
-                        bind<BasicGeometryEntityManager>().to<BasicGeometryEntityManager>().in(singleton),
-                        bind<CameraSystem>().to<CameraSystem>().in(singleton), bind<UI>().to<UI>().in(singleton),
-                        bind<RenderSystem>().to<RenderSystem>().in(singleton)))
+    : mInjector(make_injector(
+          DI::bind<IConfigure>().to<Configure>().in(DI::singleton),
+          DI::bind<ILogger>().to<SpdLogger>().in(DI::singleton), DI::bind<IWindow>().to<SDLWindow>().in(DI::singleton),
+          DI::bind<Context>().to<Context>().in(DI::singleton),
+          DI::bind<entt::registry>().to<entt::registry>().in(DI::singleton),
+          DI::bind<CommandBufferManager>().to<CommandBufferManager>().in(DI::singleton),
+          DI::bind<SyncPrimitiveManager>().to<SyncPrimitiveManager>().in(DI::singleton),
+          DI::bind<PipelineManager>().to<PipelineManager>().in(DI::singleton),
+          DI::bind<PipelineLayoutManager>().to<PipelineLayoutManager>().in(DI::singleton),
+          DI::bind<ShaderManager>().to<ShaderManager>().in(DI::singleton),
+          DI::bind<DescriptorManager>().to<DescriptorManager>().in(DI::singleton),
+          DI::bind<SamplerManager>().to<SamplerManager>().in(DI::singleton),
+          DI::bind<BufferFactory>().to<BufferFactory>().in(DI::singleton),
+          DI::bind<ImageFactory>().to<ImageFactory>().in(DI::singleton),
+          DI::bind<RenderPassManager>().to<RenderPassManager>().in(DI::singleton),
+          DI::bind<IRepository<Texture2D>>().to<Texture2DRepository>().in(DI::singleton),
+          DI::bind<IRepository<PBRMaterial>>().to<PBRMaterialRepository>().in(DI::singleton),
+          DI::bind<BasicGeometryFactory>().to<BasicGeometryFactory>().in(DI::singleton),
+          DI::bind<BasicGeometryEntityManager>().to<BasicGeometryEntityManager>().in(DI::singleton),
+          DI::bind<CameraSystem>().to<CameraSystem>().in(DI::singleton), DI::bind<UI>().to<UI>().in(DI::singleton),
+          DI::bind<RenderSystem>().to<RenderSystem>().in(DI::singleton),
+          DI::bind<TransformSystem>().to<TransformSystem>().in(DI::singleton)))
 {
     // DI
     // mConfigure = mInjector.create<std::shared_ptr<IConfigure>>();
@@ -31,25 +33,12 @@ Application::Application()
     mWindow = mInjector.create<std::shared_ptr<IWindow>>();
     mContext = mInjector.create<std::shared_ptr<Context>>();
     mRegistry = mInjector.create<std::shared_ptr<entt::registry>>();
-    // mCommandBufferManager = mInjector.create<std::shared_ptr<CommandBufferManager>>();
-    // mSyncPrimitiveManager = mInjector.create<std::shared_ptr<SyncPrimitiveManager>>();
-    // mPipelineLayoutManager = mInjector.create<std::shared_ptr<PipelineLayoutManager>>();
-    // mShaderManager = mInjector.create<std::shared_ptr<ShaderManager>>();
-    // mDescriptorManager = mInjector.create<std::shared_ptr<DescriptorManager>>();
-    // mSamplerManager = mInjector.create<std::shared_ptr<SamplerManager>>();
-    // mBufferFactory = mInjector.create<std::shared_ptr<BufferFactory>>();
-    // mDescriptorManager = mInjector.create<std::shared_ptr<DescriptorManager>>();
-    // mImageFactory = mInjector.create<std::shared_ptr<ImageFactory>>();
-    // mRenderPassManager = mInjector.create<std::shared_ptr<RenderPassManager>>();
-    // mPipelineManager = mInjector.create<std::shared_ptr<PipelineManager>>();
-    // mTextureManager = mInjector.create<std::shared_ptr<TextureManager>>();
-    // mMaterialManager = mInjector.create<std::shared_ptr<MaterialManager>>();
-    // mBasicGeometryFactory = mInjector.create<std::shared_ptr<BasicGeometryFactory>>();
     mBasicGeometryEntityManager = mInjector.create<std::shared_ptr<BasicGeometryEntityManager>>();
     mUI = mInjector.create<std::shared_ptr<UI>>();
 
     mBasicGeometryEntityManager->CreateCube(mRegistry);
     auto camera = mRegistry->create();
+    mRegistry->emplace<TransformComponent>(camera);
     mRegistry->emplace<CameraComponent>(camera).isMainCamera = true;
     InitSystem();
     mStartTime = std::chrono::high_resolution_clock::now();
@@ -63,11 +52,14 @@ void Application::InitSystem()
 {
     mRenderSystem = mInjector.create<std::shared_ptr<RenderSystem>>();
     mCameraSystem = mInjector.create<std::shared_ptr<CameraSystem>>();
+    mTransformSystem = mInjector.create<std::shared_ptr<TransformSystem>>();
     mRenderSystem->Init();
     mCameraSystem->Init();
+    mTransformSystem->Init();
 }
 void Application::ShutdownSystem()
 {
+    mTransformSystem->Shutdown();
     mCameraSystem->Shutdown();
     mRenderSystem->Shutdown();
 }
@@ -88,6 +80,7 @@ void Application::Run()
 
         mWindow->PollEvents();
         mCameraSystem->Tick(mDeltaTime);
+        mTransformSystem->Tick(mDeltaTime);
         mRenderSystem->Tick(mDeltaTime);
 
         if (mDeltaTime < 1.0f / mTargetFPS)

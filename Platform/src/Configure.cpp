@@ -4,7 +4,7 @@ namespace MEngine
 {
 Configure::Configure()
 {
-    mPath = fs::current_path() / "appsettings.json";
+    mPath = fs::current_path() / "Config" / "appsettings.json";
     SetJsonSettingFile(mPath);
 }
 void Configure::SetJsonSettingFile(const fs::path &path)

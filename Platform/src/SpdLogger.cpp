@@ -4,32 +4,32 @@ namespace MEngine
 {
 void SpdLogger::LogTrace(const std::string &message, const std::source_location &loc)
 {
-    mLogger->log(spdlog::source_loc{loc.file_name(), static_cast<int>(loc.line()), loc.function_name()},
+    mLogger->log(spdlog::source_loc{loc.file_name(), static_cast<std::uint_least32_t>(loc.line()), loc.function_name()},
                  spdlog::level::trace, message);
 }
 void SpdLogger::LogDebug(const std::string &message, const std::source_location &loc)
 {
-    mLogger->log(spdlog::source_loc{loc.file_name(), static_cast<int>(loc.line()), loc.function_name()},
+    mLogger->log(spdlog::source_loc{loc.file_name(), static_cast<std::uint_least32_t>(loc.line()), loc.function_name()},
                  spdlog::level::debug, message);
 }
 void SpdLogger::LogWarn(const std::string &message, const std::source_location &loc)
 {
-    mLogger->log(spdlog::source_loc{loc.file_name(), static_cast<int>(loc.line()), loc.function_name()},
+    mLogger->log(spdlog::source_loc{loc.file_name(), static_cast<std::uint_least32_t>(loc.line()), loc.function_name()},
                  spdlog::level::warn, message);
 }
 void SpdLogger::LogInfo(const std::string &message, const std::source_location &loc)
 {
-    mLogger->log(spdlog::source_loc{loc.file_name(), static_cast<int>(loc.line()), loc.function_name()},
+    mLogger->log(spdlog::source_loc{loc.file_name(), static_cast<std::uint_least32_t>(loc.line()), loc.function_name()},
                  spdlog::level::info, message);
 }
 void SpdLogger::LogError(const std::string &message, const std::source_location &loc)
 {
-    mLogger->log(spdlog::source_loc{loc.file_name(), static_cast<int>(loc.line()), loc.function_name()},
+    mLogger->log(spdlog::source_loc{loc.file_name(), static_cast<std::uint_least32_t>(loc.line()), loc.function_name()},
                  spdlog::level::err, message);
 }
 void SpdLogger::LogFatal(const std::string &message, const std::source_location &loc)
 {
-    mLogger->log(spdlog::source_loc{loc.file_name(), static_cast<int>(loc.line()), loc.function_name()},
+    mLogger->log(spdlog::source_loc{loc.file_name(), static_cast<std::uint_least32_t>(loc.line()), loc.function_name()},
                  spdlog::level::critical, message);
 }
 SpdLogger::SpdLogger(std::shared_ptr<IConfigure> configure) : mConfigure(configure)
@@ -71,9 +71,10 @@ SpdLogger::SpdLogger(std::shared_ptr<IConfigure> configure) : mConfigure(configu
         {
             mLogger->error("Invalid log level: {}", level);
         }
-        mLogger->set_pattern("%^[%Y-%m-%d %H:%M:%S.%e] [%20s:%-4#] %l - %v%$");
-        spdlog::register_logger(mLogger);
-        spdlog::set_default_logger(mLogger);
+        auto formatter = std::make_unique<spdlog::pattern_formatter>();
+        formatter->add_flag<UppercaseLevelFormatter>('U');
+        formatter->set_pattern("%^[%Y-%m-%d %H:%M:%S.%e] [%20s:%-4#] %U: %v%$");
+        mLogger->set_formatter(std::move(formatter));
     }
     catch (const spdlog::spdlog_ex &e)
     {

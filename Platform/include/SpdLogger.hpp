@@ -6,15 +6,33 @@
 #include "magic_enum/magic_enum.hpp"
 #include "spdlog/common.h"
 #include "spdlog/logger.h"
+#include "spdlog/pattern_formatter.h"
 #include "spdlog/sinks/rotating_file_sink.h"
 #include "spdlog/sinks/sink.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
 #include "spdlog/spdlog.h"
+#include <cctype>
 #include <memory>
 #include <source_location>
 
 namespace MEngine
 {
+class UppercaseLevelFormatter : public spdlog::custom_flag_formatter
+{
+  public:
+    void format(const spdlog::details::log_msg &msg, const std::tm &, spdlog::memory_buf_t &dest) override
+    {
+        std::string level = spdlog::to_string_view(msg.log_level).data();
+        std::transform(level.begin(), level.end(), level.begin(), tolower);
+        level[0] = toupper(level[0]);
+        dest.append(level.data(), level.data() + level.size());
+    }
+
+    std::unique_ptr<custom_flag_formatter> clone() const override
+    {
+        return std::make_unique<UppercaseLevelFormatter>();
+    }
+};
 class SpdLogger final : public ILogger, NoCopyable
 {
   private:
@@ -42,4 +60,5 @@ class SpdLogger final : public ILogger, NoCopyable
   public:
     SpdLogger(std::shared_ptr<IConfigure> configure);
 };
+
 } // namespace MEngine

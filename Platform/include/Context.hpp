@@ -80,7 +80,7 @@ class Context final : public NoCopyable
     void CreateSurface();
     void QuerySurfaceInfo();
 
-    void CreateSwapchain();
+    void CreateSwapchain(vk::SwapchainKHR oldSwapchain = nullptr);
     void CreateSwapchainImages();
     void CreateSwapchainImageViews();
 
@@ -150,6 +150,7 @@ class Context final : public NoCopyable
     {
         return mSurfaceInfo;
     }
+    void RecreateSwapchain();
     void SubmitToGraphicQueue(std::vector<vk::SubmitInfo> submits, vk::Fence fence);
     void SubmitToPresnetQueue(vk::PresentInfoKHR presentInfo);
     void SubmitToTransferQueue(std::vector<vk::SubmitInfo> submits, vk::Fence fence);

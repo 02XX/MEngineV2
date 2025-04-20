@@ -1,4 +1,5 @@
 #include "Image.hpp"
+#include <utility>
 
 namespace MEngine
 {
@@ -28,11 +29,16 @@ Image::Image(std::shared_ptr<Context> context, const vk::ImageCreateInfo &imageI
     mSamples = imageInfo.samples;
     mMipLevels = imageInfo.mipLevels;
     mArrayLayers = imageInfo.arrayLayers;
+    mCurrentLayout = imageInfo.initialLayout;
 }
 
 Image::Image(Image &&other) noexcept
     : mImage(std::exchange(other.mImage, nullptr)), mAllocation(std::exchange(other.mAllocation, nullptr)),
-      mAllocationInfo(std::exchange(other.mAllocationInfo, {}))
+      mAllocationInfo(std::exchange(other.mAllocationInfo, {})), mFormat(std::exchange(other.mFormat, vk::Format{})),
+      mExtent(std::exchange(other.mExtent, {})), mUsageFlags(std::exchange(other.mUsageFlags, {})),
+      mImageType(std::exchange(other.mImageType, {})), mTiling(std::exchange(other.mTiling, {})),
+      mSamples(std::exchange(other.mSamples, {})), mMipLevels(std::exchange(other.mMipLevels, {})),
+      mArrayLayers(std::exchange(other.mArrayLayers, {})), mContext(std::exchange(other.mContext, nullptr))
 {
 }
 
@@ -41,9 +47,18 @@ Image &Image::operator=(Image &&other) noexcept
     if (this != &other)
     {
         Release();
+        mContext = std::exchange(other.mContext, nullptr);
         mImage = std::exchange(other.mImage, nullptr);
         mAllocation = std::exchange(other.mAllocation, nullptr);
         mAllocationInfo = std::exchange(other.mAllocationInfo, {});
+        mFormat = std::exchange(other.mFormat, vk::Format{});
+        mExtent = std::exchange(other.mExtent, {});
+        mUsageFlags = std::exchange(other.mUsageFlags, {});
+        mImageType = std::exchange(other.mImageType, {});
+        mTiling = std::exchange(other.mTiling, {});
+        mSamples = std::exchange(other.mSamples, {});
+        mMipLevels = std::exchange(other.mMipLevels, {});
+        mArrayLayers = std::exchange(other.mArrayLayers, {});
     }
     return *this;
 }
@@ -92,6 +107,10 @@ uint32_t Image::GetMipLevels() const
 uint32_t Image::GetArrayLayers() const
 {
     return mArrayLayers;
+}
+vk::ImageLayout Image::GetCurrentLayout() const
+{
+    return mCurrentLayout;
 }
 void Image::Release()
 {

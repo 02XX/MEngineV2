@@ -1,9 +1,9 @@
-#include "ResourceManager.hpp"
+// #include "ResourceManager.hpp"
 
-namespace MEngine
-{
-ResourceManager::ResourceManager()
-{
-}
+// namespace MEngine
+// {
+// ResourceManager::ResourceManager()
+// {
+// }
 
-} // namespace MEngine
+// } // namespace MEngine
