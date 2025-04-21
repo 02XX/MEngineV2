@@ -28,7 +28,8 @@ void PipelineLayoutManager::CreateGlobalDescriptorSetLayout()
 {
     std::vector<vk::DescriptorSetLayoutBinding> globalDescriptorSetLayoutBindings{
         mGlobalDescriptorLayoutBindings.mCameraBinding, mGlobalDescriptorLayoutBindings.mLightBinding,
-        mGlobalDescriptorLayoutBindings.mShadowParametersBinding, mGlobalDescriptorLayoutBindings.mShadowMapsBinding};
+        mGlobalDescriptorLayoutBindings.mEnvMapBinding, mGlobalDescriptorLayoutBindings.mShadowParametersBinding,
+        mGlobalDescriptorLayoutBindings.mShadowMapsBinding};
     vk::DescriptorSetLayoutCreateInfo globalDescriptorSetLayoutCreateInfo{};
     globalDescriptorSetLayoutCreateInfo.setBindings(globalDescriptorSetLayoutBindings); // set: 0
     mGlobalDescriptorSetLayout =

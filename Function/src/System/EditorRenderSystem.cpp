@@ -20,7 +20,8 @@ EditorRenderSystem::EditorRenderSystem(
     std::shared_ptr<IRepository<PBRMaterial>> pbrMaterialRepository,
     std::shared_ptr<IRepository<Texture2D>> texture2DRepository)
     : RenderSystem(logger, context, configure, registry, renderPassManager, pipelineLayoutManager, pipelineManager,
-                   commandBufferManager, syncPrimitiveManager, descriptorManager, bufferFactory, imageFactory),
+                   commandBufferManager, syncPrimitiveManager, descriptorManager, bufferFactory, imageFactory,
+                   samplerManager),
       mWindow(window), mSamplerManager(samplerManager), mPBRMaterialRepository(pbrMaterialRepository),
       mTexture2DRepository(texture2DRepository)
 {

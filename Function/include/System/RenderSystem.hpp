@@ -20,12 +20,14 @@
 #include "PipelineManager.hpp"
 #include "RenderPassManager.hpp"
 #include "ResourceManager.hpp"
+#include "SamplerManager.hpp"
 #include "ShaderManager.hpp"
 #include "SyncPrimitiveManager.hpp"
 #include "System.hpp"
 #include "TaskScheduler.hpp"
 #include "Vertex.hpp"
 #include "entt/entt.hpp"
+#include "tinyexr.h"
 #include <cstdint>
 #include <memory>
 #include <vector>
@@ -46,7 +48,7 @@ class RenderSystem : public System
 
     std::shared_ptr<BufferFactory> mBufferFactory;
     std::shared_ptr<ImageFactory> mImageFactory;
-
+    std::shared_ptr<SamplerManager> mSamplerManager;
     std::shared_ptr<IWindow> mWindow;
 
   protected:
@@ -87,6 +89,10 @@ class RenderSystem : public System
 
         LightType type;
     };
+    // EnvMap
+    UniqueImage mEnvMap;
+    vk::UniqueImageView mEnvMapImageView;
+    vk::UniqueSampler mEnvMapSampler;
     // ShadowParameters_SBO
     //  main camera
     entt::entity mMainCameraEntity;
@@ -94,6 +100,8 @@ class RenderSystem : public System
   protected:
     void InitialRenderTargetImageLayout();
     void InitialSwapchainImageLayout();
+    void EnvMap();
+
     void CollectEntities();
     void Prepare();
     void RenderShadowDepthPass();
@@ -117,7 +125,7 @@ class RenderSystem : public System
                  std::shared_ptr<CommandBufferManager> commandBufferManager,
                  std::shared_ptr<SyncPrimitiveManager> syncPrimitiveManager,
                  std::shared_ptr<DescriptorManager> descriptorManager, std::shared_ptr<BufferFactory> bufferFactory,
-                 std::shared_ptr<ImageFactory> imageFactory);
+                 std::shared_ptr<ImageFactory> imageFactory, std::shared_ptr<SamplerManager> samplerManager);
     ~RenderSystem();
     inline auto BeginRender()
     {

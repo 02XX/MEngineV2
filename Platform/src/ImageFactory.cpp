@@ -1,4 +1,5 @@
 #include "ImageFactory.hpp"
+#include <vulkan/vulkan_enums.hpp>
 
 namespace MEngine
 {
@@ -251,7 +252,7 @@ vk::Format ImageFactory::GetBestFormat(ImageType type)
     case ImageType::Texture2D:
         return mTexture2DFormat;
     case ImageType::TextureCube:
-        return mTextureCubeFormat;
+        return vk::Format::eR16G16B16A16Sfloat;
     case ImageType::RenderTarget:
         return mRenderTargetFormat;
     case ImageType::DepthStencil:

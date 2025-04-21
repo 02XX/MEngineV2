@@ -46,6 +46,7 @@ add_subdirectory(3rdParty/magic_enum)
 add_subdirectory(3rdParty/di)
 add_subdirectory(3rdParty/json)
 # add_subdirectory(3rdParty/rttr)
+add_subdirectory(3rdParty/tinyexr)
 
 
 # test

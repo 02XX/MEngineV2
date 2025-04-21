@@ -1,9 +1,7 @@
 #include "System/RenderSystem.hpp"
-#include "Component/TransformComponent.hpp"
-#include "glm/ext/vector_float3_precision.hpp"
-#include <cstddef>
+#include "VMA.hpp"
+#include "stb_image.h"
 #include <cstring>
-
 namespace MEngine
 {
 
@@ -15,11 +13,13 @@ RenderSystem::RenderSystem(std::shared_ptr<ILogger> logger, std::shared_ptr<Cont
                            std::shared_ptr<CommandBufferManager> commandBufferManager,
                            std::shared_ptr<SyncPrimitiveManager> syncPrimitiveManager,
                            std::shared_ptr<DescriptorManager> descriptorManager,
-                           std::shared_ptr<BufferFactory> bufferFactory, std::shared_ptr<ImageFactory> imageFactory)
+                           std::shared_ptr<BufferFactory> bufferFactory, std::shared_ptr<ImageFactory> imageFactory,
+                           std::shared_ptr<SamplerManager> samplerManager)
     : System(logger, context, configure, registry), mRenderPassManager(renderPassManager),
       mPipelineLayoutManager(pipelineLayoutManager), mPipelineManager(pipelineManager),
       mCommandBufferManager(commandBufferManager), mSyncPrimitiveManager(syncPrimitiveManager),
-      mDescriptorManager(descriptorManager), mBufferFactory(bufferFactory), mImageFactory(imageFactory)
+      mDescriptorManager(descriptorManager), mBufferFactory(bufferFactory), mImageFactory(imageFactory),
+      mSamplerManager(samplerManager)
 {
 }
 void RenderSystem::Init()
@@ -53,6 +53,7 @@ void RenderSystem::Init()
     {
         mLightSBOs[i] = mBufferFactory->CreateBuffer(BufferType::Uniform, sizeof(LightUniform));
     }
+    EnvMap();
     InitialRenderTargetImageLayout();
     InitialSwapchainImageLayout();
     mIsInit = true;
@@ -147,6 +148,58 @@ void RenderSystem::InitialSwapchainImageLayout()
         throw std::runtime_error("Failed to transition swapchain image layout");
     }
     mLogger->Info("Swapchain imageLayout transitioned successfully");
+}
+void RenderSystem::EnvMap()
+{
+    // float *rgba = nullptr;
+    int width = 0, height = 0;
+    const char *err = nullptr;
+    auto exrPath = std::filesystem::current_path() / "Resource/Texture/meadow_4k.exr";
+    auto defaultTexturePath = std::filesystem::current_path() / "Resource/Material/bg.png";
+    auto rgba = stbi_load(defaultTexturePath.string().c_str(), &width, &height, nullptr, 4);
+    // LoadEXR(&rgba, &width, &height, exrPath.string().c_str(), &err);
+    if (err != nullptr)
+    {
+        mLogger->Error("Failed to load EXR file: {}", err);
+        throw std::runtime_error("Failed to load EXR file");
+    }
+    mLogger->Info("EXR file loaded successfully: {}x{}", width, height);
+    // 创建纹理图像
+    vk::ImageCreateInfo imageCreateInfo;
+    imageCreateInfo.setImageType(vk::ImageType::e2D)
+        .setFormat(vk::Format::eR32G32B32A32Sfloat)
+        .setExtent(vk::Extent3D(width, height, 1))
+        .setMipLevels(1)
+        .setArrayLayers(1)
+        .setSamples(vk::SampleCountFlagBits::e1)
+        .setTiling(vk::ImageTiling::eOptimal)
+        .setUsage(vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst)
+        .setSharingMode(vk::SharingMode::eExclusive)
+        .setInitialLayout(vk::ImageLayout::eUndefined);
+    mEnvMap =
+        mImageFactory->CreateImage(ImageType::Texture2D, vk::Extent3D(width, height, 1), width * height * 4, rgba);
+    mEnvMapImageView = mImageFactory->CreateImageView(mEnvMap.get());
+    mEnvMapSampler =
+        mSamplerManager->CreateUniqueSampler(vk::Filter::eLinear, vk::Filter::eLinear, vk::SamplerMipmapMode::eLinear);
+    // 上传DescriptorSet
+    // mDescriptorManager->UpdateCombinedSamplerImageDescriptorSet(
+    //     std::vector<ImageDescriptor>{{mEnvMapImageView.get(), mEnvMapSampler.get()}}, 2,
+    //     mGlobalDescriptorSets[mFrameIndex].get());
+
+    for (size_t i = 0; i < mFrameCount; ++i)
+    {
+        vk::WriteDescriptorSet writeDescriptorSet;
+        vk::DescriptorImageInfo imageInfo;
+        imageInfo.setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
+            .setImageView(mEnvMapImageView.get())
+            .setSampler(mEnvMapSampler.get());
+        writeDescriptorSet.setDstSet(mGlobalDescriptorSets[i].get())
+            .setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
+            .setImageInfo(imageInfo)
+            .setDstBinding(2)
+            .setDstArrayElement(0);
+        mContext->GetDevice().updateDescriptorSets({writeDescriptorSet}, {});
+    }
 }
 void RenderSystem::CollectEntities()
 {

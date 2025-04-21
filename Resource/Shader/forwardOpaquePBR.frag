@@ -138,10 +138,17 @@ pbrMaterial;
 
 layout(set = 1, binding = 1) uniform sampler2D AlbedoMap;
 
+layout(set = 0, binding = 2) uniform sampler2D EnvMap;
 //output fragment data
 //Render Targets
 layout(location = 0) out vec4 outColor; // Color output
-
+vec2 DirectionToUV(vec3 dir) {
+    float theta = atan(dir.z, dir.x); // 水平角
+    float phi = acos(dir.y);          // 垂直角
+    float u = theta / (2.0 * 3.14159);
+    float v = phi / 3.14159;
+    return vec2(u, v); // UV 范围 [0, 1]
+}
 void main()
 {
     outColor = vec4(0.0, 0.0, 0.0, 1.0);
@@ -176,8 +183,42 @@ void main()
             kD *= 1.0 - metallic;
             outColor += vec4((kD*albedoColor/PI + specular) * (LIGHT_COLOR) * NoL, 1.0);
         }
+        //environment
+        const uint SAMPLE_COUNT = 1024u;
+        vec3 envSpecular = vec3(0);
+        vec3 envDiffuse = vec3(0);
+        for(uint i = 0u; i < SAMPLE_COUNT; i++)
+        {
+            vec2 Xi = Hammersley(i, SAMPLE_COUNT);
+            
+            vec3 H = ImportanceSampleGGX(N, roughness,Xi);
+            vec3 L = normalize(2.0 * dot(V, H) * H - V);
+            float NdotL = clamp(dot(N,L),0,1.0f);
+            float NdotH =clamp(dot(N,H),0,1.0f);
+            float VdotH =clamp(dot(V,H),0,1.0f);
+            float NdotV = clamp(dot(N,V),0,0.1f);
+            
+            if(NdotL > 0.0)
+            {
+                float G =GeometrySmith(N,V,L,roughness);
+                vec3 F = FresnelSchlick(VdotH, F0);
+                float D = DistributionGGX(N,H,roughness);
+                vec3 numerator = F*D*G;
+                float denominator = 4.0 * NdotV * NdotL + 1e-5;
+                vec3 specular = numerator / denominator;
+                vec4 environmentColor = texture(EnvMap, DirectionToUV(L));
+                float pdf = D * NdotH/(4.0f * VdotH + 1e-5);
+                envSpecular += specular * environmentColor.rgb * NdotL / pdf;
+                environmentColor = texture(EnvMap, DirectionToUV(H));
+                envDiffuse += (albedoColor/PI) *  environmentColor.rgb * NdotL / pdf;
+            }
+        }
+        envSpecular /= float(SAMPLE_COUNT);
+        envDiffuse /= float(SAMPLE_COUNT);
+        outColor += vec4(envSpecular + envDiffuse, 1.0) ;
     // }
-    // outColor = vec4(specularColor,1.0);
+
+    // outColor = vec4(envColor,1.0);
 }
 
 

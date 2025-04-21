@@ -14,7 +14,7 @@ struct PBRParameters
 {
     alignas(16) glm::vec3 albedo = {1.0f, 1.0f, 1.0f};
     float metallic = 0.5f;
-    float roughness = 0.5F;
+    float roughness = 0.04f;
     float ao = 1.0f;
     float emissive = 0.0f;
     // TODO: 添加更多参数

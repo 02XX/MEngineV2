@@ -16,7 +16,7 @@ enum class PipelineLayoutType
 {
     ShadowDepth, // 阴影 深度贴图 Set0:{Camera_UBO, Light_SBO[6],
                  // ShadowParameters_SBO,ShadowMap[6](需要和Light_SBO按顺序一一对应)}
-    PBR,         // 不透明物体PBR Set0:{Camera_UBO, Light_SBO[6], ShadowParameters_SBO,
+    PBR,         // 不透明物体PBR Set0:{Camera_UBO, Light_SBO[6], EnvMap(IBL),ShadowParameters_SBO,
                  // ShadowMap[6](需要和Light_SBO按顺序一一对应)} , Set1: PBR{Parameters_UBO{Albedo, Normal,
     // MetallicRoughness, AmbientOcclusion,Emissive}, AlbedoMap, NormalMap, MetallicRoughnessMap,
     // AmbientOcclusionMap, EmissiveMap}
@@ -64,12 +64,16 @@ class PipelineLayoutManager final : public NoCopyable
         vk::DescriptorSetLayoutBinding mLightBinding{1, vk::DescriptorType::eUniformBuffer, 6,
                                                      vk::ShaderStageFlagBits::eFragment |
                                                          vk::ShaderStageFlagBits::eFragment};
-        // Set: 0, Binding: 2 Shadow Parameters
-        vk::DescriptorSetLayoutBinding mShadowParametersBinding{2, vk::DescriptorType::eStorageBuffer, 1,
+        // Set: 0, Binding: 2 envMap
+        vk::DescriptorSetLayoutBinding mEnvMapBinding{2, vk::DescriptorType::eCombinedImageSampler, 1,
+                                                      vk::ShaderStageFlagBits::eFragment |
+                                                          vk::ShaderStageFlagBits::eFragment};
+        // Set: 0, Binding:3 Shadow Parameters
+        vk::DescriptorSetLayoutBinding mShadowParametersBinding{3, vk::DescriptorType::eStorageBuffer, 1,
                                                                 vk::ShaderStageFlagBits::eFragment |
                                                                     vk::ShaderStageFlagBits::eFragment};
-        // Set: 0, Binding: 3 Shadow Maps
-        vk::DescriptorSetLayoutBinding mShadowMapsBinding{3, vk::DescriptorType::eStorageBuffer, 6,
+        // Set: 0, Binding: 4 Shadow Maps
+        vk::DescriptorSetLayoutBinding mShadowMapsBinding{4, vk::DescriptorType::eStorageBuffer, 6,
                                                           vk::ShaderStageFlagBits::eFragment |
                                                               vk::ShaderStageFlagBits::eFragment};
     } mGlobalDescriptorLayoutBindings;
