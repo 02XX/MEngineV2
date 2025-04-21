@@ -9,7 +9,9 @@
 #include "Interface/ILogger.hpp"
 #include "Interface/IWindow.hpp"
 #include "RenderPassManager.hpp"
+#include "ResourceManager.hpp"
 #include "SamplerManager.hpp"
+#include "entt/entity/fwd.hpp"
 #include "entt/entt.hpp"
 #include "imgui.h"
 #include "imgui_impl_sdl3.h"
@@ -18,10 +20,14 @@
 #include <algorithm>
 #include <cstdint>
 #include <memory>
+#include <stack>
+#include <unordered_map>
 #include <vector>
+#include <vulkan/vulkan_core.h>
 
 #include "Component/AssestComponent.hpp"
 #include "Component/CameraComponent.hpp"
+#include "Component/InputComponent.hpp"
 #include "Component/MaterialComponent.hpp"
 #include "Component/MeshComponent.hpp"
 #include "Component/TransformComponent.hpp"
@@ -39,6 +45,40 @@
 #undef max
 namespace MEngine
 {
+// class FileExplorer
+// {
+//   private:
+//     std::shared_ptr<ResourceManager> mResourceManager;
+//     std::stack<std::filesystem::path> mBackStack;
+//     std::stack<std::filesystem::path> mForwardStack;
+//     std::filesystem::path mCurrentPath;
+//     std::filesystem::path mRootPath;
+//     std::shared_ptr<AssetNode> mCurrentAssetNode;
+
+//   public:
+//     FileExplorer(std::shared_ptr<ResourceManager> resourceManager, const std::filesystem::path &rootPath)
+//         : mRootPath(rootPath), mCurrentPath(rootPath)
+//     {
+//     }
+//     void Back()
+//     {
+//         if (!mBackStack.empty())
+//         {
+//             mForwardStack.push(mCurrentPath);
+//             mCurrentPath = mBackStack.top();
+//             mBackStack.pop();
+//         }
+//     }
+//     void Forward()
+//     {
+//         if (!mForwardStack.empty())
+//         {
+//             mBackStack.push(mCurrentPath);
+//             mCurrentPath = mForwardStack.top();
+//             mForwardStack.pop();
+//         }
+//     }
+// };
 class EditorRenderSystem : public RenderSystem
 {
   private:
@@ -46,6 +86,7 @@ class EditorRenderSystem : public RenderSystem
     std::shared_ptr<SamplerManager> mSamplerManager;
     std::shared_ptr<IRepository<PBRMaterial>> mPBRMaterialRepository;
     std::shared_ptr<IRepository<Texture2D>> mTexture2DRepository;
+    // std::shared_ptr<ResourceManager> mResourceManager;
 
   private:
     // ImGUI 相关
@@ -62,11 +103,14 @@ class EditorRenderSystem : public RenderSystem
     ImGuizmo::OPERATION mGuizmoOperation = ImGuizmo::TRANSLATE;
     ImGuizmo::MODE mGuizmoMode = ImGuizmo::LOCAL;
 
+    std::unordered_map<UUID, VkDescriptorSet> mDescriptorSetMap;
+
   private:
     // Assets View
     std::shared_ptr<entt::registry> mAssetRegistry;
-    std::vector<entt::entity> mProcessedAssets;
     std::filesystem::path mCurrentPath = mProjectPath;
+    std::unordered_map<std::filesystem::path, entt::entity> mAssetMap;
+
     std::filesystem::path mUIResourcePath = std::filesystem::current_path() / "Resource" / "UI";
     float mIconSize = 64.0f; // 可调整的图标大小
     std::vector<UniqueImage> mIconImages;
@@ -110,6 +154,12 @@ class EditorRenderSystem : public RenderSystem
     void InitialEditorRenderTargetImageLayout();
 
   private:
+    void InitialFileExplore();
+    void LoadResource(entt::entity parent);
+    AssetType GetAssetTypeFromExtension(const std::filesystem::path &path);
+    void AddAssetNode(entt::entity parent, const std::filesystem::path &path);
+    void RemoveAssetNode(entt::entity entity);
+
     void SetDefaultWindowLayout();
     void RightClickMenu();
     void DockingSpace();
@@ -118,16 +168,12 @@ class EditorRenderSystem : public RenderSystem
     void ToolbarWindow();
     void SceneViewWindow();
     void AssetWindow();
-    void EntryFolder(const std::filesystem::path &path);
-    void UpdateAssetsView();
-    void ProcessAssets();
-    void DisplayAssetEntity();
+    void FileExplore();
     void LoadUIIcon(const std::filesystem::path &iconPath, vk::DescriptorSet &descriptorSet);
     void CreateSceneView();
 
   private:
-    void ShowTexture(const std::string &name, std::shared_ptr<Texture2D> texture = nullptr,
-                     ImVec2 size = ImVec2(50, 50));
+    void ShowTexture(const std::string &name, UUID textureID, ImVec2 size = ImVec2(50, 50));
 
   public:
     EditorRenderSystem(std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context,

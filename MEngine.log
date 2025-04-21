@@ -1,44 +1,60 @@
-[2025-04-10 11:05:22.893] [         ILogger.hpp:25  ] info - Application Started
-[2025-04-10 11:05:23.034] [         ILogger.hpp:15  ] trace - SDL Window created successfully
-[2025-04-10 11:05:23.041] [         ILogger.hpp:15  ] trace - Instance Version: 0.1.4.309
-[2025-04-10 11:05:23.106] [         ILogger.hpp:15  ] trace - Instance enabled layer: VK_LAYER_KHRONOS_validation
-[2025-04-10 11:05:23.106] [         ILogger.hpp:15  ] trace - Instance enabled layer: VK_LAYER_KHRONOS_synchronization2
-[2025-04-10 11:05:23.106] [         ILogger.hpp:15  ] trace - Instance enabled extension: VK_KHR_surface
-[2025-04-10 11:05:23.106] [         ILogger.hpp:15  ] trace - Instance enabled extension: VK_KHR_xlib_surface
-[2025-04-10 11:05:23.106] [         ILogger.hpp:20  ] debug - Instance Created
-[2025-04-10 11:05:23.107] [         ILogger.hpp:20  ] debug - Physical Device Selected: NVIDIA GeForce RTX 2080 Ti
-[2025-04-10 11:05:23.107] [         ILogger.hpp:20  ] debug - Surface Created
-[2025-04-10 11:05:23.114] [         ILogger.hpp:15  ] trace - Current Surface Info:
-[2025-04-10 11:05:23.114] [         ILogger.hpp:15  ] trace - Support Image Count: 2~8
-[2025-04-10 11:05:23.114] [         ILogger.hpp:15  ] trace - Support Array Layer: 1~1
-[2025-04-10 11:05:23.114] [         ILogger.hpp:15  ] trace - Support Transforms
-[2025-04-10 11:05:23.114] [         ILogger.hpp:15  ] trace - Support Usage Flags
-[2025-04-10 11:05:23.114] [         ILogger.hpp:15  ] trace - Support CompositeAlpha { Opaque }
-[2025-04-10 11:05:23.114] [         ILogger.hpp:15  ] trace - Support Extent: 1400x800~1400x800
-[2025-04-10 11:05:23.114] [         ILogger.hpp:15  ] trace - Support Format: B8G8R8A8Unorm
-[2025-04-10 11:05:23.114] [         ILogger.hpp:15  ] trace - Support Format: B8G8R8A8Srgb
-[2025-04-10 11:05:23.114] [         ILogger.hpp:15  ] trace - Support Present Mode: Fifo
-[2025-04-10 11:05:23.114] [         ILogger.hpp:15  ] trace - Support Present Mode: FifoRelaxed
-[2025-04-10 11:05:23.114] [         ILogger.hpp:15  ] trace - Support Present Mode: Immediate
-[2025-04-10 11:05:23.114] [         ILogger.hpp:20  ] debug - Current Format: B8G8R8A8Srgb
-[2025-04-10 11:05:23.114] [         ILogger.hpp:20  ] debug - Current Color Space: SrgbNonlinear
-[2025-04-10 11:05:23.114] [         ILogger.hpp:20  ] debug - Current Present Mode: Fifo
-[2025-04-10 11:05:23.114] [         ILogger.hpp:20  ] debug - Current Extent: 1400x800
-[2025-04-10 11:05:23.114] [         ILogger.hpp:20  ] debug - Current Image Count: 2
-[2025-04-10 11:05:23.114] [         ILogger.hpp:20  ] debug - Current Image Array Layer: 1
-[2025-04-10 11:05:23.114] [         ILogger.hpp:15  ] trace - Queue Family Index: 0 Supports Graphics. Supports Queue Index:0~15
-[2025-04-10 11:05:23.114] [         ILogger.hpp:15  ] trace - Queue Family Index: 0 Supports Presentation. Supports Queue Index:0~15
-[2025-04-10 11:05:23.114] [         ILogger.hpp:15  ] trace - Queue Family Index: 0 Supports Transfer. Supports Queue Index:0~15
-[2025-04-10 11:05:23.281] [         ILogger.hpp:15  ] trace - Device enabled extension: VK_KHR_swapchain
-[2025-04-10 11:05:23.281] [         ILogger.hpp:20  ] debug - Device Created
-[2025-04-10 11:05:23.281] [         ILogger.hpp:20  ] debug - Queues Getted
-[2025-04-10 11:05:23.281] [         ILogger.hpp:20  ] debug - VMA Allocator Created
-[2025-04-10 11:05:23.445] [         ILogger.hpp:20  ] debug - Swapchain Created
-[2025-04-10 11:05:23.445] [         ILogger.hpp:20  ] debug - Swapchain Images Created
-[2025-04-10 11:05:23.445] [         ILogger.hpp:15  ] trace - Swapchain Image Count: 2
-[2025-04-10 11:05:23.445] [         ILogger.hpp:20  ] debug - Swapchain Image Views Created
-[2025-04-10 11:05:23.445] [         ILogger.hpp:15  ] trace - Swapchain Image Count: 2
-[2025-04-10 11:05:23.445] [         ILogger.hpp:20  ] debug - Context Created
-[2025-04-10 11:05:23.446] [         ILogger.hpp:20  ] debug - Translucency pipeline layout created successfully
-[2025-04-10 11:05:23.446] [         ILogger.hpp:20  ] debug - Translucency render pass created successfully
-[2025-04-10 11:05:23.446] [    
+[2025-04-21 14:24:56.380] [         ILogger.hpp:30  ] Info: LoadResource: /media/zero/Data/MEngineV2/build/bin/Config
+[2025-04-21 14:24:56.380] [         ILogger.hpp:30  ] Info: LoadResource: /media/zero/Data/MEngineV2/build/bin/Config/appsettings.json
+[2025-04-21 14:24:56.380] [         ILogger.hpp:30  ] Info: LoadResource: /media/zero/Data/MEngineV2/build/bin/ConfigureTest
+[2025-04-21 14:24:56.380] [         ILogger.hpp:30  ] Info: LoadResource: /media/zero/Data/MEngineV2/build/bin/DITest
+[2025-04-21 14:24:56.380] [         ILogger.hpp:30  ] Info: LoadResource: /media/zero/Data/MEngineV2/build/bin/imgui.ini
+[2025-04-21 14:24:56.381] [         ILogger.hpp:30  ] Info: LoadResource: /media/zero/Data/MEngineV2/build/bin/JsonTest
+[2025-04-21 14:24:56.381] [         ILogger.hpp:30  ] Info: LoadResource: /media/zero/Data/MEngineV2/build/bin/LoggerTest
+[2025-04-21 14:24:56.381] [         ILogger.hpp:30  ] Info: LoadResource: /media/zero/Data/MEngineV2/build/bin/MemoryAlign
+[2025-04-21 14:24:56.381] [         ILogger.hpp:30  ] Info: LoadResource: /media/zero/Data/MEngineV2/build/bin/MEngine
+[2025-04-21 14:24:56.381] [         ILogger.hpp:30  ] Info: LoadResource: /media/zero/Data/MEngineV2/build/bin/MEngine.log
+[2025-04-21 14:24:56.381] [         ILogger.hpp:30  ] Info: LoadResource: /media/zero/Data/MEngineV2/build/bin/NewFolder
+[2025-04-21 14:24:56.381] [         ILogger.hpp:30  ] Info: LoadResource: /media/zero/Data/MEngineV2/build/bin/NewFolder1
+[2025-04-21 14:24:56.381] [         ILogger.hpp:30  ] Info: LoadResource: /media/zero/Data/MEngineV2/build/bin/NewFolder2
+[2025-04-21 14:24:56.381] [         ILogger.hpp:30  ] Info: LoadResource: /media/zero/Data/MEngineV2/build/bin/NewFolder3
+[2025-04-21 14:24:56.381] [         ILogger.hpp:30  ] Info: LoadResource: /media/zero/Data/MEngineV2/build/bin/NewFolder4
+[2025-04-21 14:24:56.381] [         ILogger.hpp:30  ] Info: LoadResource: /media/zero/Data/MEngineV2/build/bin/NewFolder5
+[2025-04-21 14:24:56.382] [         ILogger.hpp:30  ] Info: LoadResource: /media/zero/Data/MEngineV2/build/bin/NewFolder6
+[2025-04-21 14:24:56.382] [         ILogger.hpp:30  ] Info: LoadResource: /media/zero/Data/MEngineV2/build/bin/NewFolder7
+[2025-04-21 14:24:56.382] [         ILogger.hpp:30  ] Info: LoadResource: /media/zero/Data/MEngineV2/build/bin/NewMaterial.json
+[2025-04-21 14:24:56.382] [         ILogger.hpp:30  ] Info: LoadResource: /media/zero/Data/MEngineV2/build/bin/NewMaterial0.json
+[2025-04-21 14:24:56.382] [         ILogger.hpp:30  ] Info: LoadResource: /media/zero/Data/MEngineV2/build/bin/NewMaterial1.json
+[2025-04-21 14:24:56.382] [         ILogger.hpp:30  ] Info: LoadResource: /media/zero/Data/MEngineV2/build/bin/NewMaterial2.json
+[2025-04-21 14:24:56.382] [         ILogger.hpp:30  ] Info: LoadResource: /media/zero/Data/MEngineV2/build/bin/NewMaterial3.json
+[2025-04-21 14:24:56.382] [         ILogger.hpp:30  ] Info: LoadResource: /media/zero/Data/MEngineV2/build/bin/Resource
+[2025-04-21 14:24:56.382] [         ILogger.hpp:30  ] Info: LoadResource: /media/zero/Data/MEngineV2/build/bin/Resource/Material
+[2025-04-21 14:24:56.382] [         ILogger.hpp:30  ] Info: LoadResource: /media/zero/Data/MEngineV2/build/bin/Resource/Material/02.png
+[2025-04-21 14:24:56.382] [         ILogger.hpp:30  ] Info: LoadResource: /media/zero/Data/MEngineV2/build/bin/Resource/Material/CubeMaterial.json
+[2025-04-21 14:24:56.383] [         ILogger.hpp:30  ] Info: LoadResource: /media/zero/Data/MEngineV2/build/bin/Resource/Material/DefaultAlbedo.png
+[2025-04-21 14:24:56.383] [         ILogger.hpp:30  ] Info: LoadResource: /media/zero/Data/MEngineV2/build/bin/Resource/Shader
+[2025-04-21 14:24:56.383] [         ILogger.hpp:30  ] Info: LoadResource: /media/zero/Data/MEngineV2/build/bin/Resource/Shader/forwardOpaquePBR.frag
+[2025-04-21 14:24:56.383] [         ILogger.hpp:30  ] Info: LoadResource: /media/zero/Data/MEngineV2/build/bin/Resource/Shader/forwardOpaquePBR.frag.spv
+[2025-04-21 14:24:56.383] [         ILogger.hpp:30  ] Info: LoadResource: /media/zero/Data/MEngineV2/build/bin/Resource/Shader/forwardOpaquePBR.vert
+[2025-04-21 14:24:56.383] [         ILogger.hpp:30  ] Info: LoadResource: /media/zero/Data/MEngineV2/build/bin/Resource/Shader/forwardOpaquePBR.vert.spv
+[2025-04-21 14:24:56.383] [         ILogger.hpp:30  ] Info: LoadResource: /media/zero/Data/MEngineV2/build/bin/Resource/Shader/gBuffer.frag
+[2025-04-21 14:24:56.383] [         ILogger.hpp:30  ] Info: LoadResource: /media/zero/Data/MEngineV2/build/bin/Resource/Shader/gbuffer.frag
+[2025-04-21 14:24:56.383] [         ILogger.hpp:30  ] Info: LoadResource: /media/zero/Data/MEngineV2/build/bin/Resource/Shader/gBuffer.frag.spv
+[2025-04-21 14:24:56.383] [         ILogger.hpp:30  ] Info: LoadResource: /media/zero/Data/MEngineV2/build/bin/Resource/Shader/gbuffer.frag.spv
+[2025-04-21 14:24:56.383] [         ILogger.hpp:30  ] Info: LoadResource: /media/zero/Data/MEngineV2/build/bin/Resource/Shader/gBuffer.vert
+[2025-04-21 14:24:56.384] [         ILogger.hpp:30  ] Info: LoadResource: /media/zero/Data/MEngineV2/build/bin/Resource/Shader/gbuffer.vert
+[2025-04-21 14:24:56.384] [         ILogger.hpp:30  ] Info: LoadResource: /media/zero/Data/MEngineV2/build/bin/Resource/Shader/gBuffer.vert.spv
+[2025-04-21 14:24:56.384] [         ILogger.hpp:30  ] Info: LoadResource: /media/zero/Data/MEngineV2/build/bin/Resource/Shader/gbuffer.vert.spv
+[2025-04-21 14:24:56.384] [         ILogger.hpp:30  ] Info: LoadResource: /media/zero/Data/MEngineV2/build/bin/Resource/Shader/lighting.frag
+[2025-04-21 14:24:56.384] [         ILogger.hpp:30  ] Info: LoadResource: /media/zero/Data/MEngineV2/build/bin/Resource/Shader/lighting.frag.spv
+[2025-04-21 14:24:56.384] [         ILogger.hpp:30  ] Info: LoadResource: /media/zero/Data/MEngineV2/build/bin/Resource/Shader/lighting.vert
+[2025-04-21 14:24:56.384] [         ILogger.hpp:30  ] Info: LoadResource: /media/zero/Data/MEngineV2/build/bin/Resource/Shader/lighting.vert.spv
+[2025-04-21 14:24:56.384] [         ILogger.hpp:30  ] Info: LoadResource: /media/zero/Data/MEngineV2/build/bin/Resource/Shader/translucency.frag
+[2025-04-21 14:24:56.384] [         ILogger.hpp:30  ] Info: LoadResource: /media/zero/Data/MEngineV2/build/bin/Resource/Shader/translucency.frag.spv
+[2025-04-21 14:24:56.384] [         ILogger.hpp:30  ] Info: LoadResource: /media/zero/Data/MEngineV2/build/bin/Resource/Shader/translucency.vert
+[2025-04-21 14:24:56.385] [         ILogger.hpp:30  ] Info: LoadResource: /media/zero/Data/MEngineV2/build/bin/Resource/Shader/translucency.vert.spv
+[2025-04-21 14:24:56.385] [         ILogger.hpp:30  ] Info: LoadResource: /media/zero/Data/MEngineV2/build/bin/Resource/UI
+[2025-04-21 14:24:56.385] [         ILogger.hpp:30  ] Info: LoadResource: /media/zero/Data/MEngineV2/build/bin/Resource/UI/Font
+[2025-04-21 14:24:56.385] [         ILogger.hpp:30  ] Info: LoadResource: /media/zero/Data/MEngineV2/build/bin/Resource/UI/Font/MSYH.TTC
+[2025-04-21 14:24:56.385] [         ILogger.hpp:30  ] Info: LoadResource: /media/zero/Data/MEngineV2/build/bin/Resource/UI/Font/MSYHBD.TTC
+[2025-04-21 14:24:56.385] [         ILogger.hpp:30  ] Info: LoadResource: /media/zero/Data/MEngineV2/build/bin/Resource/UI/Font/MSYHL.TTC
+[2025-04-21 14:24:56.385] [         ILogger.hpp:30  ] Info: LoadResource: /media/zero/Data/MEngineV2/build/bin/Resource/UI/Icon
+[2025-04-21 14:24:56.385] [         ILogger.hpp:30  ] Info: LoadResource: /media/zero/Data/MEngineV2/build/bin/Resource/UI/Icon/file.png
+[2025-04-21 14:24:56.386] [         ILogger.hpp:30  ] Info: LoadResource: /media/zero/Data/MEngineV2/build/bin/Resource/UI/Icon/folder.png
+[2025-04-21 14:24:56.386] [         ILogger.hpp:30  ] Info: LoadResource: /media/zero/Data/MEngineV2/build/bin/RingBufferTest
+[2025-04-21 14:24:56.386] [         ILogger.hpp:30  ] Info: LoadResource: /media/zero/Data/MEngineV2/build/bin/TaskSchedulerTest
+[2025-04-21 14:24:56.386] [         ILogger.hpp:30  ] Info: LoadResource: /media/zero/Data/MEngineV2/build/bin/UUIDTest

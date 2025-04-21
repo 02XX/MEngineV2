@@ -88,6 +88,10 @@ class PBRMaterial final : public IMaterial, public Entity<>
     {
         mRenderType = renderType;
     }
+    inline void SetMaterialParams(const PBRParams &params)
+    {
+        mMaterialParams = params;
+    }
     inline void SetAlbedoMapID(const UUID &id)
     {
         mAlbedoMapID = id;

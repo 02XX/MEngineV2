@@ -1,6 +1,5 @@
 #include "Application.hpp"
 
-
 namespace MEngine
 {
 auto injector = make_injector(
@@ -41,7 +40,7 @@ Application::Application()
     auto camera = mRegistry->create();
     mRegistry->emplace<TransformComponent>(
         camera, TransformComponent(glm::vec3(0.0f, 0.0f, 5.0f), glm::quat(), glm::vec3(1.0f, 1.0f, 1.0f)));
-    mRegistry->emplace<CameraComponent>(camera).isMainCamera = true;
+    mRegistry->emplace<CameraComponent>(camera).isMainCamera = false;
     mRegistry->emplace<InputComponent>(camera);
     auto light = mRegistry->create();
     mRegistry->emplace<TransformComponent>(light);

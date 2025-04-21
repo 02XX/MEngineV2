@@ -1,6 +1,14 @@
 #include "System/EditorRenderSystem.hpp"
+#include "imgui.h"
+
 namespace MEngine
 {
+// void OnEntityCreate(entt::registry &registry, entt::entity entity)
+// {
+//     auto &assetComponent = registry.get<AssetsComponent>(entity);
+//     registry.sort<AssetsComponent>(
+//         [&](const AssetsComponent &lhs, const AssetsComponent &rhs) { return lhs.type < rhs.type; });
+// }
 EditorRenderSystem::EditorRenderSystem(
     std::shared_ptr<ILogger> logger, std::shared_ptr<Context> context, std::shared_ptr<IConfigure> configure,
     std::shared_ptr<entt::registry> registry, std::shared_ptr<RenderPassManager> renderPassManager,
@@ -57,19 +65,119 @@ void EditorRenderSystem::Init()
                                                mIO->Fonts->GetGlyphRangesChineseSimplifiedCommon());
     mIO->FontDefault = mMSYHFont;
     mAssetRegistry = std::make_shared<entt::registry>();
+    // mAssetRegistry->on_construct<AssetsComponent>().connect<&OnEntityCreate>();
     // ImGuizmo
     ImGuizmo::SetImGuiContext(ImGui::GetCurrentContext());
     ImGuizmo::Enable(true);
     // SceneView
     CreateSceneView();
-    // Icons
-    LoadUIIcon(mUIResourcePath / "Icon" / "folder.png", mFolderIcon);
-    LoadUIIcon(mUIResourcePath / "Icon" / "file.png", mFileIcon);
+
     // auto defaultTexture = mTextureManager->GetDefaultTexture();
     // mDefaultTextureDescriptorSet =
     //     ImGui_ImplVulkan_AddTexture(mSceneSampler.get(), defaultTexture->GetImageView(),
     //                                 static_cast<VkImageLayout>(vk::ImageLayout::eShaderReadOnlyOptimal));
-    EntryFolder(mProjectPath);
+    // 添加编辑相机
+    auto editorCameraEntity = mRegistry->create();
+    mRegistry->emplace<TransformComponent>(
+        editorCameraEntity, TransformComponent(glm::vec3(0.0f, 0.0f, 5.0f), glm::quat(), glm::vec3(1.0f, 1.0f, 1.0f)));
+    mRegistry->emplace<CameraComponent>(editorCameraEntity,
+                                        CameraComponent{.isMainCamera = true, .isEditCamera = true});
+    mRegistry->emplace<InputComponent>(editorCameraEntity);
+    InitialFileExplore();
+    mLogger->Info("EditorRenderSystem Initialized");
+}
+void EditorRenderSystem::InitialFileExplore()
+{
+    mCurrentPath = mProjectPath;
+    // Icons
+    LoadUIIcon(mUIResourcePath / "Icon" / "folder.png", mFolderIcon);
+    LoadUIIcon(mUIResourcePath / "Icon" / "file.png", mFileIcon);
+    // entity
+    auto entity = mAssetRegistry->create();
+    mAssetRegistry->emplace<AssetsComponent>(entity);
+    auto &assetComponent = mAssetRegistry->get<AssetsComponent>(entity);
+    assetComponent.path = mProjectPath;
+    assetComponent.name = mProjectPath.filename().string();
+    assetComponent.type = AssetType::Folder;
+    assetComponent.iconDescriptorSet = mFolderIcon;
+    assetComponent.parent = entt::null;
+    mAssetMap[assetComponent.path] = entity;
+    LoadResource(entity);
+}
+AssetType EditorRenderSystem::GetAssetTypeFromExtension(const std::filesystem::path &path)
+{
+    auto ext = path.extension().string();
+    if (ext == ".pbrmat" || ext == ".phongmat")
+        return AssetType::PBRMaterial;
+    if (ext == ".tex2D" || ext == ".png" || ext == ".jpg")
+        return AssetType::Texture2D;
+    if (ext == ".glb" || ext == ".fbx")
+        return AssetType::Model;
+    if (ext == ".anim")
+        return AssetType::Animation;
+    if (ext == ".shader")
+        return AssetType::Shader;
+    if (ext == ".wav" || ext == ".mp3")
+        return AssetType::Audio;
+    return AssetType::File;
+}
+void EditorRenderSystem::LoadResource(entt::entity parent)
+{
+    auto &parentAssetComponent = mAssetRegistry->get<AssetsComponent>(parent);
+    auto directory = std::filesystem::directory_iterator(parentAssetComponent.path);
+    std::vector<std::filesystem::directory_entry> entries;
+    for (auto &entry : std::filesystem::directory_iterator(parentAssetComponent.path))
+    {
+        entries.push_back(entry);
+    }
+    std::sort(entries.begin(), entries.end(), [](const auto &a, const auto &b) {
+        if (a.is_directory() != b.is_directory())
+            return a.is_directory();
+        return a.path().filename().string() < b.path().filename().string();
+    });
+    for (auto entry : entries)
+    {
+        auto entity = mAssetRegistry->create();
+        mAssetRegistry->emplace<AssetsComponent>(entity);
+        auto &assetComponent = mAssetRegistry->get<AssetsComponent>(entity);
+        assetComponent.path = entry.path();
+        assetComponent.name = entry.path().filename().string();
+        assetComponent.parent = parent;
+        parentAssetComponent.children.push_back(entity);
+        mAssetMap[assetComponent.path] = entity;
+        if (entry.is_directory())
+        {
+            assetComponent.type = AssetType::Folder;
+            assetComponent.iconDescriptorSet = mFolderIcon;
+            LoadResource(entity);
+        }
+        else
+        {
+            assetComponent.type = GetAssetTypeFromExtension(entry.path());
+            assetComponent.iconDescriptorSet = mFileIcon;
+            switch (assetComponent.type)
+            {
+            case AssetType::PBRMaterial: {
+                // // PBR
+                // auto material = mPBRMaterialRepository->LoadFromFile(entry.path());
+                break;
+            }
+            case AssetType::Texture2D: {
+                // auto texture = mTexture2DRepository->LoadFromFile(entry.path());
+                break;
+            }
+            default:
+                mLogger->Error("Unknown asset type: {}", magic_enum::enum_name(assetComponent.type));
+                break;
+            }
+        }
+    }
+}
+void EditorRenderSystem::AddAssetNode(entt::entity parent, const std::filesystem::path &path)
+{
+}
+void EditorRenderSystem::RemoveAssetNode(entt::entity entity)
+{
 }
 void EditorRenderSystem::Tick(float deltaTime)
 {
@@ -322,6 +430,10 @@ void EditorRenderSystem::HierarchyWindow()
     auto entities = mRegistry->view<TransformComponent>();
     for (auto entity : entities)
     {
+        if (mRegistry->all_of<CameraComponent>(entity) && mRegistry->get<CameraComponent>(entity).isEditCamera)
+        {
+            continue;
+        }
         ImGui::PushID(static_cast<int>(entt::to_integral(entity)));
         auto entityLabel = std::format("Entity {}", entt::to_integral(entity));
         if (ImGui::Selectable(entityLabel.c_str(), mSelectedEntity == entity))
@@ -370,29 +482,25 @@ void EditorRenderSystem::HierarchyWindow()
     }
     ImGui::End();
 }
-void EditorRenderSystem::ShowTexture(const std::string &name, std::shared_ptr<Texture2D> texture, ImVec2 size)
+void EditorRenderSystem::ShowTexture(const std::string &name, UUID textureID, ImVec2 size)
 {
-
+    auto texture2D = mTexture2DRepository->Get(textureID);
     ImGui::Columns(2, nullptr, false); // 创建两列布局，不显示分隔线
     ImGui::SetColumnWidth(0, 100);     // 固定文本列宽
     ImGui::Text("%s", name.c_str());
     ImGui::NextColumn(); // 切换到图片列
-    if (texture == nullptr)
+    VkDescriptorSet id;
+    if (mDescriptorSetMap.find(textureID) == mDescriptorSetMap.end())
     {
-        ImGui::Image(reinterpret_cast<ImTextureID>(static_cast<VkDescriptorSet>(mDefaultTextureDescriptorSet)), size,
-                     ImVec2(0, 1), ImVec2(1, 0));
+        id = ImGui_ImplVulkan_AddTexture(texture2D->GetSampler(), texture2D->GetImageView(),
+                                         static_cast<VkImageLayout>(vk::ImageLayout::eShaderReadOnlyOptimal));
+        mDescriptorSetMap[textureID] = id;
     }
     else
     {
-        // if (!texture->GetUIDescriptorID())
-        // {
-        //     auto id = ImGui_ImplVulkan_AddTexture(texture->GetSampler(), texture->GetImageView(),
-        //                                           static_cast<VkImageLayout>(vk::ImageLayout::eShaderReadOnlyOptimal));
-        //     texture->SetUIDescriptorID(id);
-        // }
-        // ImGui::Image(reinterpret_cast<ImTextureID>(static_cast<VkDescriptorSet>(texture->GetUIDescriptorID())), size,
-        //              ImVec2(0, 1), ImVec2(1, 0));
+        id = mDescriptorSetMap[textureID];
     }
+    ImGui::Image(reinterpret_cast<ImTextureID>(id), size, ImVec2(0, 1), ImVec2(1, 0));
     ImGui::Dummy(ImVec2(0, 5));
 
     ImGui::Columns(1); // 恢复单列布局
@@ -402,72 +510,86 @@ void EditorRenderSystem::InspectorMaterial(MaterialComponent &materialComponent)
     if (ImGui::CollapsingHeader("Material Attribute", ImGuiTreeNodeFlags_DefaultOpen))
     {
         auto &material = materialComponent.material;
-        auto pipelineTypeNames = magic_enum::enum_names<PipelineType>();
-        // if (ImGui::BeginCombo("Pipeline Type", magic_enum::enum_name(material->GetPipelineType()).data()))
-        // {
-        //     for (int i = 0; i < pipelineTypeNames.size(); i++)
-        //     {
-        //         bool isSelected = (i == static_cast<int>(material->GetPipelineType()));
-        //         if (ImGui::Selectable(pipelineTypeNames[i].data(), isSelected))
-        //         {
-        //             material->SetPipelineType(static_cast<PipelineType>(i));
-        //             mMaterialManager->SaveMaterial(material->GetMaterialPath(), material);
-        //         }
-        //     }
-        //     ImGui::EndCombo();
-        // }
-        // switch (material->GetPipelineType())
-        // {
-        // case PipelineType::ShadowMap:
-        // case PipelineType::ForwardOpaque:
-        // case PipelineType::ForwardTransparent: {
-        //     auto pbrMaterial = std::static_pointer_cast<PBRMaterial>(material);
-        //     auto pbrMaterialTextures = pbrMaterial->GetMaterialTextures();
-        //     auto pbrMaterialParams = pbrMaterial->GetMaterialParams();
-        //     auto pbrTextureFlag = pbrMaterial->GetMaterialTextureFlag();
-        //     auto albedoColor = glm::value_ptr(pbrMaterialParams.parameters.albedo);
-        //     if (ImGui::ColorEdit3("Albedo", albedoColor))
-        //     {
-        //         pbrMaterialParams.parameters.albedo = glm::vec3(albedoColor[0], albedoColor[1], albedoColor[2]);
-        //         pbrMaterial->SetPBRParameters(pbrMaterialParams.parameters);
-        //         mContext->GetDevice().waitIdle();
-        //         pbrMaterial->Update();
-        //         mMaterialManager->SaveMaterial(pbrMaterial->GetMaterialPath(), pbrMaterial);
-        //     }
-        //     ImGui::Dummy(ImVec2(0, 5));
-        //     ShowTexture("Albedo Map", pbrTextureFlag.useAlbedoMap ? pbrMaterialTextures.albedoMap : nullptr);
-        //     ShowTexture("Normal Map", pbrTextureFlag.useNormalMap ? pbrMaterialTextures.normalMap : nullptr);
-        //     ShowTexture("MetallicRoughness Map",
-        //                 pbrTextureFlag.useMetallicRoughnessMap ? pbrMaterialTextures.metallicRoughnessMap : nullptr);
-        //     ShowTexture("AO Map", pbrTextureFlag.useAOMap ? pbrMaterialTextures.aoMap : nullptr);
-        //     ShowTexture("Emissive Map", pbrTextureFlag.useEmissiveMap ? pbrMaterialTextures.emissiveMap : nullptr);
-        //     break;
-        // }
-        // case PipelineType::DeferredGBuffer:
-        // case PipelineType::DeferredLighting:
-        // case PipelineType::ScreenSpaceEffectSSAO:
-        // case PipelineType::ScreenSpaceEffectSSR:
-        // case PipelineType::SkinnedMesh:
-        // case PipelineType::MorphTarget:
-        // case PipelineType::ParticleCPU:
-        // case PipelineType::ParticleGPU:
-        // case PipelineType::Decal:
-        // case PipelineType::PostProcessToneMapping:
-        // case PipelineType::PostProcessBloom:
-        // case PipelineType::PostProcessDOF:
-        // case PipelineType::PostProcessMotionBlur:
-        // case PipelineType::PostProcessFXAA:
-        // case PipelineType::PostProcessSMAA:
-        // case PipelineType::PostProcessVignette:
-        // case PipelineType::PostProcessChromaticAberration:
-        // case PipelineType::PostProcessFilmGrain:
-        // case PipelineType::PostProcessColorGrading:
-        // case PipelineType::UISprite:
-        // case PipelineType::UIText:
-        // case PipelineType::Toon:
-        // case PipelineType::Wireframe:
-        //     break;
-        // };
+        ImGui::Text("RenderType: %s", magic_enum::enum_name(material->GetRenderType()).data());
+        switch (material->GetRenderType())
+        {
+        case RenderType::ForwardOpaquePBR:
+        case RenderType::ForwardTransparentPBR: {
+            auto pbrMaterial = static_cast<PBRMaterial *>(material);
+            auto pbrMaterialParams = pbrMaterial->GetMaterialParams();
+            auto albedoColor = glm::value_ptr(pbrMaterialParams.parameters.albedo);
+            if (ImGui::ColorEdit3("Albedo", albedoColor))
+            {
+                pbrMaterialParams.parameters.albedo = glm::vec3(albedoColor[0], albedoColor[1], albedoColor[2]);
+                pbrMaterial->SetMaterialParams(pbrMaterialParams);
+                mContext->GetDevice().waitIdle();
+                mPBRMaterialRepository->Update(pbrMaterial->GetID(), pbrMaterial);
+                // mPBRMaterialRepository->SaveToFile()
+            }
+            ImGui::Dummy(ImVec2(0, 5));
+            if (ImGui::BeginCombo("##albedo",
+                                  mTexture2DRepository->Get(pbrMaterial->GetAlbedoMapID())->GetName().c_str()))
+            {
+                for (const auto &texture : mTexture2DRepository->GetAll())
+                {
+                    ImGui::PushID(texture->GetID().ToString().c_str());
+                    if (ImGui::Selectable(texture->GetName().c_str(),
+                                          texture->GetID() == pbrMaterial->GetAlbedoMapID()))
+                    {
+                        pbrMaterial->SetAlbedoMapID(texture->GetID());
+                        mContext->GetDevice().waitIdle();
+                        mPBRMaterialRepository->Update(pbrMaterial->GetID(), pbrMaterial);
+                    }
+                    ImGui::PopID();
+                }
+                ImGui::EndCombo();
+            }
+            ShowTexture("Albedo Map", pbrMaterial->GetAlbedoMapID());
+            if (ImGui::BeginCombo("##normal",
+                                  mTexture2DRepository->Get(pbrMaterial->GetNormalMapID())->GetName().c_str()))
+            {
+                for (const auto &texture : mTexture2DRepository->GetAll())
+                {
+                    ImGui::PushID(texture->GetID().ToString().c_str());
+                    if (ImGui::Selectable(texture->GetName().c_str(),
+                                          texture->GetID() == pbrMaterial->GetNormalMapID()))
+                    {
+                        pbrMaterial->SetNormalMapID(texture->GetID());
+                        mContext->GetDevice().waitIdle();
+                        mPBRMaterialRepository->Update(pbrMaterial->GetID(), pbrMaterial);
+                    }
+                    ImGui::PopID();
+                }
+                ImGui::EndCombo();
+            }
+            ShowTexture("Normal Map", pbrMaterial->GetNormalMapID());
+            if (ImGui::BeginCombo(
+                    "##roughness",
+                    mTexture2DRepository->Get(pbrMaterial->GetMetallicRoughnessMapID())->GetName().c_str()))
+            {
+                for (const auto &texture : mTexture2DRepository->GetAll())
+                {
+                    ImGui::PushID(texture->GetID().ToString().c_str());
+                    if (ImGui::Selectable(texture->GetName().c_str(),
+                                          texture->GetID() == pbrMaterial->GetMetallicRoughnessMapID()))
+                    {
+                        pbrMaterial->SetMetallicRoughnessMapID(texture->GetID());
+                        mContext->GetDevice().waitIdle();
+                        mPBRMaterialRepository->Update(pbrMaterial->GetID(), pbrMaterial);
+                    }
+                    ImGui::PopID();
+                }
+                ImGui::EndCombo();
+            }
+            ShowTexture("ARM Map", pbrMaterial->GetMetallicRoughnessMapID());
+            ShowTexture("Emissive Map", pbrMaterial->GetEmissiveMapID());
+            break;
+        }
+        case RenderType::ForwardOpaquePhong:
+        case RenderType::ForwardTransparentPhong:
+        case RenderType::Deferred:
+            break;
+        };
     }
 }
 void EditorRenderSystem::InspectorWindow()
@@ -518,26 +640,24 @@ void EditorRenderSystem::InspectorWindow()
             if (ImGui::CollapsingHeader("Material Component", ImGuiTreeNodeFlags_DefaultOpen))
             {
                 // 获取所有材质
-                // auto materials = mMaterialManager->GetAllMaterials();
-                // std::string name =
-                // material.material->GetMaterialName() + "@" + std::to_string(material.material->GetMaterialID());
+                auto materials = mPBRMaterialRepository->GetAll();
+                std::string name = material.material->GetName() + "@" + material.material->GetID().ToString();
                 // 显示材质列表
-                // if (ImGui::BeginCombo("Material", name.c_str()))
-                // {
-                //     for (int i = 0; i < materials.size(); i++)
-                //     {
-                //         ImGui::PushID(i);
-                //         std::string materialName =
-                //             materials[i]->GetMaterialName() + "@" + std::to_string(materials[i]->GetMaterialID());
-                //         bool isSelected = (materials[i]->GetMaterialID() == material.material->GetMaterialID());
-                //         if (ImGui::Selectable(materialName.c_str(), isSelected))
-                //         {
-                //             material.material = materials[i];
-                //         }
-                //         ImGui::PopID();
-                //     }
-                //     ImGui::EndCombo();
-                // }
+                if (ImGui::BeginCombo("Material", name.c_str()))
+                {
+                    for (int i = 0; i < materials.size(); i++)
+                    {
+                        ImGui::PushID(i);
+                        std::string materialName = materials[i]->GetName() + "@" + materials[i]->GetID().ToString();
+                        bool isSelected = (materials[i]->GetID() == material.material->GetID());
+                        if (ImGui::Selectable(materialName.c_str(), isSelected))
+                        {
+                            material.material = materials[i];
+                        }
+                        ImGui::PopID();
+                    }
+                    ImGui::EndCombo();
+                }
             }
             InspectorMaterial(material);
         }
@@ -624,8 +744,8 @@ void EditorRenderSystem::SceneViewWindow()
     uint32_t height = static_cast<uint32_t>(windowSize.y);
     mIsSceneViewPortChanged = false;
     // 获取Camera
-    auto &camera = mRegistry->get<CameraComponent>(mMainCameraEntity);
-    camera.aspectRatio = static_cast<float>(width) / static_cast<float>(height);
+    auto &cameraComponent = mRegistry->get<CameraComponent>(mMainCameraEntity);
+    cameraComponent.aspectRatio = static_cast<float>(width) / static_cast<float>(height);
     if (width != mSceneViewPortWidth || height != mSceneViewPortHeight)
     {
         mSceneViewPortWidth = width;
@@ -656,8 +776,9 @@ void EditorRenderSystem::SceneViewWindow()
         {
             auto &transform = mRegistry->get<TransformComponent>(mSelectedEntity);
             auto modelMatrix = transform.modelMatrix;
-            ImGuizmo::Manipulate(glm::value_ptr(camera.viewMatrix), glm::value_ptr(camera.projectionMatrix),
-                                 mGuizmoOperation, mGuizmoMode, glm::value_ptr(modelMatrix));
+            ImGuizmo::Manipulate(glm::value_ptr(cameraComponent.viewMatrix),
+                                 glm::value_ptr(cameraComponent.projectionMatrix), mGuizmoOperation, mGuizmoMode,
+                                 glm::value_ptr(modelMatrix));
             if (ImGuizmo::IsUsing())
             {
                 // 分解矩阵
@@ -690,7 +811,7 @@ void EditorRenderSystem::AssetWindow()
         {
             if (mCurrentPath != mProjectPath)
             {
-                EntryFolder(mCurrentPath.parent_path());
+                mCurrentPath = mCurrentPath.parent_path();
             }
         }
         ImGui::SameLine();
@@ -698,7 +819,7 @@ void EditorRenderSystem::AssetWindow()
         ImGui::EndMenuBar();
     }
     ImGui::Separator();
-    DisplayAssetEntity();
+    FileExplore();
     // 4. 右键菜单
     if (ImGui::IsMouseClicked(ImGuiMouseButton_Right) && ImGui::IsWindowHovered())
     {
@@ -717,7 +838,6 @@ void EditorRenderSystem::AssetWindow()
                 newFolderPath = mCurrentPath / folderName;
             }
             std::filesystem::create_directory(newFolderPath);
-            UpdateAssetsView();
         }
         if (ImGui::MenuItem("Create Material"))
         {
@@ -730,7 +850,6 @@ void EditorRenderSystem::AssetWindow()
                 newMaterialPath = mCurrentPath / materialName;
             }
             // mMaterialManager->CreateMaterial(newMaterialPath);
-            UpdateAssetsView();
         }
         if (ImGui::MenuItem("Delete"))
         {
@@ -739,7 +858,7 @@ void EditorRenderSystem::AssetWindow()
     }
     ImGui::End();
 }
-void EditorRenderSystem::DisplayAssetEntity()
+void EditorRenderSystem::FileExplore()
 {
     if (!std::filesystem::exists(mCurrentPath))
     {
@@ -747,82 +866,80 @@ void EditorRenderSystem::DisplayAssetEntity()
         ImGui::End();
         return;
     }
-    try
+    else
     {
-        // ImGuiListClipper clipper;
-        // clipper.Begin(mProcessedAssets.size());
-        // while (clipper.Step())
-        // {
         const int itemWidth = mIconSize + 10;
         const int itemHeight = mIconSize + 20;
         int columns = std::max(1, static_cast<int>(ImGui::GetContentRegionAvail().x / itemWidth));
-        ImGui::Columns(columns, "AssetColumns", false); // false = 不显示边框
-        for (int i = 0; i < mProcessedAssets.size(); ++i)
+        if (mAssetMap.find(mCurrentPath) != mAssetMap.end())
         {
-            auto entity = mProcessedAssets[i];
-            auto &asset = mAssetRegistry->get<AssetsComponent>(entity);
-
-            ImGui::PushID(static_cast<int>(entt::to_integral(entity)));
-
-            // 绘制图标按钮
-            const bool isSelected = (mAssetsSelectedEntity == entity);
-            if (ImGui::Selectable("##btn", isSelected,
-                                  ImGuiSelectableFlags_AllowItemOverlap | ImGuiSelectableFlags_AllowDoubleClick,
-                                  ImVec2(itemWidth, itemHeight)))
+            ImGui::Columns(columns, "AssetColumns", false); // false = 不显示边框
+            auto currentNode = mAssetMap[mCurrentPath];
+            auto &assetComponent = mAssetRegistry->get<AssetsComponent>(currentNode);
+            for (auto &entity : assetComponent.children)
             {
-                mAssetsSelectedEntity = entity;
-                // 处理双击
-                if (ImGui::IsMouseDoubleClicked(0))
+                auto &asset = mAssetRegistry->get<AssetsComponent>(entity);
+                ImGui::PushID(static_cast<int>(entity));
+                // 绘制图标按钮
+                const bool isSelected = (mAssetsSelectedEntity == entity);
+                if (ImGui::Selectable("##btn", isSelected,
+                                      ImGuiSelectableFlags_AllowItemOverlap | ImGuiSelectableFlags_AllowDoubleClick,
+                                      ImVec2(itemWidth, itemHeight)))
                 {
-                    if (asset.type == AssetType::Folder)
-                        EntryFolder(mCurrentPath / asset.name);
-                }
-            }
-            if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup))
-            {
-                mAssetsHoveredEntity = entity;
-                if (ImGui::IsMouseClicked(ImGuiMouseButton_Right))
                     mAssetsSelectedEntity = entity;
-                if (ImGui::IsMouseDragging(0))
-                {
-                    if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
+                    // 处理双击
+                    if (ImGui::IsMouseDoubleClicked(0))
                     {
-                        // 设置拖拽数据
-                        ImGui::SetDragDropPayload("ASSET_ITEM", &entity, sizeof(entity));
-                        // 显示拖拽预览（图标）
-                        ImGui::Image(
-                            reinterpret_cast<ImTextureID>(static_cast<VkDescriptorSet>(asset.iconDescriptorSet)),
-                            ImVec2(mIconSize, mIconSize), ImVec2(0, 1), ImVec2(1, 0));
-                        // 可选：添加文字说明
-                        ImGui::Text("拖动 %s", asset.name.c_str());
-                        ImGui::EndDragDropSource();
+                        if (asset.type == AssetType::Folder)
+                        {
+                            mCurrentPath = mCurrentPath / asset.name;
+                        }
                     }
                 }
-            }
-            ImVec2 ContainerMinPos = ImGui::GetItemRectMin();
-            ImVec2 ContainerMaxPos = ImGui::GetItemRectMax();
-            ImVec2 ContainerSize = ImGui::GetItemRectSize();
-            // 绘制图标
-            ImVec2 iconPos = ImVec2(ContainerMinPos.x, ContainerMinPos.y);
-            ImGui::SetCursorScreenPos(iconPos);
-            ImGui::Image(reinterpret_cast<ImTextureID>(static_cast<VkDescriptorSet>(asset.iconDescriptorSet)),
-                         ImVec2(mIconSize, mIconSize), ImVec2(0, 1), ImVec2(1, 0));
-            // 绘制文本
-            ImVec2 textPos =
-                ImVec2(ContainerMinPos.x + (ContainerSize.x - mIconSize) / 2, ContainerMinPos.y + mIconSize);
-            ImGui::SetCursorScreenPos(textPos);
-            ImGui::Text("%s", asset.name.c_str());
+                if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup))
+                {
+                    mAssetsHoveredEntity = entity;
+                    if (ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+                        mAssetsSelectedEntity = entity;
+                    if (ImGui::IsMouseDragging(0))
+                    {
+                        if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
+                        {
+                            // 设置拖拽数据
+                            ImGui::SetDragDropPayload("ASSET_ITEM", &entity, sizeof(entity));
+                            // 显示拖拽预览（图标）
+                            ImGui::Image(
+                                reinterpret_cast<ImTextureID>(static_cast<VkDescriptorSet>(asset.iconDescriptorSet)),
+                                ImVec2(mIconSize, mIconSize), ImVec2(0, 1), ImVec2(1, 0));
+                            // 可选：添加文字说明
+                            ImGui::Text("拖动 %s", asset.name.c_str());
+                            ImGui::EndDragDropSource();
+                        }
+                    }
+                }
+                ImVec2 ContainerMinPos = ImGui::GetItemRectMin();
+                ImVec2 ContainerMaxPos = ImGui::GetItemRectMax();
+                ImVec2 ContainerSize = ImGui::GetItemRectSize();
+                // 绘制图标
+                ImVec2 iconPos = ImVec2(ContainerMinPos.x, ContainerMinPos.y);
+                ImGui::SetCursorScreenPos(iconPos);
+                ImGui::Image(reinterpret_cast<ImTextureID>(static_cast<VkDescriptorSet>(asset.iconDescriptorSet)),
+                             ImVec2(mIconSize, mIconSize), ImVec2(0, 1), ImVec2(1, 0));
+                // 绘制文本
+                ImVec2 textPos =
+                    ImVec2(ContainerMinPos.x + (ContainerSize.x - mIconSize) / 2, ContainerMinPos.y + mIconSize);
+                ImGui::SetCursorScreenPos(textPos);
+                ImGui::Text("%s", asset.name.c_str());
 
-            ImGui::PopID();
-            ImGui::NextColumn(); // 移动到下一列
+                ImGui::PopID();
+                ImGui::NextColumn(); // 移动到下一列
+            }
+            ImGui::Columns(1); // 恢复单列模式
         }
-        ImGui::Columns(1); // 恢复单列模式
-        // }
-        // clipper.End();
-    }
-    catch (const std::exception &e)
-    {
-        ImGui::TextColored(ImVec4(1, 0, 0, 1), "Error: %s", e.what());
+        else
+        {
+            mLogger->Error("Asset not found in registry {}", mCurrentPath.string());
+        }
     }
 }
 
@@ -832,73 +949,5 @@ EditorRenderSystem::~EditorRenderSystem()
     {
         Shutdown();
     }
-}
-void EditorRenderSystem::UpdateAssetsView()
-{
-    if (std::filesystem::exists(mCurrentPath))
-    {
-        mAssetRegistry->clear();
-        for (const auto &entry : std::filesystem::directory_iterator(mCurrentPath))
-        {
-            if (entry.is_directory())
-            {
-                auto entity = mAssetRegistry->create();
-                mAssetRegistry->emplace<AssetsComponent>(entity, entry.path(), entry.path().filename().string(),
-                                                         AssetType::Folder, mFolderIcon);
-            }
-            else
-            {
-                auto entity = mAssetRegistry->create();
-
-                // material
-                if (entry.path().extension() == ".mat")
-                {
-                    mAssetRegistry->emplace<AssetsComponent>(entity, entry.path(), entry.path().filename().string(),
-                                                             AssetType::Material, mFileIcon);
-                    // auto materialID = mMaterialManager->LoadMaterialFromFile(entry.path().string());
-                    // auto material = mMaterialManager->GetMaterial(materialID);
-                    // mAssetRegistry->emplace<MaterialComponent>(entity, material);
-                }
-                else if (entry.path().extension() == ".tex")
-                {
-                    mAssetRegistry->emplace<AssetsComponent>(entity, entry.path(), entry.path().filename().string(),
-                                                             AssetType::Texture, mFileIcon);
-                }
-                else if (entry.path().extension() == ".anim")
-                {
-                    mAssetRegistry->emplace<AssetsComponent>(entity, entry.path(), entry.path().filename().string(),
-                                                             AssetType::Animation, mFileIcon);
-                }
-                else if (entry.path().extension() == ".fbx")
-                {
-                    mAssetRegistry->emplace<AssetsComponent>(entity, entry.path(), entry.path().filename().string(),
-                                                             AssetType::Model, mFileIcon);
-                }
-                else
-                {
-                    mAssetRegistry->emplace<AssetsComponent>(entity, entry.path(), entry.path().filename().string(),
-                                                             AssetType::File, mFileIcon);
-                }
-            }
-        }
-    }
-    else
-    {
-        mLogger->Error("Path does not exist: {}", mCurrentPath.string());
-    }
-}
-void EditorRenderSystem::ProcessAssets()
-{
-    std::sort(mProcessedAssets.begin(), mProcessedAssets.end(), [this](entt::entity a, entt::entity b) {
-        auto &compA = mAssetRegistry->get<AssetsComponent>(a);
-        auto &compB = mAssetRegistry->get<AssetsComponent>(b);
-        return (compA.type == AssetType::Folder) > (compB.type == AssetType::Folder) ||
-               (compA.type == compB.type && compA.name < compB.name);
-    });
-}
-void EditorRenderSystem::EntryFolder(const std::filesystem::path &path)
-{
-    mCurrentPath = path;
-    UpdateAssetsView();
 }
 } // namespace MEngine
