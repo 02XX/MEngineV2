@@ -1,5 +1,6 @@
 #include "Application.hpp"
 
+
 namespace MEngine
 {
 auto injector = make_injector(
@@ -22,7 +23,8 @@ auto injector = make_injector(
     DI::bind<BasicGeometryEntityManager>().to<BasicGeometryEntityManager>().in(DI::singleton),
     DI::bind<CameraSystem>().to<CameraSystem>().in(DI::singleton),
     DI::bind<RenderSystem>().to<EditorRenderSystem>().in(DI::singleton),
-    DI::bind<TransformSystem>().to<TransformSystem>().in(DI::singleton));
+    DI::bind<TransformSystem>().to<TransformSystem>().in(DI::singleton),
+    DI::bind<InputSystem>().to<InputSystem>().in(DI::singleton));
 
 Application::Application()
 {
@@ -37,8 +39,15 @@ Application::Application()
 
     mBasicGeometryEntityManager->CreateCube(mRegistry);
     auto camera = mRegistry->create();
-    mRegistry->emplace<TransformComponent>(camera);
+    mRegistry->emplace<TransformComponent>(
+        camera, TransformComponent(glm::vec3(0.0f, 0.0f, 5.0f), glm::quat(), glm::vec3(1.0f, 1.0f, 1.0f)));
     mRegistry->emplace<CameraComponent>(camera).isMainCamera = true;
+    mRegistry->emplace<InputComponent>(camera);
+    auto light = mRegistry->create();
+    mRegistry->emplace<TransformComponent>(light);
+
+    mRegistry->emplace<LightComponent>(light, LightComponent{});
+
     InitSystem();
     mStartTime = std::chrono::high_resolution_clock::now();
     mLastTime = mStartTime;
@@ -53,12 +62,15 @@ void Application::InitSystem()
     mRenderSystem = injector.create<std::shared_ptr<RenderSystem>>();
     mCameraSystem = injector.create<std::shared_ptr<CameraSystem>>();
     mTransformSystem = injector.create<std::shared_ptr<TransformSystem>>();
+    mInputSystem = injector.create<std::shared_ptr<InputSystem>>();
     mRenderSystem->Init();
     mCameraSystem->Init();
     mTransformSystem->Init();
+    mInputSystem->Init();
 }
 void Application::ShutdownSystem()
 {
+    mInputSystem->Shutdown();
     mTransformSystem->Shutdown();
     mCameraSystem->Shutdown();
     mRenderSystem->Shutdown();
@@ -79,6 +91,7 @@ void Application::Run()
         mLastTime = mCurrentTime;
 
         mWindow->PollEvents();
+        mInputSystem->Tick(mDeltaTime);
         mCameraSystem->Tick(mDeltaTime);
         mTransformSystem->Tick(mDeltaTime);
         mRenderSystem->Tick(mDeltaTime);

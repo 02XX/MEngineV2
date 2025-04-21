@@ -86,17 +86,17 @@ void DescriptorManager::ResetDescriptorPool()
     mExhaustedPools.clear();
 }
 
-void DescriptorManager::UpdateUniformDescriptorSet(const std::vector<Buffer *> &uniformBuffers, uint32_t binding,
-                                                   vk::DescriptorSet dstSet)
+void DescriptorManager::UpdateUniformDescriptorSet(const std::vector<std::reference_wrapper<Buffer>> &uniformBuffers,
+                                                   uint32_t binding, vk::DescriptorSet dstSet)
 {
     std::vector<vk::DescriptorBufferInfo> descriptorBufferInfos;
     descriptorBufferInfos.reserve(uniformBuffers.size());
-    for (auto uniformBuffer : uniformBuffers)
+    for (auto &uniformBuffer : uniformBuffers)
     {
         vk::DescriptorBufferInfo descriptorBufferInfo;
-        descriptorBufferInfo.setBuffer(uniformBuffer->GetHandle())
+        descriptorBufferInfo.setBuffer(uniformBuffer.get().GetHandle())
             .setOffset(0)
-            .setRange(uniformBuffer->GetAllocationInfo().size);
+            .setRange(uniformBuffer.get().GetSize());
         descriptorBufferInfos.push_back(descriptorBufferInfo);
     }
 

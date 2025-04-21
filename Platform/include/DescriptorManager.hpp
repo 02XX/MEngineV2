@@ -5,6 +5,7 @@
 #include "Interface/ILogger.hpp"
 #include "MEngine.hpp"
 #include "NoCopyable.hpp"
+#include <functional>
 #include <memory>
 #include <vector>
 #include <vulkan/vulkan.hpp>
@@ -86,7 +87,7 @@ class DescriptorManager final : public NoCopyable
     {
         mDefaultPoolSizesProportion = defaultPoolSizesProportion;
     }
-    void UpdateUniformDescriptorSet(const std::vector<Buffer *> &uniformBuffers, uint32_t binding,
+    void UpdateUniformDescriptorSet(const std::vector<std::reference_wrapper<Buffer>> &uniformBuffers, uint32_t binding,
                                     vk::DescriptorSet dstSet);
     void UpdateCombinedSamplerImageDescriptorSet(std::vector<ImageDescriptor> imageDescriptors, uint32_t binding,
                                                  vk::DescriptorSet dstSet);

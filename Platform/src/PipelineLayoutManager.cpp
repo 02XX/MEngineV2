@@ -1,6 +1,4 @@
 #include "PipelineLayoutManager.hpp"
-#include <vector>
-#include <vulkan/vulkan_enums.hpp>
 namespace MEngine
 {
 

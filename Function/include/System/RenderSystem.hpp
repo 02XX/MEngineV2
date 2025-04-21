@@ -3,6 +3,7 @@
 #include "BufferFactory.hpp"
 #include "CommandBuffeManager.hpp"
 #include "Component/CameraComponent.hpp"
+#include "Component/LightComponent.hpp"
 #include "Component/MaterialComponent.hpp"
 #include "Component/MeshComponent.hpp"
 #include "Component/TransformComponent.hpp"
@@ -28,6 +29,7 @@
 #include <cstdint>
 #include <memory>
 #include <vector>
+
 namespace MEngine
 {
 class RenderSystem : public System
@@ -62,20 +64,37 @@ class RenderSystem : public System
 
     // Global DescriptorSet
     std::vector<vk::UniqueDescriptorSet> mGlobalDescriptorSets;
-    // main camera
-    entt::entity mMainCameraEntity;
-    UniqueBuffer mVPUBO;
-    struct VPUniform
+    // Camera_UBO
+    UniqueBuffer mCameraUBO;
+    struct CameraUniform
     {
         glm::mat4 view;
         glm::mat4 projection;
-    } mVPUniform;
+        glm::vec3 position; // 位置
+    } mCameraUniform;
+    // Light_SBO[6]
+    std::array<UniqueBuffer, 6> mLightSBOs;
+    struct LightUniform
+    {
+        glm::vec3 position; // 位置
+        float range;        // 范围
+
+        glm::vec3 direction; // 方向
+        float coneAngle;     // 锥角 only for spot light
+
+        glm::vec3 color; // 颜色
+        float intensity; // 强度
+
+        LightType type;
+    };
+    // ShadowParameters_SBO
+    //  main camera
+    entt::entity mMainCameraEntity;
 
   protected:
     void InitialRenderTargetImageLayout();
     void InitialSwapchainImageLayout();
-    void CollectRenderEntities();
-    void CollectMainCamera();
+    void CollectEntities();
     void Prepare();
     void RenderShadowDepthPass();
     void RenderDeferred();

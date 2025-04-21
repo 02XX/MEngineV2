@@ -75,8 +75,7 @@ void EditorRenderSystem::Tick(float deltaTime)
 {
     Prepare();
     // TickRotationMatrix();
-    CollectRenderEntities(); // Collect same material render entities
-    CollectMainCamera();
+    CollectEntities(); // Collect same material render entities
     ImGui_ImplSDL3_NewFrame();
     ImGui_ImplVulkan_NewFrame();
     ImGui::NewFrame();

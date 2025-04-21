@@ -1,4 +1,8 @@
 #include "System/RenderSystem.hpp"
+#include "Component/TransformComponent.hpp"
+#include "glm/ext/vector_float3_precision.hpp"
+#include <cstddef>
+#include <cstring>
 
 namespace MEngine
 {
@@ -37,12 +41,17 @@ void RenderSystem::Init()
         mInFlightFences.push_back(std::move(inFlightFence));
     }
     // Uniform Buffer
-    mVPUBO = mBufferFactory->CreateBuffer(BufferType::Uniform, sizeof(VPUniform));
+    mCameraUBO = mBufferFactory->CreateBuffer(BufferType::Uniform, sizeof(CameraUniform));
     auto globalDescriptorSetLayout = mPipelineLayoutManager->GetGlobalDescriptorSetLayout();
     for (uint32_t i = 0; i < mFrameCount; ++i)
     {
         auto sets = mDescriptorManager->AllocateUniqueDescriptorSet({globalDescriptorSetLayout});
         mGlobalDescriptorSets.push_back(std::move(sets[0]));
+    }
+    mCameraUBO = mBufferFactory->CreateBuffer(BufferType::Uniform, sizeof(CameraUniform));
+    for (size_t i = 0; i < mLightSBOs.size(); ++i)
+    {
+        mLightSBOs[i] = mBufferFactory->CreateBuffer(BufferType::Uniform, sizeof(LightUniform));
     }
     InitialRenderTargetImageLayout();
     InitialSwapchainImageLayout();
@@ -139,40 +148,77 @@ void RenderSystem::InitialSwapchainImageLayout()
     }
     mLogger->Info("Swapchain imageLayout transitioned successfully");
 }
-void RenderSystem::CollectRenderEntities()
+void RenderSystem::CollectEntities()
 {
     mRenderEntities.clear();
-    auto entities = mRegistry->view<MaterialComponent, MeshComponent>();
-    for (auto entity : entities)
+    auto renderEntities = mRegistry->view<MaterialComponent, MeshComponent>();
+    for (auto entity : renderEntities)
     {
         auto &material = mRegistry->get<MaterialComponent>(entity);
-        auto &mesh = entities.get<MeshComponent>(entity);
+        auto &mesh = mRegistry->get<MeshComponent>(entity);
         mRenderEntities[material.material->GetRenderType()].push_back(entity);
     }
-}
-void RenderSystem::CollectMainCamera()
-{
     auto entities = mRegistry->view<CameraComponent>();
     for (auto entity : entities)
     {
         auto &camera = entities.get<CameraComponent>(entity);
+        auto &transform = mRegistry->get<TransformComponent>(entity);
         if (camera.isMainCamera)
         {
             mMainCameraEntity = entity;
+            CameraUniform cameraUniform;
+            cameraUniform.position = transform.position;
+            cameraUniform.view = camera.viewMatrix;
+            cameraUniform.projection = camera.projectionMatrix;
             // 设置Uniform Buffer
-            mVPUniform.view = camera.viewMatrix;
-            mVPUniform.projection = camera.projectionMatrix;
-            memcpy(mVPUBO->GetAllocationInfo().pMappedData, &mVPUniform, sizeof(mVPUniform));
+            memcpy(mCameraUBO->GetAllocationInfo().pMappedData, &cameraUniform, sizeof(CameraUniform));
             break;
         }
     }
+    std::vector<std::reference_wrapper<Buffer>> cameraUBORefs = {*mCameraUBO};
+    mDescriptorManager->UpdateUniformDescriptorSet(cameraUBORefs, 0, mGlobalDescriptorSets[mFrameIndex].get());
+
+    auto lightEntities = mRegistry->view<LightComponent, TransformComponent>();
+    int lightIndex = 0;
+    for (auto entity : lightEntities)
+    {
+        if (lightIndex >= mLightSBOs.size())
+            break; // 超过最大光源数量
+        auto &lightComponent = mRegistry->get<LightComponent>(entity);
+        auto &transformComponent = mRegistry->get<TransformComponent>(entity);
+        auto &lightSBO = mLightSBOs[lightIndex];
+        LightUniform lightUniform;
+        lightUniform.position = transformComponent.position;
+        lightUniform.range = lightComponent.range;
+        lightUniform.direction = transformComponent.rotation * glm::vec3(0.0f, 1.0f, 0.0f);
+        lightUniform.coneAngle = lightComponent.coneAngle;
+        lightUniform.color = lightComponent.color;
+        lightUniform.intensity = lightComponent.intensity;
+        lightUniform.type = lightComponent.type;
+        // 更新光源数据
+        memcpy(lightSBO->GetAllocationInfo().pMappedData, &lightUniform, sizeof(LightUniform));
+        lightIndex++;
+    }
+    // 更新光源描述符集
+    std::vector<Buffer *> lightSBOsPointers;
+    lightSBOsPointers.reserve(mLightSBOs.size());
+    for (const auto &lightSBO : mLightSBOs)
+    {
+        lightSBOsPointers.push_back(lightSBO.get());
+    }
+    std::vector<std::reference_wrapper<Buffer>> lightSBOsReferences;
+    lightSBOsReferences.reserve(lightSBOsPointers.size());
+    for (auto *lightSBO : lightSBOsPointers)
+    {
+        lightSBOsReferences.emplace_back(*lightSBO);
+    }
+    mDescriptorManager->UpdateUniformDescriptorSet(lightSBOsReferences, 1, mGlobalDescriptorSets[mFrameIndex].get());
 }
 void RenderSystem::Tick(float deltaTime)
 {
     Prepare();
     // TickRotationMatrix();
-    CollectRenderEntities(); // Collect same material render entities
-    CollectMainCamera();
+    CollectEntities(); // Collect same material render entities
     // RenderShadowDepthPass();  // Shadow pass
     // void RenderDeferred();
     RenderForward();
@@ -205,7 +251,6 @@ void RenderSystem::Prepare()
         throw std::runtime_error("Failed to acquire next image");
     }
     mImageIndex = resultValue.value;
-    mDescriptorManager->UpdateUniformDescriptorSet({mVPUBO.get()}, 0, mGlobalDescriptorSets[mFrameIndex].get());
     vk::CommandBufferBeginInfo beginInfo;
     beginInfo.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
     mGraphicCommandBuffers[mFrameIndex]->begin(beginInfo);

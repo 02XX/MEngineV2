@@ -15,3 +15,7 @@ target_link_libraries(JsonTest PUBLIC nlohmann_json::nlohmann_json gtest gtest_m
 add_executable(UUIDTest UUIDTest.cpp)
 add_test(NAME UUIDTest COMMAND UUIDTest)
 target_link_libraries(UUIDTest PUBLIC Core gtest gtest_main)
+
+add_executable(RingBufferTest RingBufferTest.cpp)
+add_test(NAME RingBufferTest COMMAND RingBufferTest)
+target_link_libraries(RingBufferTest PUBLIC Core gtest gtest_main)

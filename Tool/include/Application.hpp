@@ -35,8 +35,10 @@
 #include "System/CameraSystem.hpp"
 #include "System/EditorRenderSystem.hpp"
 #include "System/ISystem.hpp"
+#include "System/InputSystem.hpp"
 #include "System/RenderSystem.hpp"
 #include "System/TransformSystem.hpp"
+
 
 #define BOOST_DI_CFG_CTOR_LIMIT_SIZE 50 // 定义构造函数参数的最大数量
 #include "boost/di.hpp"
@@ -62,6 +64,7 @@ class Application final : public NoCopyable
     std::shared_ptr<ISystem> mRenderSystem;
     std::shared_ptr<ISystem> mCameraSystem;
     std::shared_ptr<ISystem> mTransformSystem;
+    std::shared_ptr<ISystem> mInputSystem;
 
     // time
     uint32_t mTargetFPS = 120;

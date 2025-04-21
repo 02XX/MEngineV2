@@ -10,5 +10,6 @@ target_link_libraries(
     PUBLIC
     Platform
     glm::glm-header-only
+    # RTTR::Core
 )
 # target_compile_definitions(Core PRIVATE MENGINE_EXPORT)

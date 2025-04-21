@@ -19,10 +19,10 @@ void TransformSystem::Tick(float deltaTime)
 {
     // 1. 更新旋转矩阵
     mRotationMatrix = glm::rotate(mRotationMatrix, glm::radians(60.f) * deltaTime, glm::vec3(0.0f, 1.0f, 0.0f));
-    auto view = mRegistry->view<TransformComponent>();
-    for (auto entity : view)
+    auto views = mRegistry->view<TransformComponent>();
+    for (auto entity : views)
     {
-        auto &transform = view.get<TransformComponent>(entity);
+        auto &transform = mRegistry->get<TransformComponent>(entity);
         glm::mat4x4 modelMatrix = glm::mat4(1.0f);
         modelMatrix = glm::translate(modelMatrix, transform.position);
         modelMatrix = modelMatrix * glm::mat4_cast(transform.rotation);

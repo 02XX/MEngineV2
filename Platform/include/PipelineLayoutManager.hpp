@@ -58,16 +58,20 @@ class PipelineLayoutManager final : public NoCopyable
     {
         // Set: 0, Binding: 0 Camera
         vk::DescriptorSetLayoutBinding mCameraBinding{0, vk::DescriptorType::eUniformBuffer, 1,
-                                                      vk::ShaderStageFlagBits::eVertex};
+                                                      vk::ShaderStageFlagBits::eVertex |
+                                                          vk::ShaderStageFlagBits::eFragment};
         // Set: 0, Binding: 1 Light
-        vk::DescriptorSetLayoutBinding mLightBinding{1, vk::DescriptorType::eStorageBuffer, 6,
-                                                     vk::ShaderStageFlagBits::eFragment};
+        vk::DescriptorSetLayoutBinding mLightBinding{1, vk::DescriptorType::eUniformBuffer, 6,
+                                                     vk::ShaderStageFlagBits::eFragment |
+                                                         vk::ShaderStageFlagBits::eFragment};
         // Set: 0, Binding: 2 Shadow Parameters
         vk::DescriptorSetLayoutBinding mShadowParametersBinding{2, vk::DescriptorType::eStorageBuffer, 1,
-                                                                vk::ShaderStageFlagBits::eFragment};
+                                                                vk::ShaderStageFlagBits::eFragment |
+                                                                    vk::ShaderStageFlagBits::eFragment};
         // Set: 0, Binding: 3 Shadow Maps
         vk::DescriptorSetLayoutBinding mShadowMapsBinding{3, vk::DescriptorType::eStorageBuffer, 6,
-                                                          vk::ShaderStageFlagBits::eFragment};
+                                                          vk::ShaderStageFlagBits::eFragment |
+                                                              vk::ShaderStageFlagBits::eFragment};
     } mGlobalDescriptorLayoutBindings;
     struct PBRLayoutBindings
     {
@@ -90,6 +94,7 @@ class PipelineLayoutManager final : public NoCopyable
         vk::DescriptorSetLayoutBinding mEmissiveBinding{5, vk::DescriptorType::eCombinedImageSampler, 1,
                                                         vk::ShaderStageFlagBits::eFragment};
     } mPBRDescriptorLayoutBindings;
+
   private:
     std::unordered_map<PipelineLayoutType, vk::UniquePipelineLayout> mPipelineLayouts;
     vk::UniqueDescriptorSetLayout mPBRDescriptorSetLayout;
