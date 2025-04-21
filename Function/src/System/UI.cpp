@@ -72,7 +72,7 @@ void UI::ProcessEvent(const SDL_Event *event)
 void UI::SetSceneViewPort()
 {
     std::vector<vk::ImageView> imageViews;
-    for (auto imageView : mRenderPassManager->GetTransparentFrameResource())
+    for (auto imageView : mRenderPassManager->GetDeferredCompositionFrameResource())
     {
         imageViews.push_back(imageView->renderTargetImageView.get());
     }
@@ -511,8 +511,8 @@ void UI::SceneViewWindow()
         if (mSceneViewPortWidth != 0 && mSceneViewPortHeight != 0)
         {
             mContext->GetDevice().waitIdle();
-            mRenderPassManager->RecreateFrameBuffer(width, height);
-            SetSceneViewPort();
+            // mRenderPassManager->RecreateFrameBuffer(width, height);
+            // SetSceneViewPort();
         }
     }
     else

@@ -18,6 +18,7 @@ enum class PipelineLayoutType
                  // ShadowParameters_SBO,ShadowMap[6](需要和Light_SBO按顺序一一对应)}
     PBR,         // 不透明物体PBR Set0:{Camera_UBO, Light_SBO[6], ShadowParameters_SBO,
                  // ShadowMap[6](需要和Light_SBO按顺序一一对应)} , Set1: PBR{Parameters_UBO{Albedo, Normal,
+    DeferredLighting,
     // MetallicRoughness, AmbientOcclusion,Emissive}, AlbedoMap, NormalMap, MetallicRoughnessMap,
     // AmbientOcclusionMap, EmissiveMap}
     Phong, // 不透明物体Phong Set0:{Camera_UBO, Light_SBO[6], ShadowParameters_SBO,
@@ -30,8 +31,8 @@ enum class PipelineLayoutType
             // , Set1: Skybox{CubeMap, Rotation_UBO}
     Particle, // 粒子 Set0:{Camera_UBO, Light_SBO[6], ShadowParameters_SBO,ShadowMap[6](需要和Light_SBO按顺序一一对应)}
               // , Set1: Particle{ParticleAttributes_SBO, ParticleMap}
-    Terrain,  // 地形 Set0:{Camera_UBO, Light_SBO[6], ShadowParameters_SBO,ShadowMap[6](需要和Light_SBO按顺序一一对应)}
-              // , Set1: Terrain{TerrainMap0, TerrainMap1, TerrainMap2,
+    Terrain, // 地形 Set0:{Camera_UBO, Light_SBO[6], ShadowParameters_SBO,ShadowMap[6](需要和Light_SBO按顺序一一对应)}
+             // , Set1: Terrain{TerrainMap0, TerrainMap1, TerrainMap2,
     // TerrainMap3, HeightMap, TerrainAttributes_UBO{Proportion, HeightScale, ...}}
     SkinnedMesh, // 骨骼动画 Set0:{Camera_UBO, Light_SBO[6],
                  // ShadowParameters_SBO,ShadowMap[6](需要和Light_SBO按顺序一一对应)}  , Set1:
@@ -58,52 +59,86 @@ class PipelineLayoutManager final : public NoCopyable
     {
         // Set: 0, Binding: 0 Camera
         vk::DescriptorSetLayoutBinding mCameraBinding{0, vk::DescriptorType::eUniformBuffer, 1,
-                                                      vk::ShaderStageFlagBits::eVertex};
+                                                      vk::ShaderStageFlagBits::eVertex |
+                                                          vk::ShaderStageFlagBits::eVertex};
         // Set: 0, Binding: 1 Light
         vk::DescriptorSetLayoutBinding mLightBinding{1, vk::DescriptorType::eStorageBuffer, 6,
-                                                     vk::ShaderStageFlagBits::eFragment};
+                                                     vk::ShaderStageFlagBits::eFragment |
+                                                         vk::ShaderStageFlagBits::eVertex};
         // Set: 0, Binding: 2 Shadow Parameters
         vk::DescriptorSetLayoutBinding mShadowParametersBinding{2, vk::DescriptorType::eStorageBuffer, 1,
-                                                                vk::ShaderStageFlagBits::eFragment};
+                                                                vk::ShaderStageFlagBits::eFragment |
+                                                                    vk::ShaderStageFlagBits::eVertex};
         // Set: 0, Binding: 3 Shadow Maps
         vk::DescriptorSetLayoutBinding mShadowMapsBinding{3, vk::DescriptorType::eStorageBuffer, 6,
-                                                          vk::ShaderStageFlagBits::eFragment};
+                                                          vk::ShaderStageFlagBits::eFragment |
+                                                              vk::ShaderStageFlagBits::eVertex};
     } mGlobalDescriptorLayoutBindings;
     struct PBRLayoutBindings
     {
         // Set: 1, Binding: 0 Parameters
         vk::DescriptorSetLayoutBinding mParameterBinding{0, vk::DescriptorType::eUniformBuffer, 1,
-                                                         vk::ShaderStageFlagBits::eFragment};
+                                                         vk::ShaderStageFlagBits::eFragment |
+                                                             vk::ShaderStageFlagBits::eVertex};
         // Set: 1, Binding: 1 Base Color
         vk::DescriptorSetLayoutBinding mBaseColorBinding{1, vk::DescriptorType::eCombinedImageSampler, 1,
-                                                         vk::ShaderStageFlagBits::eFragment};
+                                                         vk::ShaderStageFlagBits::eFragment |
+                                                             vk::ShaderStageFlagBits::eVertex};
         // Set: 1, Binding: 2 Normal Map
         vk::DescriptorSetLayoutBinding mNormalMapBinding{2, vk::DescriptorType::eCombinedImageSampler, 1,
-                                                         vk::ShaderStageFlagBits::eFragment};
+                                                         vk::ShaderStageFlagBits::eFragment |
+                                                             vk::ShaderStageFlagBits::eVertex};
         // Set: 1, Binding: 3 MetallicRoughness Map
         vk::DescriptorSetLayoutBinding mMetallicRoughnessBinding{3, vk::DescriptorType::eCombinedImageSampler, 1,
-                                                                 vk::ShaderStageFlagBits::eFragment};
+                                                                 vk::ShaderStageFlagBits::eFragment |
+                                                                     vk::ShaderStageFlagBits::eVertex};
         // Set: 1, Binding: 4 Ambient Occlusion Map
         vk::DescriptorSetLayoutBinding mAmbientOcclusionBinding{4, vk::DescriptorType::eCombinedImageSampler, 1,
-                                                                vk::ShaderStageFlagBits::eFragment};
+                                                                vk::ShaderStageFlagBits::eFragment |
+                                                                    vk::ShaderStageFlagBits::eVertex};
         // Set: 1, Binding: 5 Emissive Map
         vk::DescriptorSetLayoutBinding mEmissiveBinding{5, vk::DescriptorType::eCombinedImageSampler, 1,
-                                                        vk::ShaderStageFlagBits::eFragment};
+                                                        vk::ShaderStageFlagBits::eFragment |
+                                                            vk::ShaderStageFlagBits::eVertex};
     } mPBRDescriptorLayoutBindings;
+    struct GBufferLayoutBindings
+    {
+        // Set: 1, binging: 0 Albedo
+        vk::DescriptorSetLayoutBinding mAlbedoBinding{0, vk::DescriptorType::eInputAttachment, 1,
+                                                      vk::ShaderStageFlagBits::eFragment};
+        // Set: 1, binging: 1 WorldPosition
+        vk::DescriptorSetLayoutBinding mPositionBinding{1, vk::DescriptorType::eInputAttachment, 1,
+                                                        vk::ShaderStageFlagBits::eFragment};
+        // Set: 1, binging: 2 Normal
+        vk::DescriptorSetLayoutBinding mNormalBinding{2, vk::DescriptorType::eInputAttachment, 1,
+                                                      vk::ShaderStageFlagBits::eFragment};
+        // Set: 1, binging: 3 Metalness/Roughness
+        vk::DescriptorSetLayoutBinding mMetalnessRoughnessBinding{3, vk::DescriptorType::eInputAttachment, 1,
+                                                                  vk::ShaderStageFlagBits::eFragment};
+        // Set: 1, binging: 4 AO
+        vk::DescriptorSetLayoutBinding mAOBinding{4, vk::DescriptorType::eInputAttachment, 1,
+                                                  vk::ShaderStageFlagBits::eFragment};
+        // Set: 1, binging: 5 Emissive
+        vk::DescriptorSetLayoutBinding mEmissiveBinding{5, vk::DescriptorType::eInputAttachment, 1,
+                                                        vk::ShaderStageFlagBits::eFragment};
+
+    } mGBufferLayoutBindings;
 
   private:
     std::unordered_map<PipelineLayoutType, vk::UniquePipelineLayout> mPipelineLayouts;
     vk::UniqueDescriptorSetLayout mPBRDescriptorSetLayout;
     vk::UniqueDescriptorSetLayout mGlobalDescriptorSetLayout;
-
+    vk::UniqueDescriptorSetLayout mPhongDescriptorSetLayout;
+    vk::UniqueDescriptorSetLayout mGBufferDescriptorSetLayout;
     // DescriptorSetLayout
     void CreateGlobalDescriptorSetLayout();
     void CreatePBRDescriptorSetLayout();
     void CreatePhongDescriptorSetLayout();
-
+    void CreateGBufferDescriptorSetLayout();
     // PipelineLayout
     void CreateShadowDepthPipelineLayout();
     void CreatePBRPipelineLayout();
+    void CreateDeferredLightingPipelineLayout();
     void CreatePhongPipelineLayout();
     void CreateScreenSpaceEffectPipelineLayout();
     void CreateSkyPipelineLayout();
@@ -129,6 +164,14 @@ class PipelineLayoutManager final : public NoCopyable
     {
         return mPBRDescriptorSetLayout.get();
     }
+    inline const vk::DescriptorSetLayout &GetPhongDescriptorSetLayout() const
+    {
+        return mPhongDescriptorSetLayout.get();
+    }
+    inline const vk::DescriptorSetLayout &GetGBufferDescriptorSetLayout() const
+    {
+        return mGBufferDescriptorSetLayout.get();
+    }
     inline const GlobalLayoutBindings &GetGlobalDescriptorLayoutBindings() const
     {
         return mGlobalDescriptorLayoutBindings;
@@ -136,6 +179,10 @@ class PipelineLayoutManager final : public NoCopyable
     inline const PBRLayoutBindings &GetPBRDescriptorLayoutBindings() const
     {
         return mPBRDescriptorLayoutBindings;
+    }
+    inline const GBufferLayoutBindings &GetGBufferDescriptorLayoutBindings() const
+    {
+        return mGBufferLayoutBindings;
     }
 };
 

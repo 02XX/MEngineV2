@@ -210,6 +210,20 @@ void PipelineManager::CreateDeferredGBufferPipeline()
                                                                          .setStage(vk::ShaderStageFlagBits::eFragment)
                                                                          .setModule(fragmentShader)
                                                                          .setPName("main")};
+    // ========== 4. 视口和裁剪 ==========
+    // Swapchain的宽高和Surface的宽高一致
+    vk::Viewport viewport{};
+    vk::Rect2D scissor{};
+    viewport = vk::Viewport()
+                   .setX(0.0f)
+                   .setY(0.0f)
+                   .setWidth(static_cast<float>(mContext->GetSurfaceInfo().extent.width))
+                   .setHeight(static_cast<float>(mContext->GetSurfaceInfo().extent.height))
+                   .setMinDepth(0.0f)
+                   .setMaxDepth(1.0f);
+    scissor = vk::Rect2D().setOffset({0, 0}).setExtent(mContext->GetSurfaceInfo().extent);
+    vk::PipelineViewportStateCreateInfo viewportInfo;
+    viewportInfo.setViewports(viewport).setScissors(scissor);
     // ========== 5. 光栅化状态 ==========
     vk::PipelineRasterizationStateCreateInfo rasterizationInfo{};
     rasterizationInfo.setDepthClampEnable(vk::False)
@@ -260,17 +274,94 @@ void PipelineManager::CreateDeferredGBufferPipeline()
         .setBack(backState);
 
     // ========== 8. 颜色混合 ==========
-    std::array<vk::PipelineColorBlendAttachmentState, 1> colorBlendAttachments{
-        vk::PipelineColorBlendAttachmentState()
-            .setBlendEnable(vk::False) // 是否启用混合
-            .setColorWriteMask(vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
-                               vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA) // 写入掩码
-            .setSrcColorBlendFactor(vk::BlendFactor::eOne)                                      // 源颜色混合因子
-            .setDstColorBlendFactor(vk::BlendFactor::eZero) // 目标颜色混合因子
-            .setColorBlendOp(vk::BlendOp::eAdd)             // 混合操作
-            .setSrcAlphaBlendFactor(vk::BlendFactor::eOne)  // 源Alpha混合因子
-            .setDstAlphaBlendFactor(vk::BlendFactor::eZero) // 目标Alpha混合因子
-            .setAlphaBlendOp(vk::BlendOp::eAdd)};
+    // renderTarget
+    vk::PipelineColorBlendAttachmentState renderTargetBlendAttachmentState{};
+    renderTargetBlendAttachmentState
+        .setBlendEnable(vk::False) // 是否启用混合
+        .setColorWriteMask(vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
+                           vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA) // 写入掩码
+        .setSrcColorBlendFactor(vk::BlendFactor::eOne)                                      // 源颜色混合因子
+        .setDstColorBlendFactor(vk::BlendFactor::eZero)                                     // 目标颜色混合因子
+        .setColorBlendOp(vk::BlendOp::eAdd)                                                 // 混合操作
+        .setSrcAlphaBlendFactor(vk::BlendFactor::eOne)                                      // 源Alpha混合因子
+        .setDstAlphaBlendFactor(vk::BlendFactor::eZero)                                     // 目标Alpha混合因子
+        .setAlphaBlendOp(vk::BlendOp::eAdd);
+    // albedo
+    vk::PipelineColorBlendAttachmentState albedoBlendAttachmentState{};
+    albedoBlendAttachmentState
+        .setBlendEnable(vk::False) // 是否启用混合
+        .setColorWriteMask(vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
+                           vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA) // 写入掩码
+        .setSrcColorBlendFactor(vk::BlendFactor::eOne)                                      // 源颜色混合因子
+        .setDstColorBlendFactor(vk::BlendFactor::eZero)                                     // 目标颜色混合因子
+        .setColorBlendOp(vk::BlendOp::eAdd)                                                 // 混合操作
+        .setSrcAlphaBlendFactor(vk::BlendFactor::eOne)                                      // 源Alpha混合因子
+        .setDstAlphaBlendFactor(vk::BlendFactor::eZero)                                     // 目标Alpha混合因子
+        .setAlphaBlendOp(vk::BlendOp::eAdd);
+    // position
+    vk::PipelineColorBlendAttachmentState positionBlendAttachmentState{};
+    positionBlendAttachmentState
+        .setBlendEnable(vk::False) // 是否启用混合
+        .setColorWriteMask(vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
+                           vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA) // 写入掩码
+        .setSrcColorBlendFactor(vk::BlendFactor::eOne)                                      // 源颜色混合因子
+        .setDstColorBlendFactor(vk::BlendFactor::eZero)                                     // 目标颜色混合因子
+        .setColorBlendOp(vk::BlendOp::eAdd)                                                 // 混合操作
+        .setSrcAlphaBlendFactor(vk::BlendFactor::eOne)                                      // 源Alpha混合因子
+        .setDstAlphaBlendFactor(vk::BlendFactor::eZero)                                     // 目标Alpha混合因子
+        .setAlphaBlendOp(vk::BlendOp::eAdd);
+    // normal
+    vk::PipelineColorBlendAttachmentState normalBlendAttachmentState{};
+    normalBlendAttachmentState
+        .setBlendEnable(vk::False) // 是否启用混合
+        .setColorWriteMask(vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
+                           vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA) // 写入掩码
+        .setSrcColorBlendFactor(vk::BlendFactor::eOne)                                      // 源颜色混合因子
+        .setDstColorBlendFactor(vk::BlendFactor::eZero)                                     // 目标颜色混合因子
+        .setColorBlendOp(vk::BlendOp::eAdd)                                                 // 混合操作
+        .setSrcAlphaBlendFactor(vk::BlendFactor::eOne)                                      // 源Alpha混合因子
+        .setDstAlphaBlendFactor(vk::BlendFactor::eZero)                                     // 目标Alpha混合因子
+        .setAlphaBlendOp(vk::BlendOp::eAdd);
+    // Metalness/Roughness
+    vk::PipelineColorBlendAttachmentState metalnessRoughnessBlendAttachmentState{};
+    metalnessRoughnessBlendAttachmentState
+        .setBlendEnable(vk::False) // 是否启用混合
+        .setColorWriteMask(vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
+                           vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA) // 写入掩码
+        .setSrcColorBlendFactor(vk::BlendFactor::eOne)                                      // 源颜色混合因子
+        .setDstColorBlendFactor(vk::BlendFactor::eZero)                                     // 目标颜色混合因子
+        .setColorBlendOp(vk::BlendOp::eAdd)                                                 // 混合操作
+        .setSrcAlphaBlendFactor(vk::BlendFactor::eOne)                                      // 源Alpha混合因子
+        .setDstAlphaBlendFactor(vk::BlendFactor::eZero)                                     // 目标Alpha混合因子
+        .setAlphaBlendOp(vk::BlendOp::eAdd);
+    // AO
+    vk::PipelineColorBlendAttachmentState aoBlendAttachmentState{};
+    aoBlendAttachmentState
+        .setBlendEnable(vk::False) // 是否启用混合
+        .setColorWriteMask(vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
+                           vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA) // 写入掩码
+        .setSrcColorBlendFactor(vk::BlendFactor::eOne)                                      // 源颜色混合因子
+        .setDstColorBlendFactor(vk::BlendFactor::eZero)                                     // 目标颜色混合因子
+        .setColorBlendOp(vk::BlendOp::eAdd)                                                 // 混合操作
+        .setSrcAlphaBlendFactor(vk::BlendFactor::eOne)                                      // 源Alpha混合因子
+        .setDstAlphaBlendFactor(vk::BlendFactor::eZero)                                     // 目标Alpha混合因子
+        .setAlphaBlendOp(vk::BlendOp::eAdd);
+    // emissive
+    vk::PipelineColorBlendAttachmentState emissiveBlendAttachmentState{};
+    emissiveBlendAttachmentState
+        .setBlendEnable(vk::False) // 是否启用混合
+        .setColorWriteMask(vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
+                           vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA) // 写入掩码
+        .setSrcColorBlendFactor(vk::BlendFactor::eOne)                                      // 源颜色混合因子
+        .setDstColorBlendFactor(vk::BlendFactor::eZero)                                     // 目标颜色混合因子
+        .setColorBlendOp(vk::BlendOp::eAdd)                                                 // 混合操作
+        .setSrcAlphaBlendFactor(vk::BlendFactor::eOne)                                      // 源Alpha混合因子
+        .setDstAlphaBlendFactor(vk::BlendFactor::eZero)                                     // 目标Alpha混合因子
+        .setAlphaBlendOp(vk::BlendOp::eAdd);
+    std::vector<vk::PipelineColorBlendAttachmentState> colorBlendAttachments{
+        albedoBlendAttachmentState, positionBlendAttachmentState,
+        normalBlendAttachmentState, metalnessRoughnessBlendAttachmentState,
+        aoBlendAttachmentState,     emissiveBlendAttachmentState};
     auto blendConstants = std::array<float, 4>{0.0f, 0.0f, 0.0f, 0.0f}; // 混合常量
     vk::PipelineColorBlendStateCreateInfo colorBlendInfo{};
     colorBlendInfo.setLogicOpEnable(vk::False)
@@ -283,11 +374,12 @@ void PipelineManager::CreateDeferredGBufferPipeline()
     dynamicStateInfo.setDynamicStates(dynamicStates);
     // ========== 10. 管线创建 ==========
     vk::GraphicsPipelineCreateInfo graphicsPipelineCreateInfo{};
-    graphicsPipelineCreateInfo.setPInputAssemblyState(&inputAssemblyInfo)
+    graphicsPipelineCreateInfo.setPViewportState(&viewportInfo)
+        .setPInputAssemblyState(&inputAssemblyInfo)
         .setPVertexInputState(&vertexInputInfo)
         .setStages(shaderStages)
         .setLayout(mPipelineLayoutManager->GetPipelineLayout(PipelineLayoutType::PBR))
-        .setRenderPass(mRenderPassManager->GetRenderPass(RenderPassType::Transparent))
+        .setRenderPass(mRenderPassManager->GetRenderPass(RenderPassType::DeferredComposition))
         .setSubpass(0)
         .setPRasterizationState(&rasterizationInfo)
         .setPMultisampleState(&multisampleInfo)
@@ -328,6 +420,20 @@ void PipelineManager::CreateDeferredLightingPipeline()
                                                                          .setStage(vk::ShaderStageFlagBits::eFragment)
                                                                          .setModule(fragmentShader)
                                                                          .setPName("main")};
+    // ========== 4. 视口和裁剪 ==========
+    // Swapchain的宽高和Surface的宽高一致
+    vk::Viewport viewport{};
+    vk::Rect2D scissor{};
+    viewport = vk::Viewport()
+                   .setX(0.0f)
+                   .setY(0.0f)
+                   .setWidth(static_cast<float>(mContext->GetSurfaceInfo().extent.width))
+                   .setHeight(static_cast<float>(mContext->GetSurfaceInfo().extent.height))
+                   .setMinDepth(0.0f)
+                   .setMaxDepth(1.0f);
+    scissor = vk::Rect2D().setOffset({0, 0}).setExtent(mContext->GetSurfaceInfo().extent);
+    vk::PipelineViewportStateCreateInfo viewportInfo;
+    viewportInfo.setViewports(viewport).setScissors(scissor);
     // ========== 5. 光栅化状态 ==========
     vk::PipelineRasterizationStateCreateInfo rasterizationInfo{};
     rasterizationInfo.setDepthClampEnable(vk::False)
@@ -378,17 +484,20 @@ void PipelineManager::CreateDeferredLightingPipeline()
         .setBack(backState);
 
     // ========== 8. 颜色混合 ==========
-    std::array<vk::PipelineColorBlendAttachmentState, 1> colorBlendAttachments{
-        vk::PipelineColorBlendAttachmentState()
-            .setBlendEnable(vk::False) // 是否启用混合
-            .setColorWriteMask(vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
-                               vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA) // 写入掩码
-            .setSrcColorBlendFactor(vk::BlendFactor::eOne)                                      // 源颜色混合因子
-            .setDstColorBlendFactor(vk::BlendFactor::eZero) // 目标颜色混合因子
-            .setColorBlendOp(vk::BlendOp::eAdd)             // 混合操作
-            .setSrcAlphaBlendFactor(vk::BlendFactor::eOne)  // 源Alpha混合因子
-            .setDstAlphaBlendFactor(vk::BlendFactor::eZero) // 目标Alpha混合因子
-            .setAlphaBlendOp(vk::BlendOp::eAdd)};
+    // renderTarget
+    vk::PipelineColorBlendAttachmentState renderTargetBlendAttachmentState{};
+    renderTargetBlendAttachmentState
+        .setBlendEnable(vk::False) // 是否启用混合
+        .setColorWriteMask(vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
+                           vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA) // 写入掩码
+        .setSrcColorBlendFactor(vk::BlendFactor::eOne)                                      // 源颜色混合因子
+        .setDstColorBlendFactor(vk::BlendFactor::eZero)                                     // 目标颜色混合因子
+        .setColorBlendOp(vk::BlendOp::eAdd)                                                 // 混合操作
+        .setSrcAlphaBlendFactor(vk::BlendFactor::eOne)                                      // 源Alpha混合因子
+        .setDstAlphaBlendFactor(vk::BlendFactor::eZero)                                     // 目标Alpha混合因子
+        .setAlphaBlendOp(vk::BlendOp::eAdd);
+    std::vector<vk::PipelineColorBlendAttachmentState> colorBlendAttachments{renderTargetBlendAttachmentState};
+
     auto blendConstants = std::array<float, 4>{0.0f, 0.0f, 0.0f, 0.0f}; // 混合常量
     vk::PipelineColorBlendStateCreateInfo colorBlendInfo{};
     colorBlendInfo.setLogicOpEnable(vk::False)
@@ -401,12 +510,13 @@ void PipelineManager::CreateDeferredLightingPipeline()
     dynamicStateInfo.setDynamicStates(dynamicStates);
     // ========== 10. 管线创建 ==========
     vk::GraphicsPipelineCreateInfo graphicsPipelineCreateInfo{};
-    graphicsPipelineCreateInfo.setPInputAssemblyState(&inputAssemblyInfo)
+    graphicsPipelineCreateInfo.setPViewportState(&viewportInfo)
+        .setPInputAssemblyState(&inputAssemblyInfo)
         .setPVertexInputState(&vertexInputInfo)
         .setStages(shaderStages)
-        .setLayout(mPipelineLayoutManager->GetPipelineLayout(PipelineLayoutType::PBR))
-        .setRenderPass(mRenderPassManager->GetRenderPass(RenderPassType::Transparent))
-        .setSubpass(0)
+        .setLayout(mPipelineLayoutManager->GetPipelineLayout(PipelineLayoutType::DeferredLighting))
+        .setRenderPass(mRenderPassManager->GetRenderPass(RenderPassType::DeferredComposition))
+        .setSubpass(1)
         .setPRasterizationState(&rasterizationInfo)
         .setPMultisampleState(&multisampleInfo)
         .setPDepthStencilState(&depthStencilInfo)

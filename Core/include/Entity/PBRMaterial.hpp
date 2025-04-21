@@ -7,6 +7,7 @@
 #include "Math.hpp"
 #include "magic_enum/magic_enum.hpp"
 #include "nlohmann/adl_serializer.hpp"
+#include <vulkan/vulkan_handles.hpp>
 namespace MEngine
 {
 
@@ -51,6 +52,7 @@ class PBRMaterial final : public IMaterial, public Entity<>
     // Vulkan Resources
     UniqueBuffer mMaterialParamsUBO;
     vk::UniqueDescriptorSet mMaterialDescriptorSet;
+    vk::UniqueDescriptorSet mLightingDescriptorSet;
 
   public:
     PBRMaterial();
@@ -152,6 +154,10 @@ class PBRMaterial final : public IMaterial, public Entity<>
     vk::DescriptorSet GetDescriptorSet() const override
     {
         return mMaterialDescriptorSet.get();
+    }
+    vk::DescriptorSet GetLightingDescriptorSet() const
+    {
+        return mLightingDescriptorSet.get();
     }
 };
 } // namespace MEngine

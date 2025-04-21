@@ -11,9 +11,11 @@ PipelineLayoutManager::PipelineLayoutManager(std::shared_ptr<ILogger> logger, st
     CreateGlobalDescriptorSetLayout();
     CreatePBRDescriptorSetLayout();
     CreatePhongDescriptorSetLayout();
+    CreateGBufferDescriptorSetLayout();
     // PipelineLayout
     CreateShadowDepthPipelineLayout();
     CreatePBRPipelineLayout();
+    CreateDeferredLightingPipelineLayout();
     CreatePhongPipelineLayout();
     CreateScreenSpaceEffectPipelineLayout();
     CreateSkyPipelineLayout();
@@ -60,6 +62,24 @@ void PipelineLayoutManager::CreatePBRDescriptorSetLayout()
 void PipelineLayoutManager::CreatePhongDescriptorSetLayout()
 {
 }
+
+void PipelineLayoutManager::CreateGBufferDescriptorSetLayout()
+{
+    std::vector<vk::DescriptorSetLayoutBinding> gBufferDescriptorSetLayoutBindings{
+        mGBufferLayoutBindings.mAlbedoBinding, mGBufferLayoutBindings.mPositionBinding,
+        mGBufferLayoutBindings.mNormalBinding, mGBufferLayoutBindings.mMetalnessRoughnessBinding,
+        mGBufferLayoutBindings.mAOBinding,     mGBufferLayoutBindings.mEmissiveBinding};
+    vk::DescriptorSetLayoutCreateInfo gBufferDescriptorSetLayoutCreateInfo{};
+    gBufferDescriptorSetLayoutCreateInfo.setBindings(gBufferDescriptorSetLayoutBindings)
+        .setFlags(vk::DescriptorSetLayoutCreateFlagBits::eUpdateAfterBindPool); // set: 1
+    mGBufferDescriptorSetLayout =
+        mContext->GetDevice().createDescriptorSetLayoutUnique(gBufferDescriptorSetLayoutCreateInfo);
+    if (!mGBufferDescriptorSetLayout)
+    {
+        mLogger->Error("Failed to create descriptor set layout for MVP");
+    }
+    mLogger->Info("GBuffer descriptor set layout created successfully");
+}
 // PipelineLayout
 void PipelineLayoutManager::CreateShadowDepthPipelineLayout()
 {
@@ -84,6 +104,24 @@ void PipelineLayoutManager::CreatePBRPipelineLayout()
     }
     mPipelineLayouts[PipelineLayoutType::PBR] = std::move(pipelineLayout);
     mLogger->Info("Transparent pipeline layout created successfully");
+}
+void PipelineLayoutManager::CreateDeferredLightingPipelineLayout()
+{
+    vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo;
+    std::vector<vk::DescriptorSetLayout> setLayouts{
+        mGlobalDescriptorSetLayout.get(), // set: 0
+        mGBufferDescriptorSetLayout.get() // set: 1
+    };
+    std::array<vk::PushConstantRange, 1> pushConstantRanges;
+    pushConstantRanges[0].setOffset(0).setSize(sizeof(glm::mat4x4)).setStageFlags(vk::ShaderStageFlagBits::eVertex);
+    pipelineLayoutCreateInfo.setSetLayouts(setLayouts).setPushConstantRanges(pushConstantRanges);
+    auto pipelineLayout = mContext->GetDevice().createPipelineLayoutUnique(pipelineLayoutCreateInfo);
+    if (!pipelineLayout)
+    {
+        mLogger->Error("Failed to create pipeline layout for DeferredLightingPipelineLayout");
+    }
+    mPipelineLayouts[PipelineLayoutType::DeferredLighting] = std::move(pipelineLayout);
+    mLogger->Info("DeferredLightingPipelineLayout created successfully");
 }
 void PipelineLayoutManager::CreateScreenSpaceEffectPipelineLayout()
 {

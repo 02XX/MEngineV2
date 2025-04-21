@@ -49,6 +49,11 @@ bool PBRMaterialRepository::Update(const UUID &id, const PBRMaterial &delta)
             material->mMaterialDescriptorSet = std::move(mDescriptorManager->AllocateUniqueDescriptorSet(
                 {mPipelineLayoutManager->GetPBRDescriptorSetLayout()})[0]);
         }
+        if (!material->mLightingDescriptorSet)
+        {
+            material->mLightingDescriptorSet = std::move(mDescriptorManager->AllocateUniqueDescriptorSet(
+                {mPipelineLayoutManager->GetGBufferDescriptorSetLayout()})[0]);
+        }
         vk::WriteDescriptorSet writer;
         vk::DescriptorBufferInfo bufferInfo;
         bufferInfo.setBuffer(material->mMaterialParamsUBO->GetHandle()).setOffset(0).setRange(sizeof(PBRParams));

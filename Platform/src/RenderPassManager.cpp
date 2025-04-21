@@ -42,7 +42,7 @@ void RenderPassManager::CreateDeferredCompositionRenderPass()
             .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
             .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
             .setInitialLayout(vk::ImageLayout::eUndefined)
-            .setFinalLayout(vk::ImageLayout::eShaderReadOnlyOptimal),
+            .setFinalLayout(vk::ImageLayout::eColorAttachmentOptimal),
         // 1: Render Target: Albedo
         vk::AttachmentDescription()
             .setFormat(mImageFactory->GetRenderTargetFormat())
@@ -310,7 +310,7 @@ void RenderPassManager::CreateDeferredCompositionFrameBuffer()
         // 保存资源
         mDeferredCompositionFrameResources.push_back(deferredCompositionFrameResource);
         // 创建帧缓冲
-        auto attachments = std::array<vk::ImageView, 8>{
+        std::vector<vk::ImageView> attachments = {
             deferredCompositionFrameResource->renderTargetImageView.get(),
             deferredCompositionFrameResource->albedoImageView.get(),
             deferredCompositionFrameResource->positionImageView.get(),
@@ -318,6 +318,7 @@ void RenderPassManager::CreateDeferredCompositionFrameBuffer()
             deferredCompositionFrameResource->metallicRoughnessImageView.get(),
             deferredCompositionFrameResource->aoImageView.get(),
             deferredCompositionFrameResource->emissiveImageView.get(),
+            deferredCompositionFrameResource->depthStencilImageView.get(),
         };
         vk::FramebufferCreateInfo framebufferCreateInfo;
         framebufferCreateInfo.setRenderPass(renderPass)
