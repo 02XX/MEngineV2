@@ -41,8 +41,8 @@ void InputSystem::Shutdown()
 void InputSystem::HandleSDLEvent(const SDL_Event *event)
 {
     mSDLEvents.PushOverwrite(*event);
-    mLogger->Trace("HandleSDLEvent: type = {}, action = {}, key = {}, button = {}, position = ({}, {})",
-                   static_cast<int>(event->type), 0, static_cast<int>(event->key.key),
-                   static_cast<int>(event->button.button), event->motion.x, event->motion.y);
+    // mLogger->Trace("HandleSDLEvent: type = {}, action = {}, key = {}, button = {}, position = ({}, {})",
+    //                static_cast<int>(event->type), 0, static_cast<int>(event->key.key),
+    //                static_cast<int>(event->button.button), event->motion.x, event->motion.y);
 }
 } // namespace MEngine

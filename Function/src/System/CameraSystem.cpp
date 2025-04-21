@@ -17,28 +17,29 @@ void CameraSystem::Init()
     {
         auto &inputComponent = view.get<InputComponent>(entity);
         auto &camera = view.get<CameraComponent>(entity);
-
-        inputComponent.eventCallback = [&](const SDL_Event *event, float deltaTime) {
-            bool rightMouseDown = false;
+        bool rightMouseDown = false;
+        inputComponent.eventCallback = [&, rightMouseDown = false](const SDL_Event *event, float deltaTime) mutable {
             if (event->type == SDL_EVENT_KEY_DOWN)
             {
-                if (event->key.repeat)
+                // if (event->key.repeat)
+                // {
+                switch (event->key.key)
                 {
-                    switch (event->key.key)
-                    {
-                    case SDLK_W:
-                        camera.position.y += 0.1f;
-                        break;
-                    case SDLK_S:
-                        camera.position.y -= 0.1f;
-                        break;
-                    case SDLK_A:
-                        camera.position.x -= 0.1f;
-                        break;
-                    case SDLK_D:
-                        camera.position.x += 0.1f;
-                        break;
-                    }
+                case SDLK_W:
+                    camera.position += camera.front * camera.moveSpeed * deltaTime;
+                    break;
+                case SDLK_S:
+                    camera.position -= camera.front * camera.moveSpeed * deltaTime;
+                    break;
+                case SDLK_A:
+                    camera.position -=
+                        glm::normalize(glm::cross(camera.front, camera.up)) * camera.moveSpeed * deltaTime;
+                    break;
+                case SDLK_D:
+                    camera.position +=
+                        glm::normalize(glm::cross(camera.front, camera.up)) * camera.moveSpeed * deltaTime;
+                    break;
+                    // }
                 }
             }
             if (event->type == SDL_EVENT_MOUSE_BUTTON_DOWN)
@@ -57,13 +58,14 @@ void CameraSystem::Init()
             }
             if (event->type == SDL_EVENT_MOUSE_MOTION && rightMouseDown)
             {
-                camera.yaw += event->motion.xrel * camera.moveSpeed * deltaTime;
-                camera.pitch -= event->motion.yrel * camera.moveSpeed * deltaTime;
+                camera.yaw += event->motion.xrel * camera.rotateSpeed * deltaTime;
+                camera.pitch -= event->motion.yrel * camera.rotateSpeed * deltaTime;
                 camera.pitch = std::clamp(camera.pitch, -89.0f, 89.0f);
             }
             if (event->type == SDL_EVENT_MOUSE_WHEEL)
             {
                 camera.zoom += event->wheel.y * camera.zoomSpeed * deltaTime;
+
                 camera.zoom = std::clamp(camera.zoom, 0.1f, 10.0f); // 限制缩放范围
             }
         };
@@ -77,7 +79,6 @@ void CameraSystem::Tick(float deltaTime)
     {
         auto &camera = entities.get<CameraComponent>(entity);
         auto extent = mRenderPassManager->GetRenderTargetExtent();
-
         camera.aspectRatio = static_cast<float>(extent.width * 1.0f) / extent.height;
         glm::mat4 viewMatrix = glm::lookAtRH(camera.position, camera.position + camera.front, camera.up);
         glm::mat4 pitchMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(camera.pitch), glm::vec3(1.0f, 0.0f, 0.0f));

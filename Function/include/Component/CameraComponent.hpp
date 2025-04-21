@@ -19,8 +19,9 @@ struct CameraComponent : public IComponent<>
     float fovY = 60;
     float nearPlane = 0.1;
     float farPlane = 100;
-    float moveSpeed = 0.1f;
-    float zoomSpeed = 0.1f;
+    float moveSpeed = 8.f;
+    float rotateSpeed = 10.f;
+    float zoomSpeed = 5.f;
     // View Matrix
     glm::mat4 viewMatrix = glm::mat4(1.0f);
     // Projection Matrix
