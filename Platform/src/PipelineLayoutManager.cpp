@@ -89,6 +89,18 @@ void PipelineLayoutManager::CreateScreenSpaceEffectPipelineLayout()
 }
 void PipelineLayoutManager::CreateSkyPipelineLayout()
 {
+    vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo;
+    std::vector<vk::DescriptorSetLayout> setLayouts{
+        mGlobalDescriptorSetLayout.get(), // set: 0
+    };
+    pipelineLayoutCreateInfo.setSetLayouts(setLayouts);
+    auto pipelineLayout = mContext->GetDevice().createPipelineLayoutUnique(pipelineLayoutCreateInfo);
+    if (!pipelineLayout)
+    {
+        mLogger->Error("Failed to create pipeline layout for DefferPipelineLayout");
+    }
+    mPipelineLayouts[PipelineLayoutType::Skybox] = std::move(pipelineLayout);
+    mLogger->Info("Sky pipeline layout created successfully");
 }
 void PipelineLayoutManager::CreateParticlePipelineLayout()
 {

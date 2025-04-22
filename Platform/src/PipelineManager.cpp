@@ -1,4 +1,5 @@
 #include "PipelineManager.hpp"
+#include <vulkan/vulkan.hpp>
 
 namespace MEngine
 {
@@ -16,6 +17,7 @@ PipelineManager::PipelineManager(std::shared_ptr<ILogger> logger, std::shared_pt
     CreateForwardTransparentPhongPipeline();
     CreateDeferredGBufferPipeline();
     CreateDeferredLightingPipeline();
+    CreateSkyboxPipeline();
     CreateScreenSpaceEffectSSAOPipeline();
     CreateScreenSpaceEffectSSRPipeline();
     CreateSkinnedMeshPipeline();
@@ -292,6 +294,109 @@ void PipelineManager::CreateDeferredGBufferPipeline()
 }
 void PipelineManager::CreateDeferredLightingPipeline()
 {
+}
+void PipelineManager::CreateSkyboxPipeline()
+{
+    // ========== 1. 顶点输入状态 ==========
+
+    vk::PipelineVertexInputStateCreateInfo vertexInputInfo{};
+    vertexInputInfo.setVertexBindingDescriptions({}).setVertexAttributeDescriptions({});
+    // ========== 2. 输入装配状态 ==========
+    vk::PipelineInputAssemblyStateCreateInfo inputAssemblyInfo{};
+    inputAssemblyInfo.setTopology(vk::PrimitiveTopology::eTriangleList).setPrimitiveRestartEnable(vk::False);
+    // ========== 3. 着色器阶段 ==========
+    mShaderManager->LoadShaderModule("SkyBoxVertexShader", "skybox.vert.spv");
+    mShaderManager->LoadShaderModule("SkyBoxFragmentShader", "skybox.frag.spv");
+    auto vertexShader = mShaderManager->GetShaderModule("SkyBoxVertexShader");
+    auto fragmentShader = mShaderManager->GetShaderModule("SkyBoxFragmentShader");
+    std::array<vk::PipelineShaderStageCreateInfo, 2> shaderStages = {vk::PipelineShaderStageCreateInfo()
+                                                                         .setStage(vk::ShaderStageFlagBits::eVertex)
+                                                                         .setModule(vertexShader)
+                                                                         .setPName("main"),
+                                                                     vk::PipelineShaderStageCreateInfo()
+                                                                         .setStage(vk::ShaderStageFlagBits::eFragment)
+                                                                         .setModule(fragmentShader)
+                                                                         .setPName("main")};
+    // ========== 4. 视口和裁剪 ==========
+    // Swapchain的宽高和Surface的宽高一致
+    vk::Viewport viewport{};
+    vk::Rect2D scissor{};
+    viewport = vk::Viewport()
+                   .setX(0.0f)
+                   .setY(0.0f)
+                   .setWidth(static_cast<float>(mContext->GetSurfaceInfo().extent.width))
+                   .setHeight(static_cast<float>(mContext->GetSurfaceInfo().extent.height))
+                   .setMinDepth(0.0f)
+                   .setMaxDepth(1.0f);
+    scissor = vk::Rect2D().setOffset({0, 0}).setExtent(mContext->GetSurfaceInfo().extent);
+    vk::PipelineViewportStateCreateInfo viewportInfo;
+    viewportInfo.setViewports(viewport).setScissors(scissor);
+    // ========== 5. 光栅化状态 ==========
+    vk::PipelineRasterizationStateCreateInfo rasterizationInfo{};
+    rasterizationInfo.setDepthClampEnable(vk::False)
+        .setRasterizerDiscardEnable(vk::False)
+        .setPolygonMode(vk::PolygonMode::eFill)
+        .setLineWidth(1.0f)
+        .setCullMode(vk::CullModeFlagBits::eNone)
+        .setFrontFace(vk::FrontFace::eClockwise)
+        .setDepthBiasEnable(vk::False);
+    // ========= 6. 多重采样 ==========
+    vk::PipelineMultisampleStateCreateInfo multisampleInfo{};
+    multisampleInfo.setSampleShadingEnable(vk::False)
+        .setRasterizationSamples(vk::SampleCountFlagBits::e1)
+        .setMinSampleShading(1.0f)
+        .setPSampleMask(nullptr)
+        .setAlphaToCoverageEnable(vk::False)
+        .setAlphaToOneEnable(vk::False);
+    // ========== 7. 深度模板测试 ==========
+    vk::PipelineDepthStencilStateCreateInfo depthStencilInfo{};
+    depthStencilInfo.setDepthTestEnable(vk::False)
+        .setDepthWriteEnable(vk::False)
+        .setDepthCompareOp(vk::CompareOp::eLessOrEqual)
+        .setDepthBoundsTestEnable(vk::False)
+        .setMinDepthBounds(0.0f)
+        .setMaxDepthBounds(1.0f)
+        .setStencilTestEnable(vk::False);
+    // ========== 8. 颜色混合状态 ==========
+    vk::PipelineColorBlendAttachmentState colorBlendAttachment{};
+    colorBlendAttachment.setBlendEnable(vk::False).setColorWriteMask(
+        vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB |
+        vk::ColorComponentFlagBits::eA);
+    vk::PipelineColorBlendStateCreateInfo colorBlendInfo{};
+    colorBlendInfo.setLogicOpEnable(vk::False)
+        .setLogicOp(vk::LogicOp::eCopy)
+        .setAttachments(colorBlendAttachment)
+        .setBlendConstants({0.0f, 0.0f, 0.0f, 0.0f});
+    // ========== 9. 动态状态 ==========
+    std::vector<vk::DynamicState> dynamicStates = {vk::DynamicState::eViewport, vk::DynamicState::eScissor};
+    vk::PipelineDynamicStateCreateInfo dynamicStateInfo{};
+    dynamicStateInfo.setDynamicStates(dynamicStates);
+    // ========== 10. 管线布局 ==========
+    auto pipelineLayout = mPipelineLayoutManager->GetPipelineLayout(PipelineLayoutType::Skybox);
+    // ========== 11. 渲染通道 ==========
+    auto renderPass = mRenderPassManager->GetRenderPass(RenderPassType::Sky);
+    // ========== 12. 管线创建 ==========
+    vk::GraphicsPipelineCreateInfo pipelineInfo{};
+    pipelineInfo.setStageCount(static_cast<uint32_t>(shaderStages.size()))
+        .setPStages(shaderStages.data())
+        .setPVertexInputState(&vertexInputInfo)
+        .setPInputAssemblyState(&inputAssemblyInfo)
+        .setPViewportState(&viewportInfo)
+        .setPRasterizationState(&rasterizationInfo)
+        .setPMultisampleState(&multisampleInfo)
+        .setPDepthStencilState(&depthStencilInfo)
+        .setPColorBlendState(&colorBlendInfo)
+        .setPDynamicState(&dynamicStateInfo)
+        .setLayout(pipelineLayout)
+        .setRenderPass(renderPass)
+        .setSubpass(0);
+    auto pipeline = mContext->GetDevice().createGraphicsPipelineUnique(nullptr, pipelineInfo);
+    if (pipeline.result != vk::Result::eSuccess)
+    {
+        mLogger->Error("Failed to create Skybox pipeline");
+    }
+    mPipelines[PipelineType::Skybox] = std::move(pipeline.value);
+    mLogger->Info("Skybox pipeline created successfully");
 }
 void PipelineManager::CreateScreenSpaceEffectSSAOPipeline()
 {

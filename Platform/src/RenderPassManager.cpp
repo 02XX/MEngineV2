@@ -55,10 +55,10 @@ void RenderPassManager::CreateForwardCompositionRenderPass()
             .setFormat(mImageFactory->GetDepthStencilFormat()) // 32位深度+8位模板存储
             .setSamples(vk::SampleCountFlagBits::e1)
             .setLoadOp(vk::AttachmentLoadOp::eClear)
-            .setStoreOp(vk::AttachmentStoreOp::eDontCare) // 深度模板不需要存储
+            .setStoreOp(vk::AttachmentStoreOp::eStore)
             .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
             .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
-            .setInitialLayout(vk::ImageLayout::eUndefined)
+            .setInitialLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal)
             .setFinalLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal),
     };
     // SubPass: 0 不透明物体
@@ -105,6 +105,51 @@ void RenderPassManager::CreateForwardCompositionRenderPass()
 }
 void RenderPassManager::CreateSkyRenderPass()
 {
+    std::vector<vk::AttachmentDescription> attachments{
+        // Render Target
+        vk::AttachmentDescription()
+            .setFormat(mImageFactory->GetRenderTargetFormat())
+            .setSamples(vk::SampleCountFlagBits::e1)
+            .setLoadOp(vk::AttachmentLoadOp::eLoad)
+            .setStoreOp(vk::AttachmentStoreOp::eDontCare)
+            .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
+            .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
+            .setInitialLayout(vk::ImageLayout::eColorAttachmentOptimal)
+            .setFinalLayout(vk::ImageLayout::eColorAttachmentOptimal),
+        // depth
+        // Depth Stencil
+        vk::AttachmentDescription()
+            .setFormat(mImageFactory->GetDepthStencilFormat())
+            .setSamples(vk::SampleCountFlagBits::e1)
+            .setLoadOp(vk::AttachmentLoadOp::eLoad)
+            .setStoreOp(vk::AttachmentStoreOp::eStore)
+            .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
+            .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
+            .setInitialLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal)
+            .setFinalLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal),
+    };
+    std::vector<vk::AttachmentReference> colorRefs{
+        vk::AttachmentReference(0, vk::ImageLayout::eColorAttachmentOptimal), // Render Target
+    };
+    vk::AttachmentReference depthRef{
+        vk::AttachmentReference(1, vk::ImageLayout::eDepthStencilAttachmentOptimal), // Depth Stencil
+    };
+    std::vector<vk::SubpassDescription> subpasses{
+        // 0: Render Target
+        vk::SubpassDescription()
+            .setPipelineBindPoint(vk::PipelineBindPoint::eGraphics)
+            .setColorAttachments(colorRefs)        // Render Target
+            .setPDepthStencilAttachment(&depthRef) // Depth Stencil
+    };
+    vk::RenderPassCreateInfo renderPassCreateInfo{};
+    renderPassCreateInfo.setAttachments(attachments).setSubpasses(subpasses);
+    auto renderPass = mContext->GetDevice().createRenderPassUnique(renderPassCreateInfo);
+    if (!renderPass)
+    {
+        mLogger->Error("Failed to create Sky render pass");
+    }
+    mRenderPasses[RenderPassType::Sky] = std::move(renderPass);
+    mLogger->Info("Sky render pass created successfully");
 }
 void RenderPassManager::CreateTransparentRenderPass()
 {
@@ -317,6 +362,31 @@ void RenderPassManager::CreateForwardCompositionFrameBuffer()
 }
 void RenderPassManager::CreateSkyFrameBuffer()
 {
+    mFrameBuffers[RenderPassType::Sky].clear();
+    auto frameCount = mContext->GetSwapchainImages().size();
+    auto extent = vk::Extent2D{mRenderTargetWidth, mRenderTargetHeight};
+    auto renderPass = mRenderPasses[RenderPassType::Sky].get();
+    for (size_t i = 0; i < frameCount; i++)
+    {
+        // 创建帧缓冲
+        std::vector<vk::ImageView> attachments{
+            mRenderTargets[i]->colorImageView.get(),        // Render Target: Color
+            mRenderTargets[i]->depthStencilImageView.get(), // Depth Stencil
+        };
+        vk::FramebufferCreateInfo framebufferCreateInfo;
+        framebufferCreateInfo.setRenderPass(renderPass)
+            .setAttachments(attachments)
+            .setWidth(extent.width)
+            .setHeight(extent.height)
+            .setLayers(1);
+        auto framebuffer = mContext->GetDevice().createFramebufferUnique(framebufferCreateInfo);
+        if (!framebuffer)
+        {
+            mLogger->Error("Failed to create framebuffer for Sky render pass");
+        }
+        mFrameBuffers[RenderPassType::Sky].push_back(std::move(framebuffer));
+        mLogger->Info("Framebuffer {} for Sky render pass created successfully", i);
+    }
 }
 void RenderPassManager::CreateTransparentFrameBuffer()
 {

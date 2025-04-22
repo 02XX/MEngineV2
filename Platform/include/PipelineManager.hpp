@@ -23,6 +23,8 @@ enum class PipelineType
     DeferredGBuffer,         // 延迟渲染 GBuffer 阶段管线
     DeferredLighting,        // 延迟渲染 Lighting 阶段管线0.
 
+    // 天空盒
+    Skybox, // 天空盒渲染管线
     // 屏幕空间特效
     ScreenSpaceEffectSSAO, // 屏幕空间环境光遮蔽
     ScreenSpaceEffectSSR,  // 屏幕空间反射
@@ -81,6 +83,7 @@ class PipelineManager final : public NoCopyable
     void CreateForwardTransparentPhongPipeline();
     void CreateDeferredGBufferPipeline();
     void CreateDeferredLightingPipeline();
+    void CreateSkyboxPipeline();
     void CreateScreenSpaceEffectSSAOPipeline();
     void CreateScreenSpaceEffectSSRPipeline();
     void CreateSkinnedMeshPipeline();

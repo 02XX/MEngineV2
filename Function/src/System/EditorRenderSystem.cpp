@@ -204,7 +204,7 @@ void EditorRenderSystem::Tick(float deltaTime)
     // RenderShadowDepthPass();  // Shadow pass
     // void RenderDeferred();
     RenderForward();
-    // RenderSkyPass();          // Sky pass
+    // RenderSkyPass(); // Sky pass
     // RenderTranslucencyPass(); // Translucency pass
     // RenderPostProcessPass();  // Post process pass
     // RenderUIPass(deltaTime); // UI pass

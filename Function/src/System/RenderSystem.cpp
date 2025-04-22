@@ -94,6 +94,19 @@ void RenderSystem::InitialRenderTargetImageLayout()
             renderTargetCommandBuffer->pipelineBarrier(vk::PipelineStageFlagBits::eTopOfPipe,
                                                        vk::PipelineStageFlagBits::eColorAttachmentOutput, {}, {}, {},
                                                        forwardImageMemoryBarrier);
+            // Depth Stencil ImageLayout
+            vk::ImageMemoryBarrier depthImageMemoryBarrier;
+            depthImageMemoryBarrier.setImage(renderTarget.depthStencilImage->GetHandle())
+                .setOldLayout(vk::ImageLayout::eUndefined)
+                .setNewLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal)
+                .setSrcAccessMask(vk::AccessFlagBits::eNone)
+                .setDstAccessMask(vk::AccessFlagBits::eDepthStencilAttachmentWrite |
+                                  vk::AccessFlagBits::eDepthStencilAttachmentRead)
+                .setSubresourceRange(vk::ImageSubresourceRange{
+                    vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil, 0, 1, 0, 1});
+            renderTargetCommandBuffer->pipelineBarrier(vk::PipelineStageFlagBits::eTopOfPipe,
+                                                       vk::PipelineStageFlagBits::eEarlyFragmentTests, {}, {}, {},
+                                                       depthImageMemoryBarrier);
         }
     }
     renderTargetCommandBuffer->end();
@@ -275,7 +288,7 @@ void RenderSystem::Tick(float deltaTime)
     // RenderShadowDepthPass();  // Shadow pass
     // void RenderDeferred();
     RenderForward();
-    // RenderSkyPass();          // Sky pass
+    RenderSkyPass(); // Sky pass
     // RenderTranslucencyPass(); // Translucency pass
     // RenderPostProcessPass();  // Post process pass
     // RenderUIPass(deltaTime); // UI pass
@@ -457,6 +470,46 @@ void RenderSystem::RenderPostProcessPass()
 }
 void RenderSystem::RenderSkyPass()
 {
+    auto renderTargetImages = mRenderPassManager->GetRenderTargets();
+    auto extent = renderTargetImages[mFrameIndex].colorImage->GetExtent();
+    auto pipelineLayout = mPipelineLayoutManager->GetPipelineLayout(PipelineLayoutType::Skybox);
+    auto pipeline = mPipelineManager->GetPipeline(PipelineType::Skybox);
+    auto renderPass = mRenderPassManager->GetRenderPass(RenderPassType::Sky);
+    auto skyFrameBuffers = mRenderPassManager->GetFrameBuffer(RenderPassType::Sky);
+    vk::RenderPassBeginInfo renderPassBeginInfo;
+    std::vector<vk::ClearValue> clearValues{
+        vk::ClearValue(std::array<float, 4>{0.1f, 0.1f, 0.1f, 1.0f}), // 附件0: Render Target
+        vk::ClearDepthStencilValue(1.0f, 0)                           // 附件1: Depth Stencil
+    };
+    renderPassBeginInfo.setRenderPass(renderPass)
+        .setFramebuffer(skyFrameBuffers[mFrameIndex])
+        .setRenderArea(vk::Rect2D({0, 0}, vk::Extent2D(extent.width, extent.height)))
+        .setClearValues(clearValues);
+    mGraphicCommandBuffers[mFrameIndex]->beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);
+    {
+        // viewport
+        vk::Viewport viewport;
+        viewport.setX(0.0f)
+            .setY(0.0f)
+            .setWidth(static_cast<float>(extent.width))
+            .setHeight(static_cast<float>(extent.height))
+            .setMinDepth(0.0f)
+            .setMaxDepth(1.0f);
+        mGraphicCommandBuffers[mFrameIndex]->setViewport(0, viewport);
+        // scissor
+        vk::Rect2D scissor;
+        scissor.setOffset({0, 0}).setExtent(vk::Extent2D(extent.width, extent.height));
+        mGraphicCommandBuffers[mFrameIndex]->setScissor(0, scissor);
+        // 1. 绑定管线
+        mGraphicCommandBuffers[mFrameIndex]->bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
+        // 2. 绑定Global描述符集
+        mGraphicCommandBuffers[mFrameIndex]->bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0,
+                                                                mGlobalDescriptorSets[mFrameIndex].get(), {});
+
+        // 6. 绘制
+        mGraphicCommandBuffers[mFrameIndex]->draw(36, 1, 0, 0);
+    }
+    mGraphicCommandBuffers[mFrameIndex]->endRenderPass();
 }
 void RenderSystem::RenderUIPass(float deltaTime)
 {
