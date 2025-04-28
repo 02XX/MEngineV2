@@ -1,5 +1,4 @@
 #include "Repository/Texture2DRepository.hpp"
-#include <utility>
 
 namespace MEngine
 {
